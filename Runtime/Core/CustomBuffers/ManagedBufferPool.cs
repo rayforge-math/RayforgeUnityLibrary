@@ -271,27 +271,14 @@ namespace Rayforge.ManagedResources.CustomBufferPools
         }
     }
 
-    /// <summary>
-    /// Global static pool for <see cref="ManagedComputeBuffer"/> instances.
-    /// Provides convenient access to a shared buffer pool and factory method for custom pools.
-    /// </summary>
-    public static class ManagedComputeBufferPool
+    public class BaseManagedPool<Tdesc, Tbuffer>
+        where Tbuffer : IPooledBuffer<Tdesc>
+        where Tdesc : unmanaged, IEquatable<Tdesc>
     {
         /// <summary>
         /// Internal static pool instance used for the default Rent() method.
         /// </summary>
-        private static readonly LeasedBufferPool<ComputeBufferDescriptor, ManagedComputeBuffer> m_Pool;
-
-        /// <summary>
-        /// Static constructor initializes the global pool.
-        /// </summary>
-        static ManagedComputeBufferPool()
-        {
-            m_Pool = new LeasedBufferPool<ComputeBufferDescriptor, ManagedComputeBuffer>(
-                createFunc: (desc) => new ManagedComputeBuffer(desc),
-                releaseFunc: (buffer) => buffer.Dispose()
-            );
-        }
+        protected static readonly LeasedBufferPool<Tdesc, Tbuffer> m_Pool;
 
         /// <summary>
         /// Rents a buffer from the global pool.
@@ -299,112 +286,7 @@ namespace Rayforge.ManagedResources.CustomBufferPools
         /// </summary>
         /// <param name="desc">Descriptor describing the desired compute buffer.</param>
         /// <returns>A leased buffer representing the rented <see cref="ManagedComputeBuffer"/>.</returns>
-        public static LeasedBuffer<ComputeBufferDescriptor, ManagedComputeBuffer> Rent(ComputeBufferDescriptor desc)
-            => m_Pool.Rent(desc);
-
-        /// <summary>
-        /// Rents a typed compute buffer from the global pool.
-        /// Automatically determines stride based on <typeparamref name="T"/>.
-        /// The returned buffer is wrapped in a <see cref="LeasedBuffer{Tdesc,Tbuffer}"/> and automatically returned when disposed.
-        /// </summary>
-        /// <typeparam name="T">The element type stored in the compute buffer.</typeparam>
-        /// <param name="count">Number of elements in the buffer.</param>
-        /// <param name="type">Optional compute buffer type. Default is structured.</param>
-        /// <returns>A leased buffer representing the rented <see cref="ManagedComputeBuffer"/>.</returns>
-        public static LeasedBuffer<ComputeBufferDescriptor, ManagedComputeBuffer> Rent<T>(int count, ComputeBufferType type = ComputeBufferType.Structured)
-            where T : unmanaged
-        {
-            int stride = Marshal.SizeOf<T>();
-            var desc = new ComputeBufferDescriptor { count = count, stride = stride, type = type };
-            return m_Pool.Rent(desc);
-        }
-
-        /// <summary>
-        /// Creates a custom LeasedBufferPool with user-provided factory methods.
-        /// </summary>
-        /// <param name="createFunc">Factory method to create new buffers when needed.</param>
-        /// <param name="releaseFunc">Callback to release buffers permanently.</param>
-        /// <returns>A new LeasedBufferPool instance.</returns>
-        public static LeasedBufferPool<ComputeBufferDescriptor, ManagedComputeBuffer> Create(
-            BufferCreateFunc<ComputeBufferDescriptor, ManagedComputeBuffer> createFunc,
-            BufferReleaseFunc<ComputeBufferDescriptor, ManagedComputeBuffer> releaseFunc)
-        {
-            return new LeasedBufferPool<ComputeBufferDescriptor, ManagedComputeBuffer>(
-                createFunc,
-                releaseFunc
-            );
-        }
-
-        /// <summary>
-        /// Creates a batched buffer pool for sequential buffers, with optional base and batch sizes.
-        /// Useful to reduce frequent reallocations when the buffer size grows.
-        /// </summary>
-        /// <param name="createFunc">Factory method to create new buffers when needed.</param>
-        /// <param name="releaseFunc">Callback to release buffers permanently.</param>
-        /// <param name="baseSize">Minimum allocation size (defaults to 1).</param>
-        /// <param name="batchSize">Batch size for rounding allocations (0 disables batching).</param>
-        /// <returns>A new BatchedLeasedBufferPool instance.</returns>
-        public static BatchedLeasedBufferPool<ComputeBufferDescriptor, ManagedComputeBuffer> CreateBatched(
-            BufferCreateFunc<ComputeBufferDescriptor, ManagedComputeBuffer> createFunc,
-            BufferReleaseFunc<ComputeBufferDescriptor, ManagedComputeBuffer> releaseFunc, 
-            int baseSize = 1,
-            int batchSize = 0)
-        {
-            return new BatchedLeasedBufferPool<ComputeBufferDescriptor, ManagedComputeBuffer>(
-                createFunc,
-                releaseFunc,
-                baseSize,
-                batchSize
-            );
-        }
-
-        /// <summary>
-        /// Releases all buffers in the global pool.
-        /// After calling this, rented buffers will still work, 
-        /// but no old buffers will be reused.
-        /// </summary>
-        public static void ClearUnused()
-            => m_Pool.ClearUnused();
-
-        /// <summary>
-        /// Releases all buffers in the global pool.
-        /// All buffers will be disposed, no matter the lease state.
-        /// </summary>
-        public static void Dispose()
-            => m_Pool.Dispose();
-    }
-
-    /// <summary>
-    /// Global static access to a pool of managed system buffers (<see cref="NativeArray{T}"/>).
-    /// Provides simple Rent() for default use and factory methods for custom pools,
-    /// including a batched variant for sequential buffers to reduce frequent reallocations.
-    /// </summary>
-    /// <typeparam name="T">The struct type stored in the NativeArray.</typeparam>
-    public static class ManagedSystemBufferPool<T>
-        where T : struct
-    {
-        /// <summary>
-        /// Default global pool instance.
-        /// </summary>
-        private static readonly LeasedBufferPool<SystemBufferDescriptor, ManagedSystemBuffer<T>> m_Pool;
-
-        /// <summary>
-        /// Static constructor initializes the default global pool.
-        /// </summary>
-        static ManagedSystemBufferPool()
-        {
-            m_Pool = new LeasedBufferPool<SystemBufferDescriptor, ManagedSystemBuffer<T>>(
-                createFunc: desc => new ManagedSystemBuffer<T>(desc),
-                releaseFunc: buffer => buffer.Release()
-            );
-        }
-
-        /// <summary>
-        /// Rent a system buffer from the default global pool.
-        /// </summary>
-        /// <param name="desc">Descriptor for the buffer to rent.</param>
-        /// <returns>A leased buffer managing the lifetime automatically.</returns>
-        public static LeasedBuffer<SystemBufferDescriptor, ManagedSystemBuffer<T>> Rent(SystemBufferDescriptor desc)
+        public static LeasedBuffer<Tdesc, Tbuffer> Rent(Tdesc desc)
             => m_Pool.Rent(desc);
 
         /// <summary>
@@ -413,158 +295,11 @@ namespace Rayforge.ManagedResources.CustomBufferPools
         /// <param name="createFunc">Factory method to create new buffers when needed.</param>
         /// <param name="releaseFunc">Callback to release buffers permanently.</param>
         /// <returns>A new LeasedBufferPool instance.</returns>
-        public static LeasedBufferPool<SystemBufferDescriptor, ManagedSystemBuffer<T>> Create(
-            BufferCreateFunc<SystemBufferDescriptor, ManagedSystemBuffer<T>> createFunc,
-            BufferReleaseFunc<SystemBufferDescriptor, ManagedSystemBuffer<T>> releaseFunc)
+        public static LeasedBufferPool<Tdesc, Tbuffer> Create(
+            BufferCreateFunc<Tdesc, Tbuffer> createFunc,
+            BufferReleaseFunc<Tdesc, Tbuffer> releaseFunc)
         {
-            return new LeasedBufferPool<SystemBufferDescriptor, ManagedSystemBuffer<T>>(
-                createFunc,
-                releaseFunc
-            );
-        }
-
-        /// <summary>
-        /// Creates a batched buffer pool for sequential buffers, with optional base and batch sizes.
-        /// Useful to reduce frequent reallocations when the buffer size grows.
-        /// </summary>
-        /// <param name="createFunc">Factory method to create new buffers when needed.</param>
-        /// <param name="releaseFunc">Callback to release buffers permanently.</param>
-        /// <param name="baseSize">Minimum allocation size (defaults to 1).</param>
-        /// <param name="batchSize">Batch size for rounding allocations (0 disables batching).</param>
-        /// <returns>A new BatchedLeasedBufferPool instance.</returns>
-        public static BatchedLeasedBufferPool<SystemBufferDescriptor, ManagedSystemBuffer<T>> CreateBatched(
-            BufferCreateFunc<SystemBufferDescriptor, ManagedSystemBuffer<T>> createFunc,
-            BufferReleaseFunc<SystemBufferDescriptor, ManagedSystemBuffer<T>> releaseFunc,
-            int baseSize = 1,
-            int batchSize = 0)
-        {
-            return new BatchedLeasedBufferPool<SystemBufferDescriptor, ManagedSystemBuffer<T>>(
-                createFunc,
-                releaseFunc,
-                baseSize,
-                batchSize
-            );
-        }
-
-        /// <summary>
-        /// Releases all buffers in the global pool.
-        /// After calling this, rented buffers will still work, 
-        /// but no old buffers will be reused.
-        /// </summary>
-        public static void ClearUnused()
-            => m_Pool.ClearUnused();
-
-        /// <summary>
-        /// Releases all buffers in the global pool.
-        /// All buffers will be disposed, no matter the lease state.
-        /// </summary>
-        public static void Dispose()
-            => m_Pool.Dispose();
-    }
-
-    /// <summary>
-    /// Global static access to a pool of managed render textures.
-    /// Provides simple Rent() for default use and factory methods for custom pools.
-    /// </summary>
-    public static class ManagedRenderTexturePool
-    {
-        /// <summary>
-        /// Default global pool instance.
-        /// </summary>
-        private static readonly LeasedBufferPool<RenderTextureDescriptorWrapper, ManagedRenderTexture> m_Pool;
-
-        /// <summary>
-        /// Static constructor initializes the default global pool.
-        /// </summary>
-        static ManagedRenderTexturePool()
-        {
-            m_Pool = new LeasedBufferPool<RenderTextureDescriptorWrapper, ManagedRenderTexture>(
-                createFunc: desc => new ManagedRenderTexture(desc, FilterMode.Bilinear, TextureWrapMode.Clamp),
-                releaseFunc: buffer => buffer.Release()
-            );
-        }
-
-        /// <summary>
-        /// Rent a managed render texture from the default global pool.
-        /// </summary>
-        /// <param name="desc">Descriptor for the render texture to rent.</param>
-        /// <returns>A leased buffer managing the lifetime automatically.</returns>
-        public static LeasedBuffer<RenderTextureDescriptorWrapper, ManagedRenderTexture> Rent(RenderTextureDescriptorWrapper desc)
-            => m_Pool.Rent(desc);
-
-        /// <summary>
-        /// Creates a custom LeasedBufferPool with user-provided factory methods.
-        /// </summary>
-        /// <param name="createFunc">Factory method to create new render textures when needed.</param>
-        /// <param name="releaseFunc">Callback to release render textures permanently.</param>
-        /// <returns>A new LeasedBufferPool instance.</returns>
-        public static LeasedBufferPool<RenderTextureDescriptorWrapper, ManagedRenderTexture> Create(
-            BufferCreateFunc<RenderTextureDescriptorWrapper, ManagedRenderTexture> createFunc,
-            BufferReleaseFunc<RenderTextureDescriptorWrapper, ManagedRenderTexture> releaseFunc)
-        {
-            return new LeasedBufferPool<RenderTextureDescriptorWrapper, ManagedRenderTexture>(
-                createFunc,
-                releaseFunc
-            );
-        }
-
-        /// <summary>
-        /// Releases all buffers in the global pool.
-        /// After calling this, rented buffers will still work, 
-        /// but no old buffers will be reused.
-        /// </summary>
-        public static void ClearUnused()
-            => m_Pool.ClearUnused();
-
-        /// <summary>
-        /// Releases all buffers in the global pool.
-        /// All buffers will be disposed, no matter the lease state.
-        /// </summary>
-        public static void Dispose()
-            => m_Pool.Dispose();
-    }
-
-    /// <summary>
-    /// Global static access to a pool of managed Texture2D objects.
-    /// Provides simple Rent() for default use and factory methods for custom pools.
-    /// </summary>
-    public static class ManagedTexture2DPool
-    {
-        /// <summary>
-        /// Default global pool instance.
-        /// </summary>
-        private static readonly LeasedBufferPool<Texture2dDescriptor, ManagedTexture2D> m_Pool;
-
-        /// <summary>
-        /// Static constructor initializes the default global pool.
-        /// </summary>
-        static ManagedTexture2DPool()
-        {
-            m_Pool = new LeasedBufferPool<Texture2dDescriptor, ManagedTexture2D>(
-                createFunc: desc => new ManagedTexture2D(desc),
-                releaseFunc: buffer => buffer.Release()
-            );
-        }
-
-        /// <summary>
-        /// Rent a managed Texture2D from the default global pool.
-        /// </summary>
-        /// <param name="desc">Descriptor for the Texture2D to rent.</param>
-        /// <returns>A leased buffer managing the lifetime automatically.</returns>
-        public static LeasedBuffer<Texture2dDescriptor, ManagedTexture2D> Rent(Texture2dDescriptor desc)
-            => m_Pool.Rent(desc);
-
-        /// <summary>
-        /// Creates a custom LeasedBufferPool with user-provided factory methods.
-        /// </summary>
-        /// <param name="createFunc">Factory method to create new Texture2D objects when needed.</param>
-        /// <param name="releaseFunc">Callback to release textures permanently.</param>
-        /// <returns>A new LeasedBufferPool instance.</returns>
-        public static LeasedBufferPool<Texture2dDescriptor, ManagedTexture2D> Create(
-            BufferCreateFunc<Texture2dDescriptor, ManagedTexture2D> createFunc,
-            BufferReleaseFunc<Texture2dDescriptor, ManagedTexture2D> releaseFunc)
-        {
-            return new LeasedBufferPool<Texture2dDescriptor, ManagedTexture2D>(
+            return new LeasedBufferPool<Tdesc, Tbuffer>(
                 createFunc,
                 releaseFunc
             );
@@ -587,17 +322,132 @@ namespace Rayforge.ManagedResources.CustomBufferPools
             => m_Pool.Dispose();
     }
 
+    public class BaseBatchedManagedPool<Tdesc, Tbuffer> : BaseManagedPool<Tdesc, Tbuffer>
+        where Tbuffer : IPooledBuffer<Tdesc>
+        where Tdesc : unmanaged, IEquatable<Tdesc>
+    {
+        /// <summary>
+        /// Creates a batched buffer pool for sequential buffers, with optional base and batch sizes.
+        /// Useful to reduce frequent reallocations when the buffer size grows.
+        /// </summary>
+        /// <param name="createFunc">Factory method to create new buffers when needed.</param>
+        /// <param name="releaseFunc">Callback to release buffers permanently.</param>
+        /// <param name="baseSize">Minimum allocation size (defaults to 1).</param>
+        /// <param name="batchSize">Batch size for rounding allocations (0 disables batching).</param>
+        /// <returns>A new BatchedLeasedBufferPool instance.</returns>
+        public static BatchedLeasedBufferPool<Tdesc, Tbuffer> CreateBatched(
+            BufferCreateFunc<Tdesc, Tbuffer> createFunc,
+            BufferReleaseFunc<Tdesc, Tbuffer> releaseFunc, 
+            int baseSize = 1,
+            int batchSize = 0)
+        {
+            return new BatchedLeasedBufferPool<Tdesc, Tbuffer>(
+                createFunc,
+                releaseFunc,
+                baseSize,
+                batchSize
+            );
+        }
+    }
+
+    /// <summary>
+    /// Global static pool for <see cref="ManagedComputeBuffer"/> instances.
+    /// Provides convenient access to a shared buffer pool and factory method for custom pools.
+    /// </summary>
+    public static class ManagedComputeBufferPool : BaseBatchedManagedPool<ComputeBufferDescriptor, ManagedComputeBuffer>
+    {
+        /// <summary>
+        /// Static constructor initializes the global pool.
+        /// </summary>
+        static ManagedComputeBufferPool()
+        {
+            m_Pool = new LeasedBufferPool<ComputeBufferDescriptor, ManagedComputeBuffer>(
+                createFunc: (desc) => new ManagedComputeBuffer(desc),
+                releaseFunc: (buffer) => buffer.Dispose()
+            );
+        }
+
+        /// <summary>
+        /// Rents a typed compute buffer from the global pool.
+        /// Automatically determines stride based on <typeparamref name="T"/>.
+        /// The returned buffer is wrapped in a <see cref="LeasedBuffer{Tdesc,Tbuffer}"/> and automatically returned when disposed.
+        /// </summary>
+        /// <typeparam name="T">The element type stored in the compute buffer.</typeparam>
+        /// <param name="count">Number of elements in the buffer.</param>
+        /// <param name="type">Optional compute buffer type. Default is structured.</param>
+        /// <returns>A leased buffer representing the rented <see cref="ManagedComputeBuffer"/>.</returns>
+        public static LeasedBuffer<ComputeBufferDescriptor, ManagedComputeBuffer> Rent<T>(int count, ComputeBufferType type = ComputeBufferType.Structured)
+            where T : unmanaged
+        {
+            int stride = Marshal.SizeOf<T>();
+            var desc = new ComputeBufferDescriptor { count = count, stride = stride, type = type };
+            return m_Pool.Rent(desc);
+        }
+    }
+
+    /// <summary>
+    /// Global static access to a pool of managed system buffers (<see cref="NativeArray{T}"/>).
+    /// Provides simple Rent() for default use and factory methods for custom pools,
+    /// including a batched variant for sequential buffers to reduce frequent reallocations.
+    /// </summary>
+    /// <typeparam name="T">The struct type stored in the NativeArray.</typeparam>
+    public static class ManagedSystemBufferPool<T> : BaseBatchedManagedPool<SystemBufferDescriptor, ManagedSystemBuffer>
+        where T : struct
+    {
+        /// <summary>
+        /// Static constructor initializes the default global pool.
+        /// </summary>
+        static ManagedSystemBufferPool()
+        {
+            m_Pool = new LeasedBufferPool<SystemBufferDescriptor, ManagedSystemBuffer<T>>(
+                createFunc: desc => new ManagedSystemBuffer<T>(desc),
+                releaseFunc: buffer => buffer.Release()
+            );
+        }
+    }
+
+    /// <summary>
+    /// Global static access to a pool of managed render textures.
+    /// Provides simple Rent() for default use and factory methods for custom pools.
+    /// </summary>
+    public static class ManagedRenderTexturePool : BaseManagedPool<RenderTextureDescriptorWrapper, ManagedRenderTexture>
+    {
+        /// <summary>
+        /// Static constructor initializes the default global pool.
+        /// </summary>
+        static ManagedRenderTexturePool()
+        {
+            m_Pool = new LeasedBufferPool<RenderTextureDescriptorWrapper, ManagedRenderTexture>(
+                createFunc: desc => new ManagedRenderTexture(desc, FilterMode.Bilinear, TextureWrapMode.Clamp),
+                releaseFunc: buffer => buffer.Release()
+            );
+        }
+    }
+
+    /// <summary>
+    /// Global static access to a pool of managed Texture2D objects.
+    /// Provides simple Rent() for default use and factory methods for custom pools.
+    /// </summary>
+    public static class ManagedTexture2DPool : BaseManagedPool<Texture2dDescriptor, ManagedTexture2D>
+    {
+        /// <summary>
+        /// Static constructor initializes the default global pool.
+        /// </summary>
+        static ManagedTexture2DPool()
+        {
+            m_Pool = new LeasedBufferPool<Texture2dDescriptor, ManagedTexture2D>(
+                createFunc: desc => new ManagedTexture2D(desc),
+                releaseFunc: buffer => buffer.Release()
+            );
+        }
+    }
+
     /// <summary>
     /// Global static access to a pool of managed Texture2DArray objects.
     /// Provides Rent() for default use and factory method to create custom pools.
     /// </summary>
-    public static class ManagedTexture2DArrayPool
+    public static class ManagedTexture2DArrayPool : BaseManagedPool<Texture2dArrayDescriptor, ManagedTexture2DArray>
     {
-        /// <summary>
-        /// Default global pool instance.
-        /// </summary>
-        private static readonly LeasedBufferPool<Texture2dArrayDescriptor, ManagedTexture2DArray> m_Pool;
-
         /// <summary>
         /// Static constructor initializes the default global pool.
         /// </summary>
@@ -608,44 +458,5 @@ namespace Rayforge.ManagedResources.CustomBufferPools
                 releaseFunc: buffer => buffer.Release()
             );
         }
-
-        /// <summary>
-        /// Rent a managed Texture2DArray from the default global pool.
-        /// </summary>
-        /// <param name="desc">Descriptor for the Texture2DArray to rent.</param>
-        /// <returns>A leased buffer managing the lifetime automatically.</returns>
-        public static LeasedBuffer<Texture2dArrayDescriptor, ManagedTexture2DArray> Rent(Texture2dArrayDescriptor desc)
-            => m_Pool.Rent(desc);
-
-        /// <summary>
-        /// Creates a custom LeasedBufferPool with user-provided factory methods.
-        /// </summary>
-        /// <param name="createFunc">Factory method to create new Texture2DArray objects.</param>
-        /// <param name="releaseFunc">Callback to release textures permanently.</param>
-        /// <returns>A new LeasedBufferPool instance.</returns>
-        public static LeasedBufferPool<Texture2dArrayDescriptor, ManagedTexture2DArray> Create(
-            BufferCreateFunc<Texture2dArrayDescriptor, ManagedTexture2DArray> createFunc,
-            BufferReleaseFunc<Texture2dArrayDescriptor, ManagedTexture2DArray> releaseFunc)
-        {
-            return new LeasedBufferPool<Texture2dArrayDescriptor, ManagedTexture2DArray>(
-                createFunc,
-                releaseFunc
-            );
-        }
-
-        /// <summary>
-        /// Releases all buffers in the global pool.
-        /// After calling this, rented buffers will still work, 
-        /// but no old buffers will be reused.
-        /// </summary>
-        public static void ClearUnused()
-            => m_Pool.ClearUnused();
-
-        /// <summary>
-        /// Releases all buffers in the global pool.
-        /// All buffers will be disposed, no matter the lease state.
-        /// </summary>
-        public static void Dispose()
-            => m_Pool.Dispose();
     }
 }
