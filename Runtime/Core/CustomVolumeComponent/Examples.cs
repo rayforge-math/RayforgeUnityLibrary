@@ -1,7 +1,14 @@
+using UnityEngine;
+using UnityEngine.Rendering;
+
+using Rayforge.CustomVolumeComponent.Editor;
+using System.Collections;
+using System;
+
 namespace Rayforge.CustomVolumeComponent.Example
 {
     [System.Serializable, VolumeComponentMenu("Custom/Test")]
-    private class TestVolumeComponent : VolumeComponent, IPostProcessComponent
+    public class TestVolumeComponent : VolumeComponent, IPostProcessComponent
     {
         public enum ValueEnabled
         {
@@ -11,10 +18,15 @@ namespace Rayforge.CustomVolumeComponent.Example
         }
 
         [System.Serializable]
-        public struct Entry
+        public struct Entry : IEquatable<Entry>
         {   
             public float x;
             public int y;
+
+            public bool Equals(Entry other)
+            {
+                return x == other.x && y == other.y;
+            }
         }
 
         protected override void OnEnable()
@@ -99,6 +111,8 @@ namespace Rayforge.CustomVolumeComponent.Example
             value2.OnValueChanged -= HandleChanged;
             entries.OnValueChanged -= HandleChanged;
         }
+
+        public bool IsActive() => false;
     }
 
 #if UNITY_PIPELINE_URP

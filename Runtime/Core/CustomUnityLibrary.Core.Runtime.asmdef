@@ -1,0 +1,8 @@
+{
+  "name": "CustomUnityLibrary.Core.Runtime",
+  "references": [
+    "Unity.RenderPipelines.Core.Runtime"
+  ],
+  "allowUnsafeCode": true,
+  "autoReferenced": true
+}

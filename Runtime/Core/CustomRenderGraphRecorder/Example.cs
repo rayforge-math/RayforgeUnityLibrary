@@ -5,10 +5,13 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
+#if UNITY_PIPELINE_URP
 using UnityEngine.Rendering.Universal;
+#endif
 
 namespace Rayforge.CustomRenderGraphRecorder.Example
 {
+#if UNITY_PIPELINE_URP
     public class TestRenderPass : ScriptableRenderPass
     {
         private const string k_PassName = "MyPass";
@@ -47,4 +50,5 @@ namespace Rayforge.CustomRenderGraphRecorder.Example
                 });
         }
     }
+#endif
 }

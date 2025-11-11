@@ -1,0 +1,11 @@
+{
+  "name": "CustomUnityLibrary.Core.Editor",
+  "references": [
+    "CustomUnityLibrary.Core.Runtime",
+    "Unity.RenderPipelines.Core.Editor",
+    "Unity.RenderPipelines.Core.Runtime"
+  ],
+  "includePlatforms": ["Editor"],
+  "allowUnsafeCode": true,
+  "autoReferenced": true
+}
