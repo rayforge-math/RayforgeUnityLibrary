@@ -1,0 +1,21 @@
+{
+  "name": "eu.rayforge.custom-unity-library",
+  "version": "1.0.0",
+  "displayName": "Custom Unity Library",
+  "description": "Collection of my Unity structurs, wrappers and helpers.",
+  "unity": "6000.0",
+  "unityRelease": "58f2",
+  "keywords": [
+    "utility",
+    "generic",
+    "library"
+  ],
+  "author": {
+    "name": "Rayforge",
+    "email": "info@rayforge.eu",
+    "url": "https://rayforge.eu/"
+  },
+  "dependencies": {
+    "com.unity.render-pipelines.core": "17.0.4"
+  }
+}
