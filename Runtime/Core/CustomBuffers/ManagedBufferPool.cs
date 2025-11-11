@@ -192,6 +192,18 @@ namespace Rayforge.ManagedResources.CustomBufferPools
             m_FreeDict.Clear();
             m_Reserved.Clear();
         }
+
+        /// <summary>
+        /// Permanently releases all unused buffers. Override to control teardown behavior.
+        /// </summary>
+        public virtual void ClearUnused()
+        {
+            foreach (var stack in m_FreeDict.Values)
+                foreach (var buffer in stack)
+                    m_ReleaseFunc.Invoke(buffer);
+
+            m_FreeDict.Clear();
+        }
     }
 
     /// <summary>
@@ -345,6 +357,21 @@ namespace Rayforge.ManagedResources.CustomBufferPools
                 batchSize
             );
         }
+
+        /// <summary>
+        /// Releases all buffers in the global pool.
+        /// After calling this, rented buffers will still work, 
+        /// but no old buffers will be reused.
+        /// </summary>
+        public static void ClearUnused()
+            => m_Pool.ClearUnused();
+
+        /// <summary>
+        /// Releases all buffers in the global pool.
+        /// All buffers will be disposed, no matter the lease state.
+        /// </summary>
+        public static void Dispose()
+            => m_Pool.Dispose();
     }
 
     /// <summary>
@@ -418,6 +445,21 @@ namespace Rayforge.ManagedResources.CustomBufferPools
                 batchSize
             );
         }
+
+        /// <summary>
+        /// Releases all buffers in the global pool.
+        /// After calling this, rented buffers will still work, 
+        /// but no old buffers will be reused.
+        /// </summary>
+        public static void ClearUnused()
+            => m_Pool.ClearUnused();
+
+        /// <summary>
+        /// Releases all buffers in the global pool.
+        /// All buffers will be disposed, no matter the lease state.
+        /// </summary>
+        public static void Dispose()
+            => m_Pool.Dispose();
     }
 
     /// <summary>
@@ -465,6 +507,21 @@ namespace Rayforge.ManagedResources.CustomBufferPools
                 releaseFunc
             );
         }
+
+        /// <summary>
+        /// Releases all buffers in the global pool.
+        /// After calling this, rented buffers will still work, 
+        /// but no old buffers will be reused.
+        /// </summary>
+        public static void ClearUnused()
+            => m_Pool.ClearUnused();
+
+        /// <summary>
+        /// Releases all buffers in the global pool.
+        /// All buffers will be disposed, no matter the lease state.
+        /// </summary>
+        public static void Dispose()
+            => m_Pool.Dispose();
     }
 
     /// <summary>
@@ -512,6 +569,22 @@ namespace Rayforge.ManagedResources.CustomBufferPools
                 releaseFunc
             );
         }
+
+        /// <summary>
+        /// Releases all buffers in the global pool.
+        /// After calling this, rented buffers will still work, 
+        /// but no old buffers will be reused.
+        /// </summary>
+        public static void ClearUnused()
+            => m_Pool.ClearUnused();
+
+        /// <summary>
+        /// Releases all buffers in the global pool.
+        /// All buffers will be disposed, no matter the lease state.
+        /// For <see cref="Texture2D"/>, the resource stays valid as long as a reference exists.
+        /// </summary>
+        public static void Dispose()
+            => m_Pool.Dispose();
     }
 
     /// <summary>
@@ -559,5 +632,20 @@ namespace Rayforge.ManagedResources.CustomBufferPools
                 releaseFunc
             );
         }
+
+        /// <summary>
+        /// Releases all buffers in the global pool.
+        /// After calling this, rented buffers will still work, 
+        /// but no old buffers will be reused.
+        /// </summary>
+        public static void ClearUnused()
+            => m_Pool.ClearUnused();
+
+        /// <summary>
+        /// Releases all buffers in the global pool.
+        /// All buffers will be disposed, no matter the lease state.
+        /// </summary>
+        public static void Dispose()
+            => m_Pool.Dispose();
     }
 }
