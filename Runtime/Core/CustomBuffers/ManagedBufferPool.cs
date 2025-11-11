@@ -278,7 +278,7 @@ namespace Rayforge.ManagedResources.CustomBufferPools
         /// <summary>
         /// Internal static pool instance used for the default Rent() method.
         /// </summary>
-        protected static readonly LeasedBufferPool<Tdesc, Tbuffer> m_Pool;
+        protected static LeasedBufferPool<Tdesc, Tbuffer> m_Pool;
 
         /// <summary>
         /// Rents a buffer from the global pool.
@@ -324,7 +324,7 @@ namespace Rayforge.ManagedResources.CustomBufferPools
 
     public class BaseBatchedManagedPool<Tdesc, Tbuffer> : BaseManagedPool<Tdesc, Tbuffer>
         where Tbuffer : IPooledBuffer<Tdesc>
-        where Tdesc : unmanaged, IEquatable<Tdesc>
+        where Tdesc : unmanaged, IEquatable<Tdesc>, IBatchingDescriptor
     {
         /// <summary>
         /// Creates a batched buffer pool for sequential buffers, with optional base and batch sizes.
@@ -354,7 +354,7 @@ namespace Rayforge.ManagedResources.CustomBufferPools
     /// Global static pool for <see cref="ManagedComputeBuffer"/> instances.
     /// Provides convenient access to a shared buffer pool and factory method for custom pools.
     /// </summary>
-    public static class ManagedComputeBufferPool : BaseBatchedManagedPool<ComputeBufferDescriptor, ManagedComputeBuffer>
+    public class ManagedComputeBufferPool : BaseBatchedManagedPool<ComputeBufferDescriptor, ManagedComputeBuffer>
     {
         /// <summary>
         /// Static constructor initializes the global pool.
@@ -391,7 +391,7 @@ namespace Rayforge.ManagedResources.CustomBufferPools
     /// including a batched variant for sequential buffers to reduce frequent reallocations.
     /// </summary>
     /// <typeparam name="T">The struct type stored in the NativeArray.</typeparam>
-    public static class ManagedSystemBufferPool<T> : BaseBatchedManagedPool<SystemBufferDescriptor, ManagedSystemBuffer>
+    public class ManagedSystemBufferPool<T> : BaseBatchedManagedPool<SystemBufferDescriptor, ManagedSystemBuffer<T>>
         where T : struct
     {
         /// <summary>
@@ -410,7 +410,7 @@ namespace Rayforge.ManagedResources.CustomBufferPools
     /// Global static access to a pool of managed render textures.
     /// Provides simple Rent() for default use and factory methods for custom pools.
     /// </summary>
-    public static class ManagedRenderTexturePool : BaseManagedPool<RenderTextureDescriptorWrapper, ManagedRenderTexture>
+    public class ManagedRenderTexturePool : BaseManagedPool<RenderTextureDescriptorWrapper, ManagedRenderTexture>
     {
         /// <summary>
         /// Static constructor initializes the default global pool.
@@ -428,7 +428,7 @@ namespace Rayforge.ManagedResources.CustomBufferPools
     /// Global static access to a pool of managed Texture2D objects.
     /// Provides simple Rent() for default use and factory methods for custom pools.
     /// </summary>
-    public static class ManagedTexture2DPool : BaseManagedPool<Texture2dDescriptor, ManagedTexture2D>
+    public class ManagedTexture2DPool : BaseManagedPool<Texture2dDescriptor, ManagedTexture2D>
     {
         /// <summary>
         /// Static constructor initializes the default global pool.
@@ -446,7 +446,7 @@ namespace Rayforge.ManagedResources.CustomBufferPools
     /// Global static access to a pool of managed Texture2DArray objects.
     /// Provides Rent() for default use and factory method to create custom pools.
     /// </summary>
-    public static class ManagedTexture2DArrayPool : BaseManagedPool<Texture2dArrayDescriptor, ManagedTexture2DArray>
+    public class ManagedTexture2DArrayPool : BaseManagedPool<Texture2dArrayDescriptor, ManagedTexture2DArray>
     {
         /// <summary>
         /// Static constructor initializes the default global pool.
