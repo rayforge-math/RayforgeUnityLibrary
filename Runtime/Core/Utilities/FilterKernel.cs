@@ -52,6 +52,11 @@ namespace Rayforge.CustomUtility.Filter
         public readonly float[] RawData => m_Kernel;
 
         /// <summary>
+        /// Number of elements in raw float array used for GPU buffer uploads.
+        /// </summary>
+        public int Count => m_Kernel?.Length ?? 0;
+
+        /// <summary>
         /// Provides direct access to the kernel coefficients.
         /// </summary>
         public float this[int index] => m_Kernel[index];
