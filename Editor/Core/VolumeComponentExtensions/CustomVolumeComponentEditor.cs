@@ -7,7 +7,7 @@ using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Rayforge.CustomVolumeComponent.Editor
+namespace Rayforge.VolumeComponentExtensions.Editor
 {
     public static class SerializedDataParameterExtensions
     {

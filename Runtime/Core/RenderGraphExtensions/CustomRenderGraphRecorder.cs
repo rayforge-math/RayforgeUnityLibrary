@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
-namespace Rayforge.CustomRenderGraphRecorder
+namespace Rayforge.RenderGraphExtensions.RenderPasses
 {
     /// <summary>
     /// Provides shader property identifiers for common blit parameters used when drawing

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Rayforge.CustomUtility.Rendering
+namespace Rayforge.Utility.Rendering
 {
     public static class SharedTexture
     {

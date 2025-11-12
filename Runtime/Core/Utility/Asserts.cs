@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace Rayforge.CustomUtility.RuntimeCheck
+namespace Rayforge.Utility.RuntimeCheck
 {
     public static class Asserts
     {

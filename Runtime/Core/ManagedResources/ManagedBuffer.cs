@@ -1,9 +1,11 @@
+using Rayforge.ManagedResources.Pooling;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using UnityEngine;
 
-namespace Rayforge.ManagedResources.CustomBuffers
+namespace Rayforge.ManagedResources.NativeMemory
 {
     /// <summary>
     /// Interface for pooled GPU/graphics resources.
@@ -248,6 +250,22 @@ namespace Rayforge.ManagedResources.CustomBuffers
         public ManagedComputeBuffer(ComputeBufferDescriptor desc)
             : base(new ComputeBuffer(desc.count, desc.stride, desc.type), desc)
         { }
+
+        /// <summary>
+        /// Creates a compute buffer.
+        /// Automatically determines stride based on <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The element type stored in the compute buffer.</typeparam>
+        /// <param name="count">Number of elements in the buffer.</param>
+        /// <param name="type">Optional compute buffer type. Default is structured.</param>
+        /// <returns>A leased buffer representing the rented <see cref="ManagedComputeBuffer"/>.</returns>
+        public static ManagedComputeBuffer Create<T>(int count, ComputeBufferType type = ComputeBufferType.Structured)
+            where T : unmanaged
+        {
+            int stride = Marshal.SizeOf<T>();
+            var desc = new ComputeBufferDescriptor { count = count, stride = stride, type = type };
+            return new ManagedComputeBuffer(desc);
+        }
 
         /// <summary>
         /// Uploads raw array data to the GPU buffer.

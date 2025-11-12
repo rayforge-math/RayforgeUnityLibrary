@@ -1,11 +1,10 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 
-using Rayforge.CustomVolumeComponent.Editor;
-using System.Collections;
+using Rayforge.VolumeComponentExtensions.Editor;
 using System;
 
-namespace Rayforge.CustomVolumeComponent.Example
+namespace Rayforge.VolumeComponentExtensions.Example
 {
     [System.Serializable, VolumeComponentMenu("Custom/Test")]
     public class TestVolumeComponent : VolumeComponent, IPostProcessComponent

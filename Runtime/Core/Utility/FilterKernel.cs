@@ -1,10 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Rayforge.ManagedResources.CustomBuffers;
+using Rayforge.ManagedResources.NativeMemory;
 
-using static Rayforge.CustomUtility.RuntimeCheck.Asserts;
+using static Rayforge.Utility.RuntimeCheck.Asserts;
 
-namespace Rayforge.CustomUtility.Filter
+namespace Rayforge.Utility.Filter
 {
     public static class GaussHelpers
     {

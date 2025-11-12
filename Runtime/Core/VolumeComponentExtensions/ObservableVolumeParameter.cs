@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Rayforge.CustomVolumeComponent
+namespace Rayforge.VolumeComponentExtensions
 {
     public delegate T InterpFunc<T>(T from, T to, float t);
     public delegate T ClampFunc<T>(T value, T min, T max);

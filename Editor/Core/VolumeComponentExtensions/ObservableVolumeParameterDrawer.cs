@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEngine;
 
-namespace Rayforge.CustomVolumeComponent
+namespace Rayforge.VolumeComponentExtensions
 {
     [VolumeParameterDrawer(typeof(ObservableClampedFloatParameter))]
     public class ObservableClampedFloatParameterDrawer : VolumeParameterDrawer

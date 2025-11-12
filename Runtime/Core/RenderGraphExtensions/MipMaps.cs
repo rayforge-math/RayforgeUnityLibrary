@@ -3,44 +3,30 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.RenderGraphModule;
 
-using static Rayforge.CustomUtility.RuntimeCheck.Asserts;
+using static Rayforge.Utility.RuntimeCheck.Asserts;
 
-namespace Rayforge.CustomUtility.GraphicsBuffer
+namespace Rayforge.RenderGraphExtensions.Rendering
 {
     /// <summary>
-    /// Extension methods for <see cref="Vector2Int"/> to simplify common resolution operations.
-    /// </summary>
-    public static class ResolutionExtensions
-    {
-        /// <summary>
-        /// Checks whether two <see cref="Vector2Int"/> values match exactly in both X and Y.
-        /// </summary>
-        /// <param name="lhs">The first resolution to compare.</param>
-        /// <param name="rhs">The second resolution to compare.</param>
-        /// <returns>True if both X and Y components are equal; otherwise false.</returns>
-        public static bool Matches(this Vector2Int lhs, Vector2Int rhs)
-        {
-            return lhs.x == rhs.x && lhs.y == rhs.y;
-        }
-    }
-
-    /// <summary>
-    /// Delegate used to generate resolution for a mip level from a base resolution.
+    /// Delegate used to generate the resolution for a mip level from a base resolution within a RenderGraph context.
+    /// Typically used to create a chain of <see cref="TextureHandle"/> descriptors for custom mip chains.
     /// </summary>
     /// <param name="mipLevel">The mip level index (0 is full resolution).</param>
-    /// <param name="baseRes">The base resolution.</param>
+    /// <param name="baseRes">The base resolution (mip 0).</param>
     /// <returns>The resolution for the given mip level.</returns>
     public delegate Vector2Int MipCreateFunc(int mipLevel, Vector2Int baseRes);
 
     /// <summary>
-    /// Manages a chain of <see cref="RenderTextureDescriptor"/> for multiple mip levels, with automatic resolution and format updates.
+    /// Manages a chain of <see cref="RenderTextureDescriptor"/> instances for multiple mip levels,
+    /// specifically designed for use with RenderGraph passes and <see cref="TextureHandle"/> allocations.
+    /// Handles automatic resolution scaling per mip and consistent format updates across the chain.
     /// </summary>
     public struct RenderTextureDescriptorMipChain
     {
-        /// <summary>Function used to generate mip resolutions for each level.</summary>
+        /// <summary>Function used to generate mip resolutions for each level in the RenderGraph context.</summary>
         private readonly MipCreateFunc k_MipCreateFunc;
 
-        /// <summary>Array of descriptors for each mip level.</summary>
+        /// <summary>Array of descriptors for each mip level, to be used for TextureHandle creation.</summary>
         private RenderTextureDescriptor[] m_Descriptors;
 
         /// <summary>Read-only access to the mip level descriptors.</summary>
@@ -48,7 +34,7 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
 
         /// <summary>Access a specific mip level descriptor by index.</summary>
         /// <param name="index">The mip level index.</param>
-        /// <returns>The <see cref="RenderTextureDescriptor"/> at the given index.</returns>
+        /// <returns>The <see cref="RenderTextureDescriptor"/> for the given mip, suitable for RenderGraph texture creation.</returns>
         public RenderTextureDescriptor this[int index] => m_Descriptors[index];
 
         private RenderTextureFormat m_Format;
@@ -60,7 +46,7 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
         }
 
         public int Length => m_Descriptors?.Length ?? 0;
-        /// <summary>Total number of mip levels.</summary>
+        /// <summary>Total number of mip levels in the chain, used to allocate corresponding TextureHandles in RenderGraph.</summary>
         public int MipCount
         {
             get => Length;
@@ -68,21 +54,21 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
         }
 
         private Vector2Int m_Resolution;
-        /// <summary>Width and height of the full resolution (mip 0).</summary>
+        /// <summary>Width and height of the base resolution (mip 0), used as reference for all mip levels.</summary>
         public Vector2Int Resolution
         {
             get => m_Resolution;
             set => UpdateResolution(value);
         }
 
-        /// <summary>Width of the base resolution.</summary>
+        /// <summary>Width of the base resolution (mip 0).</summary>
         public int Width
         {
             get => m_Resolution.x;
             set => Resolution = new Vector2Int { x = value, y = m_Resolution.y };
         }
 
-        /// <summary>Height of the base resolution.</summary>
+        /// <summary>Height of the base resolution (mip 0).</summary>
         public int Height
         {
             get => m_Resolution.y;
@@ -90,11 +76,12 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
         }
 
         /// <summary>
-        /// Creates a mip chain with the given resolution, optional mip generation function, mip count, and format.
+        /// Creates a mip chain for RenderGraph usage with the given resolution, optional custom mip generation function, mip count, and format.
+        /// Each descriptor can be used to allocate a <see cref="TextureHandle"/> for a RenderGraph pass.
         /// </summary>
-        /// <param name="width">Base width.</param>
-        /// <param name="height">Base height.</param>
-        /// <param name="createFunc">Optional custom mip generation function.</param>
+        /// <param name="width">Base width of the mip 0 level.</param>
+        /// <param name="height">Base height of the mip 0 level.</param>
+        /// <param name="createFunc">Optional custom mip resolution function.</param>
         /// <param name="mipCount">Number of mip levels.</param>
         /// <param name="format">Render texture format.</param>
         public RenderTextureDescriptorMipChain(int width, int height, MipCreateFunc createFunc = null, int mipCount = 1, RenderTextureFormat format = RenderTextureFormat.Default)
@@ -112,12 +99,13 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
         }
 
         /// <summary>
-        /// Updates the resolution of the mip chain and recalculates all mip levels using the mip creation function.
+        /// Updates the base resolution of the mip chain and recalculates all mip level descriptors.
+        /// Intended for use before allocating <see cref="TextureHandle"/>s in RenderGraph.
         /// </summary>
         /// <param name="resolution">The new base resolution.</param>
         private void UpdateResolution(Vector2Int resolution)
         {
-            if (!Resolution.Matches(resolution))
+            if (!Resolution.Equals(resolution))
             {
                 ValidateResolution(resolution);
 
@@ -125,7 +113,6 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
                 for (int i = 0; i < m_Descriptors.Length; ++i)
                 {
                     var mipRes = k_MipCreateFunc.Invoke(i, m_Resolution);
-
                     m_Descriptors[i].width = mipRes.x;
                     m_Descriptors[i].height = mipRes.y;
                 }
@@ -133,7 +120,8 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
         }
 
         /// <summary>
-        /// Updates the number of mip levels in the chain and reinitializes the descriptors if the count has changed.
+        /// Updates the number of mip levels and reinitializes descriptors.
+        /// Relevant for allocating a variable number of TextureHandles in RenderGraph.
         /// </summary>
         /// <param name="mipCount">The new number of mip levels.</param>
         private void UpdateMipCount(int mipCount)
@@ -146,12 +134,13 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
         }
 
         /// <summary>
-        /// Updates the format of all descriptors in the mip chain.
+        /// Updates the format of all descriptors.
+        /// Ensures consistency when creating TextureHandles for RenderGraph passes.
         /// </summary>
-        /// <param name="format">The new <see cref="RenderTextureFormat"/> to use for all mip levels.</param>
+        /// <param name="format">The new <see cref="RenderTextureFormat"/> to use.</param>
         private void UpdateFormat(RenderTextureFormat format)
         {
-            if(m_Format != format)
+            if (m_Format != format)
             {
                 m_Format = format;
                 for (int i = 0; i < m_Descriptors.Length; ++i)
@@ -162,9 +151,9 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
         }
 
         /// <summary>
-        /// Initializes the mip chain descriptors with the current resolution and format.
+        /// Initializes the mip chain descriptors for use with RenderGraph texture allocations.
         /// </summary>
-        /// <param name="mipCount">The number of mip levels to initialize.</param>
+        /// <param name="mipCount">Number of mip levels.</param>
         private void InitMipChain(int mipCount)
         {
             if (m_Descriptors.Length != mipCount)
@@ -180,22 +169,22 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
         }
 
         /// <summary>
-        /// Default mip creation function that calculates the resolution of a mip level from the base resolution.
+        /// Default mip creation function for RenderGraph: halves the resolution per mip level, clamped to 1.
         /// </summary>
-        /// <param name="mipLevel">The mip level to calculate.</param>
-        /// <param name="resolution">The base resolution.</param>
-        /// <returns>A <see cref="Vector2Int"/> representing the mip resolution.</returns>
+        /// <param name="mipLevel">The mip level index.</param>
+        /// <param name="resolution">The base resolution (mip 0).</param>
+        /// <returns>The resolution for the mip level.</returns>
         public static Vector2Int DefaultMipCreate(int mipLevel, Vector2Int resolution)
         {
             return new Vector2Int { x = DefaultMipCreate(mipLevel, resolution.x), y = DefaultMipCreate(mipLevel, resolution.y) };
         }
 
         /// <summary>
-        /// Default mip creation function for a single dimension.
+        /// Default mip creation for a single dimension.
         /// </summary>
-        /// <param name="mipLevel">The mip level to calculate.</param>
-        /// <param name="resolution">The base resolution for the dimension.</param>
-        /// <returns>The calculated mip resolution.</returns>
+        /// <param name="mipLevel">The mip level index.</param>
+        /// <param name="resolution">The base resolution for this dimension.</param>
+        /// <returns>Halved resolution for the mip level, minimum 1.</returns>
         private static int DefaultMipCreate(int mipLevel, int resolution)
         {
             return Mathf.Max(1, resolution >> mipLevel);
@@ -204,28 +193,42 @@ namespace Rayforge.CustomUtility.GraphicsBuffer
         /// <summary>
         /// Validates that the mip count is greater than zero.
         /// </summary>
-        /// <param name="mipCount">The mip count to validate.</param>
+        /// <param name="mipCount">Mip count to validate.</param>
         private static void ValidateMipCount(int mipCount)
         {
             const string error = "MipCount must be greater than 0";
-            Validate(mipCount, (val) => { return val > 0; }, error);
+            Validate(mipCount, (val) => val > 0, error);
         }
 
         /// <summary>
-        /// Validates that the given resolution has positive width and height.
+        /// Validates that the resolution has positive width and height.
         /// </summary>
-        /// <param name="resolution">The resolution to validate.</param>
+        /// <param name="resolution">Resolution to validate.</param>
         private static void ValidateResolution(Vector2Int resolution)
         {
-            const string error = "resolution must be greater than 0";
-            Validate(resolution, (val) => { return resolution.x > 0 && resolution.y > 0; }, error);
+            const string error = "Resolution must be greater than 0";
+            Validate(resolution, (val) => resolution.x > 0 && resolution.y > 0, error);
         }
     }
 
     /// <summary>
-    /// Represents a chain of TextureHandles, typically corresponding to mip levels of a texture.
+    /// Represents a chain of <see cref="TextureHandle"/>s corresponding to mip levels of a texture
+    /// specifically for use in RenderGraph passes. 
+    /// 
+    /// Unity's standard RenderTexture MipChain can be cumbersome in RenderGraph because:
+    /// - Each mip level needs its own <see cref="TextureHandle"/> allocation.
+    /// - Copying or generating mips between levels requires explicit pass setup.
+    /// - Automatic mip generation via standard RenderTexture is not directly supported in RenderGraph.
+    /// 
+    /// This structure simplifies the process by:
+    /// - Creating all mip levels via a user-provided function.
+    /// - Allowing optional mip map generation between handles in a RenderGraph-friendly way.
+    /// - Providing easy access to individual mip handles and read-only spans for pass binding.
     /// </summary>
-    /// <typeparam name="Tdata">Optional user data passed to texture creation function.</typeparam>
+    /// <typeparam name="Tdata">
+    /// Optional user data passed to the texture creation function, useful for passing context
+    /// or resources needed during RenderGraph allocation.
+    /// </typeparam>
     public struct TextureHandleMipChain<Tdata> where Tdata : class
     {
         /// <summary>
