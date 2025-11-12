@@ -28,6 +28,7 @@ namespace Rayforge.ManagedResources.Pooling
         where Tbuffer : IPooledBuffer<Tdesc>
         where Tdesc : unmanaged, IEquatable<Tdesc>
     {
+        private Tbuffer m_BufferHandle;
         private bool m_Valid;
         private readonly LeasedReturnFunc<Tdesc, Tbuffer> m_OnReturn;
 
@@ -52,7 +53,7 @@ namespace Rayforge.ManagedResources.Pooling
 
         protected LeasedBufferBase(Tbuffer buffer, LeasedReturnFunc<Tdesc, Tbuffer> onReturnHandle)
         {
-            BufferHandle = buffer ?? throw new ArgumentNullException(nameof(buffer));
+            m_BufferHandle = buffer ?? throw new ArgumentNullException(nameof(buffer));
             m_OnReturn = onReturnHandle ?? throw new ArgumentNullException(nameof(onReturnHandle));
             m_Valid = true;
         }
@@ -67,7 +68,7 @@ namespace Rayforge.ManagedResources.Pooling
                 return false;
 
             m_Valid = false;
-            return m_OnReturn.Invoke(BufferHandle);
+            return m_OnReturn.Invoke(m_BufferHandle);
         }
     }
 
