@@ -35,7 +35,15 @@ namespace Rayforge.ManagedResources.Pooling
         /// The underlying pooled buffer instance.
         /// Throws if accessed after return.
         /// </summary>
-        public Tbuffer BufferHandle { get; }
+        public Tbuffer BufferHandle
+        {
+            get
+            {
+                if (!m_Valid)
+                    throw new InvalidOperationException("Cannot access buffer after it has been returned to the pool.");
+                return m_BufferHandle;
+            }
+        }
 
         /// <summary>
         /// Indicates whether the lease is still active.
