@@ -34,10 +34,11 @@ namespace Rayforge.Utility.Filter
     }
 
     /// <summary>
-    /// Represents a normalized symmetric 1D convolution kernel,
-    /// typically used in blur filters (e.g., Gaussian blur).
+    /// Represents a normalized symmetric 1D convolution kernel, typically used in blur filters (e.g., Gaussian blur),
+    /// parameterized by <typeparamref name="Tparam"/> which defines the type of additional filter parameters.
     /// </summary>
-    public struct FilterKernel : IComputeData<float>
+    /// <typeparam name="Tparam">Type used to provide filter-specific parameters to the <see cref="FilterFunction"/>.</typeparam>
+    public struct FilterKernel<Tparam> : IComputeDataArray<float>
     {
         private float[] m_Kernel;
 
@@ -52,35 +53,41 @@ namespace Rayforge.Utility.Filter
         public readonly float[] RawData => m_Kernel;
 
         /// <summary>
-        /// Number of elements in raw float array used for GPU buffer uploads.
+        /// Number of elements in the raw float array used for GPU buffer uploads.
         /// </summary>
         public int Count => m_Kernel?.Length ?? 0;
 
         /// <summary>
         /// Provides direct access to the kernel coefficients.
         /// </summary>
+        /// <param name="index">Index in the kernel array.</param>
         public float this[int index] => m_Kernel[index];
 
         private readonly int k_KernelRadiusMax;
 
         /// <summary>
-        /// Function used to compute a kernel weight at a given radius index.
+        /// Function used to compute a kernel weight at a given radius index,
+        /// using a parameter of type <typeparamref name="Tparam"/>.
         /// </summary>
-        public delegate float FilterFunction(int radius, float param);
+        /// <param name="radius">The distance from the center of the kernel.</param>
+        /// <param name="param">Filter-specific parameter of type <typeparamref name="Tparam"/>.</param>
+        /// <returns>Computed kernel weight for the given radius.</returns>
+        public delegate float FilterFunction(int radius, Tparam param);
         private FilterFunction m_FilterFunc;
 
         /// <summary>
-        /// Function used to compute filter parameters based on the current radius.
+        /// Function used to compute a <typeparamref name="Tparam"/> instance based on the current radius.
         /// </summary>
-        public delegate float ParamFunction(int radius);
+        /// <param name="radius">Current kernel radius.</param>
+        /// <returns>Parameter of type <typeparamref name="Tparam"/> to be passed into <see cref="FilterFunction"/>.</returns>
+        public delegate Tparam ParamFunction(int radius);
         private ParamFunction m_ParamFunc;
 
         private bool m_Changed;
-
         private int m_Radius;
 
         /// <summary>
-        /// The active kernel radius. This controls the number of computed samples.
+        /// The active kernel radius. Controls the number of computed samples.
         /// Setting this triggers kernel recomputation on the next <see cref="Apply"/>.
         /// </summary>
         public int Radius
@@ -100,19 +107,21 @@ namespace Rayforge.Utility.Filter
         /// <summary>
         /// Converts a kernel radius to the backing array size.
         /// </summary>
+        /// <param name="radius">Kernel radius to convert.</param>
+        /// <returns>Array size required to store the kernel values for the given radius.</returns>
         public static int ToBufferSize(int radius) => radius + 1;
 
         /// <summary>
-        /// Current size of the kernel buffer based on active radius.
+        /// Current size of the kernel buffer based on the active radius.
         /// </summary>
         public int BufferSize => ToBufferSize(m_Radius);
 
         /// <summary>
-        /// Creates a new filter kernel using the provided curve definition callbacks.
+        /// Creates a new filter kernel using the provided filter and parameter functions.
         /// </summary>
-        /// <param name="filterFunc">Function mapping (index, parameter) to weight.</param>
-        /// <param name="paramFunc">Function computing the curve parameter based on radius.</param>
-        /// <param name="radiusMax">Maximum kernel radius allowed.</param>
+        /// <param name="filterFunc">Function mapping (index, <typeparamref name="Tparam"/>) to kernel weight.</param>
+        /// <param name="paramFunc">Function computing the filter parameter of type <typeparamref name="Tparam"/> based on radius.</param>
+        /// <param name="radiusMax">Maximum allowed kernel radius.</param>
         public FilterKernel(FilterFunction filterFunc, ParamFunction paramFunc, int radiusMax)
         {
             ValidateDelegate(filterFunc);
@@ -130,13 +139,13 @@ namespace Rayforge.Utility.Filter
 
         /// <summary>
         /// Recomputes and normalizes the kernel if any parameter has changed.
-        /// Call this before sampling or uploading to GPU.
+        /// Call this before sampling or uploading to the GPU.
         /// </summary>
         public void Apply()
         {
             if (m_Changed)
             {
-                float param = m_ParamFunc(m_Radius);
+                Tparam param = m_ParamFunc(m_Radius);
 
                 float sum = 0f;
                 for (int i = 0; i <= m_Radius; ++i)
@@ -156,6 +165,8 @@ namespace Rayforge.Utility.Filter
         /// <summary>
         /// Ensures the provided radius is within valid bounds.
         /// </summary>
+        /// <param name="radius">Radius to validate.</param>
+        /// <param name="radiusMax">Maximum allowed radius.</param>
         private static void ValidateRadius(int radius, int radiusMax)
         {
             string error = $"radius must be x where 0 <= x && x <= {radiusMax}";

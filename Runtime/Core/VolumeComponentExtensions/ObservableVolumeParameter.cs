@@ -159,7 +159,7 @@ namespace Rayforge.VolumeComponentExtensions
 
     [System.Serializable]
     public struct ArrayWrapper<T> : IEnumerable<T>, IEquatable<ArrayWrapper<T>>
-            where T : struct
+        where T : struct
     {
         [SerializeField]
         private T[] array;

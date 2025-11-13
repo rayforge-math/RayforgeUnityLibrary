@@ -156,11 +156,25 @@ namespace Rayforge.ManagedResources.NativeMemory
     }
 
     /// <summary>
+    /// Represents a CPU-side container that exposes backing single element array data for GPU upload.
+    /// Used for data sets such as constant buffers, etc.
+    /// </summary>
+    /// <typeparam name="Ttype">The unmanaged element type stored in the array.</typeparam>
+    public interface IComputeData<Ttype>
+        where Ttype : unmanaged
+    {
+        /// <summary>
+        /// Returns the raw array backing the data. This array is directly uploaded to GPU buffers.
+        /// </summary>
+        public Ttype RawData { get; }
+    }
+
+    /// <summary>
     /// Represents a CPU-side container that exposes backing array data for GPU upload.
     /// Used for data sets such as filter kernels or lookup tables.
     /// </summary>
     /// <typeparam name="Ttype">The unmanaged element type stored in the array.</typeparam>
-    public interface IComputeData<Ttype>
+    public interface IComputeDataArray<Ttype>
         where Ttype : unmanaged
     {
         /// <summary>
@@ -299,9 +313,20 @@ namespace Rayforge.ManagedResources.NativeMemory
 
         /// <summary>
         /// Uploads data from a <see cref="IComputeData{T}"/> container to the buffer.
-        /// Useful for uniform-style data structures.
+        /// Useful for e.g. constant buffers.
         /// </summary>
         public void SetData<T>(IComputeData<T> data)
+            where T : unmanaged
+        {
+            if (data == null) return;
+            SetData(new T[] { data.RawData });
+        }
+
+        /// <summary>
+        /// Uploads data from a <see cref="IComputeDataArray{T}"/> container to the buffer.
+        /// Useful for uniform-style data structures.
+        /// </summary>
+        public void SetData<T>(IComputeDataArray<T> data)
             where T : unmanaged
         {
             if (data == null) return;
