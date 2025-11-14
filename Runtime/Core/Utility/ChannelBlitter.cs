@@ -171,11 +171,17 @@ namespace Rayforge.Utility.Blitter
         }
 
         /// <summary>
-        /// Performs a compute shader blit using ChannelBlitterParams.
-        /// Sets shader parameters, binds textures, and dispatches the compute shader.
+        /// Performs a compute-based blit operation using <see cref="ChannelBlitterParams"/>.
+        /// This path is intended for non-interpolated, non-normalized pixel data where
+        /// bit-accurate transfer is required (e.g., bitfields, masks, integer-packed channels) or 
+        /// as a slightly more performant blit operation where no interpolation is needed without
+        /// invoking the entire rasterizer pipeline.
+        ///
+        /// The compute pipeline ensures that the source values are copied 1:1 without 
+        /// filtering or normalization, allowing precise preservation of bit-level information.
         /// </summary>
-        /// <param name="source">Source texture.</param>
-        /// <param name="dest">Destination render target.</param>
+        /// <param name="source">Source texture containing raw pixel data.</param>
+        /// <param name="dest">Destination render texture.</param>
         /// <param name="param">Channel mapping and offset/size rectangle.</param>
         public static void ComputeBlit(Texture source, RenderTexture dest, ChannelBlitterParams param)
         {
@@ -192,5 +198,4 @@ namespace Rayforge.Utility.Blitter
             k_ComputeBlitShader.Dispatch(0, numGroups.x, numGroups.y, 1);
         }
     }
-
 }
