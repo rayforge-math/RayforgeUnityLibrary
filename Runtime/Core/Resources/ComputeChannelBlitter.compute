@@ -1,0 +1,40 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel ChannelBlitter
+
+Texture2D<uint4> _BlitSource;
+RWTexture2D<uint4> _BlitDest;
+
+static const uint R = 0;
+static const uint G = 1;
+static const uint B = 2;
+static const uint A = 3;
+static const uint None = 4;
+
+cbuffer _ChannelBlitterParams
+{
+    uint _R;
+    uint _G;
+    uint _B;
+    uint _A;
+    
+    float4 _BlitParams;
+};
+
+[numthreads(8,8,1)]
+void ChannelBlitter (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < (uint) _BlitParams.z && id.y < (uint) _BlitParams.w)
+    {
+        uint2 coords = uint2(_BlitParams.x, _BlitParams.y) + uint2(_BlitParams.z, _BlitParams.w);
+        uint4 sample = _BlitSource[coords];
+        
+        uint4 dest = (uint4) 0;
+        if (_R < None) dest.r = sample[_R];
+        if (_G < None) dest.g = sample[_G];
+        if (_B < None) dest.b = sample[_B];
+        if (_A < None) dest.a = sample[_A];
+        
+        _BlitDest[id.xy] = dest;
+    }
+}
+
