@@ -1,13 +1,8 @@
-Shader "Rayforge/PixelChannelBlitter"
+Shader "Rayforge/RasterChannelBlitter"
 {
     Properties
     {
         _BlitSource("Source Texture", 2D) = "white" {}
-        _BlitParams("Blit Params", Vector) = (1,1,1,1)
-        _R("R Channel Mapping", Int) = 0
-        _G("G Channel Mapping", Int) = 1
-        _B("B Channel Mapping", Int) = 2
-        _A("A Channel Mapping", Int) = 3
     }
     SubShader
     {
@@ -17,7 +12,8 @@ Shader "Rayforge/PixelChannelBlitter"
             Cull Off ZWrite Off
 
         HLSLPROGRAM
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+            #include "Common.hlsl"
 
             #pragma vertex Vert
             #pragma fragment ChannelBlitterFrag
@@ -29,9 +25,19 @@ Shader "Rayforge/PixelChannelBlitter"
             static const uint None = 4;
 
             TEXTURE2D(_BlitSource);
-            float4 _BlitSource_TexelSize;
+            cbuffer UnityPerMaterial : register(b0)
+            {
+                float4 _BlitSource_TexelSize : packoffset(c0.x);
+            }
+
+            SamplerState sampler_LinearClamp
+            {
+                Filter = MIN_MAG_MIP_LINEAR;
+                AddressU = Clamp;
+                AddressV = Clamp;
+            };
             
-            cbuffer ChannelBlitterParams : register(b0)
+            cbuffer _ChannelBlitterParams : register(b1)
             {
                 uint _R : packoffset(c0.x);
                 uint _G : packoffset(c0.y);
@@ -46,16 +52,10 @@ Shader "Rayforge/PixelChannelBlitter"
                 float2 texcoord : TEXCOORD0;
             };
 
-            void FullscreenTriangle(uint id, inout Varyings o)
-            {
-                o.texcoord = float2((id << 1) & 2, id & 2);
-                o.positionCS = float4(o.texcoord * 2 - 1, 0, 1);
-            }
-
             Varyings Vert(uint id : SV_VertexID)
             {
                 Varyings output = (Varyings)0;
-                FullscreenTriangle(id, output);
+                FullscreenTriangle(id, output.positionCS, output.texcoord);
 
                 float2 offset = _BlitParams.xy * _BlitSource_TexelSize.xy;
                 float2 scale = _BlitParams.zw * _BlitSource_TexelSize.xy;
