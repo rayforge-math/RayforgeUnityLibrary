@@ -223,9 +223,9 @@ inline float CosApprox(float x)
 inline float SinApprox(float x)
 {
     float s = x - PI / 2.0;
-    float x2 = x * x;
-    float x4 = x2 * x2;
-    return 1.0 - x2 / 2.0 + x4 / 24.0;
+    float s2 = s * s;
+    float s4 = s2 * s2;
+    return 1.0 - s2 / 2.0 + s4 / 24.0;
 }
 
 /// <summary>
@@ -277,9 +277,8 @@ float3 MixColor(float3 color, float3 mixColor, int mixOption, float strength, bo
 /// 0 = No change, 1 = Multiply blend, 2 = Scale by luminance, 3 = Additive blend.
 /// </param>
 /// <param name="strength">The interpolation factor for blending, typically in range 0..1.</param>
-/// <param name="streakLut">Optional second LUT for additional effects (currently unused in this function).</param>
 /// <returns>The resulting color after LUT application and blending as <c>float3</c>.</returns>
-float3 MixLut(TEXTURE2D(lut), float3 color, int mode, float strength, TEXTURE2D(streakLut))
+float3 MixLut(TEXTURE2D(lut), float3 color, int mode, float strength)
 {
     float luminance = saturate(Luminance(color));
     float3 lutColor = SAMPLE_TEXTURE2D(lut, sampler_LinearClampCustom, float2(luminance, 0.5)).rgb;
