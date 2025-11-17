@@ -12,8 +12,7 @@ Shader "Rayforge/RasterChannelBlitter"
             Cull Off ZWrite Off
 
         HLSLPROGRAM
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-            #include "Common.hlsl"
+            #include "Packages/customunitylibrary/Runtime/Core/Resources/Common.hlsl"
 
             #pragma vertex Vert
             #pragma fragment ChannelBlitterFrag
@@ -24,19 +23,19 @@ Shader "Rayforge/RasterChannelBlitter"
             static const uint A = 3;
             static const uint None = 4;
 
-            TEXTURE2D(_BlitSource);
-            cbuffer UnityPerMaterial : register(b0)
-            {
-                float4 _BlitSource_TexelSize : packoffset(c0.x);
-            }
-
             SamplerState sampler_LinearClamp
             {
                 Filter = MIN_MAG_MIP_LINEAR;
                 AddressU = Clamp;
                 AddressV = Clamp;
             };
-            
+
+            TEXTURE2D(_BlitSource);
+            cbuffer UnityPerMaterial : register(b0)
+            {
+                float4 _BlitSource_TexelSize : packoffset(c0.x);
+            }
+
             cbuffer _ChannelBlitterParams : register(b1)
             {
                 uint _R : packoffset(c0.x);
