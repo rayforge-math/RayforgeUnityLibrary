@@ -20,11 +20,9 @@ float4 _Rayforge_BlueNoise_TexelSize;
 // 2. Utility Functions
 // ============================================================================
 
-float SampleBlueNoise(float2 screenUV, float strength, float2 screenSize)
+float SampleBlueNoise(float2 screenUV, float2 screenSize)
 {
     screenUV.x *= screenSize.x / screenSize.y;
 
-    float noise = (SAMPLE_TEXTURE2D(_Rayforge_BlueNoise, sampler_Rayforge_BlueNoise, screenUV).r - 0.5) * strength * 0.2;
-
-    return noise;
+    return SAMPLE_TEXTURE2D(_Rayforge_BlueNoise, sampler_Rayforge_BlueNoise, screenUV).r;
 }
