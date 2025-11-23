@@ -10,7 +10,7 @@
 // 1. Includes
 // ============================================================================
 
-#include "Packages/customunitylibrary/Runtime/Core/Resources/Common.hlsl"
+#include "Packages/eu.rayforge.customunitylibrary/Runtime/Core/Resources/Common.hlsl"
 
 // ============================================================================
 // 2. Utility Functions
