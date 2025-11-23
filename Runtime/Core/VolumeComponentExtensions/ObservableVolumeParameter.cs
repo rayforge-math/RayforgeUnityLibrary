@@ -54,7 +54,7 @@ namespace Rayforge.VolumeComponentExtensions
             OnValueChanged?.Invoke(this);
         }
 
-        public bool Changed()
+        public virtual bool Changed()
         {
             if(!EqualityComparer<T>.Default.Equals(m_Cached, value))
             {
@@ -162,7 +162,7 @@ namespace Rayforge.VolumeComponentExtensions
         where T : struct
     {
         [SerializeField]
-        private T[] array;
+        public T[] array;
 
         public int Length => array.Length;
         public T this[int index] => array[index];
@@ -191,14 +191,17 @@ namespace Rayforge.VolumeComponentExtensions
             return GetEnumerator();
         }
 
+        public bool ReferenceEquals(ArrayWrapper<T> other)
+            => ReferenceEquals(this.array, other.array);
+
         public bool Equals(ArrayWrapper<T> other)
         {
             if (ReferenceEquals(array, other.array)) return true;
             if (IsValid() != other.IsValid()) return false;
             if (!IsValid() && !other.IsValid()) return true;
-            if (array.Length != other.Length) return false;
+            if (Length != other.Length) return false;
 
-            return array.SequenceEqual(other);
+            return array.SequenceEqual(other.array);
         }
 
         public static ArrayWrapper<T> Empty()
@@ -219,11 +222,28 @@ namespace Rayforge.VolumeComponentExtensions
         }
     }
 
+    public static class ArrayExtensions
+    {
+        public static int ArrayToHash<T>(this T[] array)
+            where T : struct, IEquatable<T>
+        {
+            if (array == null || array.Length == 0) 
+                return 0;
+
+            var hash = new HashCode();
+            foreach (var item in array)
+                hash.Add(item);
+            return hash.ToHashCode();
+        }
+    }
+
     [System.Serializable]
     public class ObservableListParameter<T> : ObservableParameter<ArrayWrapper<T>>
         where T : struct, IEquatable<T>, IInterpolatable<T>
     {
         private readonly IEqualityComparer<T> m_Comparer;
+        private int m_Hash;
+        private int m_Cache;
 
         public ObservableListParameter(T[] value = null, IEqualityComparer<T> comparer = null, bool overrideState = false)
             : base(new ArrayWrapper<T>(value), ArrayInterp, overrideState)
@@ -236,15 +256,20 @@ namespace Rayforge.VolumeComponentExtensions
             get => m_Value;
             set
             {
-                if (m_Value.Equals(value)) return;
-                if (!value.IsValid())
+                if (m_Value.ReferenceEquals(value)) return;
+
+                var hash = value.array.ArrayToHash();
+                if (m_Hash != hash)
                 {
-                    m_Value = ArrayWrapper<T>.Empty();
-                    NotifyObservers();
-                }
-                else if (!m_Value.SequenceEqual(value, m_Comparer))
-                {
-                    m_Value.CopyFrom(value);
+                    if (hash == 0)
+                    {
+                        m_Value = ArrayWrapper<T>.Empty();
+                    }
+                    else
+                    {
+                        m_Value.CopyFrom(value);
+                    }
+                    m_Hash = hash;
                     NotifyObservers();
                 }
             }
@@ -273,6 +298,16 @@ namespace Rayforge.VolumeComponentExtensions
             }
             return new ArrayWrapper<T>(result);
         }
+
+        public override bool Changed()
+        {
+            if (m_Cache != m_Hash)
+            {
+                m_Cache = m_Hash;
+                return true;
+            }
+            return false;
+        }
     }
 
     [System.Serializable]
@@ -280,6 +315,8 @@ namespace Rayforge.VolumeComponentExtensions
         where T : struct, IEquatable<T>
     {
         private readonly IEqualityComparer<T> m_Comparer;
+        private int m_Hash;
+        private int m_Cache;
 
         public NoInterpObservableListParameter(T[] value = null, IEqualityComparer<T> comparer = null, bool overrideState = false)
             : base(new ArrayWrapper<T>(value), overrideState)
@@ -292,15 +329,20 @@ namespace Rayforge.VolumeComponentExtensions
             get => m_Value;
             set
             {
-                if (m_Value.Equals(value)) return;
-                if(!value.IsValid())
+                if (m_Value.ReferenceEquals(value)) return;
+
+                var hash = value.array.ArrayToHash();
+                if (m_Hash != hash)
                 {
-                    m_Value = ArrayWrapper<T>.Empty();
-                    NotifyObservers();
-                }
-                else if (!m_Value.SequenceEqual(value, m_Comparer))
-                {
-                    m_Value.CopyFrom(value);
+                    if(hash == 0)
+                    {
+                        m_Value = ArrayWrapper<T>.Empty();
+                    }
+                    else
+                    {
+                        m_Value.CopyFrom(value);
+                    }
+                    m_Hash = hash;
                     NotifyObservers();
                 }
             }
@@ -309,6 +351,16 @@ namespace Rayforge.VolumeComponentExtensions
         public override void SetValue(VolumeParameter parameter)
         {
             value = parameter.GetValue<ArrayWrapper<T>>();
+        }
+
+        public override bool Changed()
+        {
+            if (m_Cache != m_Hash)
+            {
+                m_Cache = m_Hash;
+                return true;
+            }
+            return false;
         }
     }
 
@@ -918,60 +970,8 @@ namespace Rayforge.VolumeComponentExtensions
                 gradient.mode == other.mode &&
                 gradient.colorSpace == other.colorSpace;
         }
-    }
 
-    [System.Serializable]
-    public class ObservableTextureGradientParameter : TextureGradientParameter, IObservableParameter<TextureGradient>, IEquatable<ObservableTextureGradientParameter>
-    {
-        private int m_Cached;
-
-        public event NotifyDelegate<TextureGradient> OnValueChanged;
-
-        private int _cache;
-
-        public ObservableTextureGradientParameter(TextureGradient value, bool overrideState = false)
-            : base(value, overrideState)
-        { }
-
-        public override TextureGradient value
-        {
-            get => base.value;
-            set
-            {
-                var hash = value.GetHashCode();
-                if (_cache != hash)
-                {
-                    _cache = hash;
-                    base.value.CopyFromTextureGradient(value);
-
-                    NotifyObservers();
-                }
-            }
-        }
-
-        public override void SetValue(VolumeParameter parameter)
-        {
-            var gradient = ((TextureGradientParameter)parameter).value;
-            value = gradient;
-        }
-
-        public void NotifyObservers()
-        {
-            OnValueChanged?.Invoke(this);
-        }
-
-        public bool Changed()
-        {
-            var hash = GetHashCode();
-            if(m_Cached != hash)
-            {
-                m_Cached = hash;
-                return true;
-            }
-            return false;
-        }
-
-        public override int GetHashCode()
+        public static int ToHashCode(this TextureGradient value)
         {
             if (value == null || value.colorKeys == null || value.colorKeys.Length == 0 || value.alphaKeys == null || value.alphaKeys.Length == 0)
                 return 0;
@@ -997,6 +997,56 @@ namespace Rayforge.VolumeComponentExtensions
 
                 return hash;
             }
+        }
+    }
+
+    [System.Serializable]
+    public class ObservableTextureGradientParameter : TextureGradientParameter, IObservableParameter<TextureGradient>, IEquatable<ObservableTextureGradientParameter>
+    {
+        private int m_Cache;
+
+        public event NotifyDelegate<TextureGradient> OnValueChanged;
+
+        private int m_Hash;
+
+        public ObservableTextureGradientParameter(TextureGradient value, bool overrideState = false)
+            : base(value, overrideState)
+        { }
+
+        public override TextureGradient value
+        {
+            get => base.value;
+            set
+            {
+                var hash = value.ToHashCode();
+                if (m_Hash != hash)
+                {
+                    m_Hash = hash;
+                    base.value.CopyFromTextureGradient(value);
+                    NotifyObservers();
+                }
+            }
+        }
+
+        public override void SetValue(VolumeParameter parameter)
+        {
+            var gradient = ((TextureGradientParameter)parameter).value;
+            value = gradient;
+        }
+
+        public void NotifyObservers()
+        {
+            OnValueChanged?.Invoke(this);
+        }
+
+        public bool Changed()
+        {
+            if(m_Cache != m_Hash)
+            {
+                m_Cache = m_Hash;
+                return true;
+            }
+            return false;
         }
 
         public bool Equals(ObservableTextureGradientParameter other)

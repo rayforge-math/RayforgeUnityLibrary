@@ -1,7 +1,58 @@
 using UnityEngine;
 
+using static Rayforge.Utility.RuntimeCheck.Asserts;
+
 namespace Rayforge.Utility.Rendering
 {
+    /// <summary>
+    /// Provides access to shared global resources used across Rayforge shaders and other
+    /// systems. This class is responsible for loading, validating, and globally registering
+    /// textures that must be available to multiple rendering passes.
+    ///
+    /// All resources managed here are loaded once and exposed as global shader properties.
+    /// Repeated calls to the loading functions are safe, as they only initialize resources
+    /// on first use.
+    /// </summary>
+    public static class SharedResources
+    {
+        private const string k_TexturesFolder = "Textures/";
+
+        private const string k_BlueNoiseTextureName = "_Rayforge_BlueNoise";
+        /// <summary>
+        /// Gets the global shader property name used to bind the blue noise texture.
+        /// </summary>
+        public const string BlueNoiseTextureName = k_BlueNoiseTextureName;
+
+        private static readonly int k_BlueNoiseTextureId = Shader.PropertyToID(k_BlueNoiseTextureName);
+        /// <summary>
+        /// Gets the shader property ID for the blue noise global texture.
+        /// </summary>
+        public static int BlueNoiseTextureId => k_BlueNoiseTextureId;
+
+        private const string k_BlueNoiseResourceName = "BlueNoise512";
+        private static Texture2D s_BlueNoiseTexture;
+
+        /// <summary>
+        /// Loads the blue noise texture from the Resources folder (if not already loaded)
+        /// and assigns it as a global shader texture. The texture is validated before use.
+        /// Calling this method multiple times is safe: the texture is only loaded once.
+        /// </summary>
+        public static void LoadBlueNoise()
+        {
+            if (s_BlueNoiseTexture == null)
+            {
+                s_BlueNoiseTexture = Resources.Load<Texture2D>(k_TexturesFolder + k_BlueNoiseResourceName);
+            }
+
+            Validate(
+                s_BlueNoiseTexture, 
+                _ => _ != null,
+                "Blue Noise texture " + nameof(s_BlueNoiseTexture) + " is null.");
+
+            SharedTexture.Ensure(k_BlueNoiseTextureId, s_BlueNoiseTexture);
+        }
+    }
+
     /// <summary>
     /// Utility class for managing shared global textures in shaders.
     /// Ensures that a given texture is set as a global shader property only once,
@@ -45,6 +96,5 @@ namespace Rayforge.Utility.Rendering
                 Shader.SetGlobalTexture(propertyId, texture);
             }
         }
-
     }
 }

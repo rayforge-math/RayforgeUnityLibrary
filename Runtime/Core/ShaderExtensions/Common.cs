@@ -133,5 +133,4 @@ namespace Rayforge.ShaderExtensions.Common
         /// <summary>Exponential threshold; smooth falloff with exponential curve.</summary>
         Exponential = 3
     }
-
 }
