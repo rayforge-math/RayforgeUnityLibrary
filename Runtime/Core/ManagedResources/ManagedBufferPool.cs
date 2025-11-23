@@ -405,7 +405,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// <returns>The adjusted element count according to batch settings.</returns>
         private int BatchedCount(int requestedCount)
         {
-            int adjusted = Math.Max(requestedCount, BaseSize);
+            int adjusted = Math.Max(1, Math.Max(requestedCount, BaseSize));
             if (BatchSize > 0)
                 adjusted = ((adjusted + BatchSize - 1) / BatchSize) * BatchSize;
             return adjusted;
@@ -441,8 +441,8 @@ namespace Rayforge.ManagedResources.Pooling
             {
                 var desc = buffer.Descriptor;
                 Return(buffer);
-                desc.Count = BatchedCount(desc.Count);
-                return RentInternal(buffer.Descriptor);
+                desc.Count = BatchedCount(count);
+                return RentInternal(desc);
             }
             return buffer;
         }
@@ -627,6 +627,25 @@ namespace Rayforge.ManagedResources.Pooling
         { }
     }
 
+    /// <summary>
+    /// Base class providing a globally shared buffer pool for a specific 
+    /// <typeparamref name="Tdesc"/> / <typeparamref name="Tbuffer"/> type combination.
+    /// <para>
+    /// For every unique set of template arguments, exactly one global buffer pool instance
+    /// (<see cref="LeasedBufferPool{Tdesc,Tbuffer}"/>) is created and shared across all 
+    /// derived classes and call sites. By using a static pool this universally holds true.
+    /// </para>
+    /// <para>
+    /// The pooling behavior (how descriptors are generated, how buffers are matched, 
+    /// and how renting/resolving works) can be fully customized by derived classes, 
+    /// while the actual allocation, reuse, and lifetime management remain centralized 
+    /// in the global pool.
+    /// </para>
+    /// <para>
+    /// This ensures consistent resource reuse for each template specialization, while 
+    /// still allowing flexible buffer access strategies in child classes.
+    /// </para>
+    /// </summary>
     public partial class GlobalManagedPoolBase<Tdesc, Tbuffer>
         where Tbuffer : IPooledBuffer<Tdesc>
         where Tdesc : unmanaged, IEquatable<Tdesc>
