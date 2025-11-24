@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.RenderGraphModule;
-
+using UnityEngine.UIElements;
 using static Rayforge.Utility.RuntimeCheck.Asserts;
 
 namespace Rayforge.RenderGraphExtensions.Rendering
@@ -315,6 +315,24 @@ namespace Rayforge.RenderGraphExtensions.Rendering
                     return false;
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// Imports a <see cref="TextureHandle"/> into the mip chain at the specified index.
+        /// </summary>
+        /// <param name="mipLevel">The mip level index where the handle should be stored.</param>
+        /// <param name="handle">The <see cref="TextureHandle"/> to import.</param>
+        /// <returns>
+        /// <c>true</c> if the handle was successfully imported; 
+        /// <c>false</c> if the index is out of range or the handle is invalid.
+        /// </returns>
+        public bool SetMipHandle(int mipLevel, TextureHandle handle)
+        {
+            if (mipLevel >= MipCount || !handle.IsValid()) 
+                return false;
+            
+            m_Handles[mipLevel] = handle;
             return true;
         }
 
