@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
@@ -22,7 +23,6 @@ namespace Rayforge.RenderGraphExtensions.Rendering
             => renderGraph.ImportTexture(handle);
     }
 
-
     /// <summary>
     /// Manages a pair of persistent render targets for temporal reprojection using a ping-pong scheme.
     /// One handle is used as the current target (write), the other as the previous frame's history (read).
@@ -37,11 +37,11 @@ namespace Rayforge.RenderGraphExtensions.Rendering
         /// <c>true</c> if a handle has been allocated;
         /// <c>false</c> if no allocation was necessary.
         /// </returns>
-        public delegate bool TextureCreateFunction(ref RTHandle handle, Tdesc descriptor, string name);
+        public delegate bool TextureReAllocFunction(ref RTHandle handle, Tdesc descriptor, string name);
 
         private RTHandle[] m_Handles;
         private string[] m_HandleNames;
-        private TextureCreateFunction m_CreateFunc;
+        private TextureReAllocFunction m_ReAllocFunc;
         private int m_CurrentTarget;
 
         /// <summary>
@@ -60,10 +60,10 @@ namespace Rayforge.RenderGraphExtensions.Rendering
         /// </summary>
         /// <param name="createFunc">Delegate used to create or reallocate handles.</param>
         /// <param name="handleName">Optional base name used for the ping-pong handles for debugging/profiling.</param>
-        public ReprojectionHandles(TextureCreateFunction createFunc, string handleName = "")
+        public ReprojectionHandles(TextureReAllocFunction reAllocFunc, string handleName = "")
         {
-            ValidateDelegate(createFunc);
-            m_CreateFunc = createFunc;
+            ValidateDelegate(reAllocFunc);
+            m_ReAllocFunc = reAllocFunc;
             m_Handles = Array.Empty<RTHandle>();
             m_HandleNames = new string[2];
             for (int i = 0; i < 2; ++i)
@@ -83,7 +83,7 @@ namespace Rayforge.RenderGraphExtensions.Rendering
         /// <c>true</c> if a handle has been allocated; 
         /// <c>false</c> if no allocation was necessary.
         /// </returns>
-        public bool ReAllocateHandlesIfNeeded(Tdesc descriptor, bool swap = true)
+        public bool ReAllocateHandlesIfNeeded(Tdesc descriptor, bool swap = false)
         {
             if (m_Handles == null || m_Handles.Length != 2)
             {
@@ -93,7 +93,7 @@ namespace Rayforge.RenderGraphExtensions.Rendering
             bool alloc = false;
             for (int i = 0; i < 2; ++i)
             {
-                alloc |= m_CreateFunc.Invoke(ref m_Handles[i], descriptor, m_HandleNames[i]);
+                alloc |= m_ReAllocFunc.Invoke(ref m_Handles[i], descriptor, m_HandleNames[i]);
             }
 
             if (swap) Swap();
@@ -113,5 +113,60 @@ namespace Rayforge.RenderGraphExtensions.Rendering
         /// <returns>Index of the alternate handle.</returns>
         private static int NextIndex(int index)
             => (index + 1) & 1;
+    }
+
+    /// <summary>
+    /// Provides per-frame temporal camera data for use in reprojection-based effects
+    /// such as TAA, motion reprojection, or temporal denoising.
+    /// 
+    /// This class manages the previous frame's View-Projection matrix and exposes it
+    /// as a global shader property. It guarantees that the update/upload runs only once
+    /// per frame, even if called multiple times.
+    /// </summary>
+    public static class TemporalCameraData
+    {
+        /// <summary>
+        /// Cached previous frame's View-Projection matrix.
+        /// Used by shaders to reproject current pixel positions into history buffers.
+        /// </summary>
+        private static Matrix4x4 s_PrevViewProjMatrix = Matrix4x4.identity;
+
+        /// <summary>
+        /// Internal frame counter ensuring that updates occur only once per frame.
+        /// </summary>
+        private static int s_FrameCount = -1;
+
+        /// <summary>
+        /// Shader property ID for setting the previous View-Projection matrix globally.
+        /// </summary>
+        private static readonly int k_PrevViewProjectionMatrixId =
+            Shader.PropertyToID("_Rayforge_Matrix_Prev_VP");
+
+        /// <summary>
+        /// Updates the previous View-Projection (VP) matrix once per frame.
+        /// 
+        /// This method sets the *current cached matrix* into a global shader variable,
+        /// and then refreshes the cached matrix with this frame's actual VP matrix.
+        /// 
+        /// Call this at the start of your rendering frame or before dispatching any
+        /// reprojection-reliant shader passes.
+        /// </summary>
+        public static void UpdatePreviousViewProjectionMatrix()
+        {
+            int currentFrame = Time.frameCount;
+
+            if (s_FrameCount == currentFrame)
+                return;
+
+            s_FrameCount = currentFrame;
+
+            Shader.SetGlobalMatrix(k_PrevViewProjectionMatrixId, s_PrevViewProjMatrix);
+
+            var mainCamera = Camera.main;
+            if (mainCamera == null)
+                return;
+
+            s_PrevViewProjMatrix = mainCamera.projectionMatrix * mainCamera.worldToCameraMatrix;
+        }
     }
 }
