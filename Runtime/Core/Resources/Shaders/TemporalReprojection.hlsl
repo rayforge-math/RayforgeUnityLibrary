@@ -6,20 +6,49 @@
 // Description: pipeline independant HLSL utilities for Unity
 // ============================================================================
 
+// ============================================================================
+// 1. Defines/Macros
+// ============================================================================
+
+#if defined(RAYFORGE_PIPELINE_HDRP)
+    #define _TAA_MotionVectorTexture        _CameraMotionVectorsTexture
+    #define sampler_TAA_MotionVectorTexture sampler_CameraMotionVectorsTexture
+#elif defined(RAYFORGE_PIPELINE_URP)
+    #define _TAA_MotionVectorTexture        _MotionVectorTexture
+    #define sampler_TAA_MotionVectorTexture sampler_MotionVectorTexture
+#else
+    #define _TAA_MotionVectorTexture        _MotionVectorTexture
+    #define sampler_TAA_MotionVectorTexture sampler_MotionVectorTexture
+#endif
+
+#define _TAA_DepthTexture               _CameraDepthTexture
+#define sampler_TAA_DepthTexture        sampler_CameraDepthTexture
+
+// ============================================================================
+// 2. Includes
+// ============================================================================
+
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
 // ============================================================================
-// 1. Variables
+// 3. Variables
 // ============================================================================
 float4x4 _Rayforge_Matrix_Prev_VP;
 
-TEXTURE2D_X(_MotionVectorTexture);
-SAMPLER(sampler_MotionVectorTexture);
-TEXTURE2D_X(_CameraDepthTexture);
-SAMPLER(sampler_CameraDepthTexture);
+#if !defined(RAYFORGE_DEPTH_TEXTURE)
+#define RAYFORGE_DEPTH_TEXTURE
+TEXTURE2D_X(_TAA_DepthTexture);
+SAMPLER(sampler_TAA_DepthTexture);
+#endif
+
+#if !defined(RAYFORGE_MOTIONVECTOR_TEXTURE)
+#define RAYFORGE_MOTIONVECTOR_TEXTURE
+TEXTURE2D_X(_TAA_MotionVectorTexture);
+SAMPLER(sampler_TAA_MotionVectorTexture);
+#endif
 
 // ============================================================================
-// 2. Utility Functions
+// 4. Utility Functions
 // ============================================================================
 
 /// <summary>
@@ -164,12 +193,12 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
 {
     float4 result = (float4) 0;
 
-    float2 motionVector = SAMPLE_TEXTURE2D_X(_MotionVectorTexture, sampler_MotionVectorTexture, currentUV).rg;
+    float2 motionVector = SAMPLE_TEXTURE2D_X(_TAA_MotionVectorTexture, sampler_TAA_MotionVectorTexture, currentUV).rg;
     float4 history = SampleHistoryMotionVectors(historyTexture, historySampler, currentUV, motionVector);
-
+    
     if (params.depthRejection)
     {
-        float currentDepth = SAMPLE_TEXTURE2D_X(_CameraDepthTexture, sampler_CameraDepthTexture, currentUV).r;
+        float currentDepth = SAMPLE_TEXTURE2D_X(_TAA_DepthTexture, sampler_TAA_DepthTexture, currentUV).r;
         float prevDepth = history.a;
         result.a = currentDepth;
         if(!DepthReject(currentDepth, prevDepth, params.depthThreshold))

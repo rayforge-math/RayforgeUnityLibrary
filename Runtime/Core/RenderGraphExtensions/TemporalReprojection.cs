@@ -7,6 +7,8 @@ using static Rayforge.Utility.RuntimeCheck.Asserts;
 
 namespace Rayforge.RenderGraphExtensions.Rendering
 {
+
+
     /// <summary>
     /// Extension methods for <see cref="RTHandle"/> to simplify integration with RenderGraph.
     /// </summary>
