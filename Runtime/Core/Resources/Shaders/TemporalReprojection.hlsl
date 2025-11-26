@@ -295,6 +295,7 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
     float4 result = (float4) 0;
 
     float2 motionVector = SAMPLE_TEXTURE2D_X(_TAA_MotionVectorTexture, sampler_TAA_MotionVectorTexture, currentUV).rg;
+    bool motion = motionVector.x != 0 || motionVector.y != 0;
 
     float4 history;
 #if defined(TAA_USE_NEIGHBORHOOD_CLAMP)
@@ -320,26 +321,29 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
         }
     }
 
-    if (params.velocityDisocclusion)
+    if(motion)
     {
-        float disocclusion = VelocityMagnitudeDisocclusion(motionVector, params.velocityThreshold, params.velocityScale);
-        params.historyWeight *= (1.0 - disocclusion);
-    }
+        if (params.velocityDisocclusion)
+        {
+            float disocclusion = VelocityMagnitudeDisocclusion(motionVector, params.velocityThreshold, params.velocityScale);
+            params.historyWeight *= (1.0 - disocclusion);
+        }
 
 #if defined(TAA_USE_NEIGHBORHOOD_CLAMP)
-    switch(params.colorClampingMode)
-    {
-    default:
-    case 0:
-        break;
-    case 1:
-        currentColor = MinMaxClampCurrent(currentColor, neighborhood);
-        break;
-    case 2:
-        currentColor = ClipBoxClampCurrent(currentColor, neighborhood, params.clipBoxScale);
-        break;
-    }
+        switch(params.colorClampingMode)
+        {
+        default:
+        case 0:
+            break;
+        case 1:
+            currentColor = MinMaxClampCurrent(currentColor, neighborhood);
+            break;
+        case 2:
+            currentColor = ClipBoxClampCurrent(currentColor, neighborhood, params.clipBoxScale);
+            break;
+        }
 #endif
+    }
 
     result.rgb = Blend(currentColor, history.rgb, params.historyWeight);
     return result;
