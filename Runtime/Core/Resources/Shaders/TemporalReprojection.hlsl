@@ -10,8 +10,6 @@
 // 1. Defines/Macros
 // ============================================================================
 
-#pragma multi_compile __ TAA_USE_NEIGHBORHOOD_CLAMP
-
 #if defined(RAYFORGE_PIPELINE_HDRP)
     #define _TAA_MotionVectorTexture        _CameraMotionVectorsTexture
     #define sampler_TAA_MotionVectorTexture sampler_CameraMotionVectorsTexture
@@ -150,50 +148,52 @@ void ComputeMeanAndStdDev9(in float3 neighborhood[9], out float3 mean, out float
 
 /// <summary>
 /// Performs clip-box clamping on the current frame color using the mean and
-/// standard deviation of a 3×3 neighborhood from the reprojected history.
-/// This limits the current color to a statistically plausible range based on history,
-/// reducing ghosting and preventing extreme temporal deviations.
+/// standard deviation of a 3×3 neighborhood from the *current frame*.
+/// This limits the current color to a statistically plausible range,
+/// reducing flicker and preventing extreme outliers before temporal accumulation.
 /// </summary>
-/// <param name="currentColor">
-/// The current frame color that should be validated and potentially clamped.
+/// <param name="historyColor">
+/// The input color of the history.
 /// </param>
-/// <param name="historyNeighborhood">
-/// A fixed array of 9 float3 samples representing the surrounding reprojected
-/// history pixels used to compute the statistical clip region.
+/// <param name="currentNeighborhood">
+/// A fixed array of 9 float3 samples representing the local 3×3 neighborhood
+/// around the current pixel from the *current frame*.
 /// </param>
 /// <param name="clipBoxScale">
-/// A scalar controlling the size of the clip box.  
-/// Typical values range from 1.0 to 3.0:  
-/// Lower values = more aggressive clamping (less ghosting, more flicker)  
-/// Higher values = looser clamping (more stability, more ghosting risk)
+/// Controls the width of the clip box.  
+/// Typical values: 1.0–3.0  
+/// Lower = more aggressive clamping (less ghosting, more flicker)  
+/// Higher = smoother but more ghosting risk.
 /// </param>
 /// <returns>
-/// The clamped current color, ensuring it fits within the computed statistical
-/// boundaries of the history neighborhood.
+/// The clamped color of the current pixel.
 /// </returns>
-float3 ClipBoxClampCurrent(float3 currentColor, float3 historyNeighborhood[9], float clipBoxScale)
+float3 ClipBoxClamp(float3 historyColor, float3 currentNeighborhood[9], float clipBoxScale)
 {
     float3 mean, stdDev;
-    ComputeMeanAndStdDev9(historyNeighborhood, mean, stdDev);
+    ComputeMeanAndStdDev9(currentNeighborhood, mean, stdDev);
 
     float3 minC = mean - stdDev * clipBoxScale;
     float3 maxC = mean + stdDev * clipBoxScale;
 
-    return clamp(currentColor, minC, maxC);
+    return clamp(historyColor, minC, maxC);
 }
 
 /// <summary>
 /// Clamps the current frame color to the min/max range defined by a 3×3 neighborhood
-/// of reprojected history pixels. Prevents extreme deviations in temporal blending.
+/// of the *current frame*.  
+/// This prevents extreme differences before temporal accumulation.
 /// </summary>
-/// <param name="currentColor">The current frame color to clamp.</param>
-/// <param name="historyNeighborhood">
-/// An array of 9 colors representing the local neighborhood of reprojected history pixels.
+/// <param name="historyColor">
+/// The input color of the history.
+/// </param>
+/// <param name="currentNeighborhood">
+/// The 3×3 local neighborhood of the current pixel taken from the current frame.
 /// </param>
 /// <returns>
-/// The current color clamped to the bounding box defined by the history neighborhood.
+/// The current color clamped to the min/max bounding box of the local neighborhood.
 /// </returns>
-float3 MinMaxClampCurrent(float3 currentColor, float3 historyNeighborhood[9])
+float3 MinMaxClamp(float3 historyColor, float3 currentNeighborhood[9])
 {
     float3 minColor = float3(1e9, 1e9, 1e9);
     float3 maxColor = float3(-1e9, -1e9, -1e9);
@@ -201,11 +201,11 @@ float3 MinMaxClampCurrent(float3 currentColor, float3 historyNeighborhood[9])
     [unroll]
     for (int i = 0; i < 9; ++i)
     {
-        minColor = min(minColor, historyNeighborhood[i]);
-        maxColor = max(maxColor, historyNeighborhood[i]);
+        minColor = min(minColor, currentNeighborhood[i]);
+        maxColor = max(maxColor, currentNeighborhood[i]);
     }
 
-    return clamp(currentColor, minColor, maxColor);
+    return clamp(historyColor, minColor, maxColor);
 }
 
 /// <summary>
@@ -253,6 +253,14 @@ float3 Blend(float3 current, float3 previous, float historyWeight)
     return lerp(current, previous, historyWeight);
 }
 
+/// <summary>
+/// Parameter block controlling temporal reprojection behavior, including 
+/// depth rejection, motion-vector–based disocclusion, history weighting,
+/// and optional neighborhood-based color clamping.
+/// </summary>
+/// <remarks>
+/// Intentionally made to be 16 byte aligned, fitting within 2 4-component 32 bit vector registers.
+/// </remarks>
 struct ReprojectionParams
 {
     bool depthRejection;
@@ -261,88 +269,204 @@ struct ReprojectionParams
     float velocityThreshold;
     float velocityScale;
     float historyWeight;
-#if defined(TAA_USE_NEIGHBORHOOD_CLAMP)
-    bool colorClampingMode;
+    int colorClampingMode;
     float clipBoxScale;
-#endif
 };
 
-void SampleHistoryNeighborhood(TEXTURE2D_PARAM( historyTexture, historySampler), float2 historyTexelSize, float2 texcoord, out float3 neighborhood[9], out float4 centreHistory)
+/// <summary>
+/// Samples the motion vector at the current UV and fetches the reprojected
+/// history color from the previous frame.
+/// </summary>
+/// <param name="historyTexture">The history color texture from the previous frame.</param>
+/// <param name="historySampler">The sampler used to sample the history texture.</param>
+/// <param name="currentUV">The UV coordinate of the current pixel.</param>
+/// <param name="motionVector">
+/// Output: The motion vector retrieved from the motion vector buffer.
+/// </param>
+/// <param name="history">
+/// Output: The reprojected history color, including depth stored
+/// in the alpha channel.
+/// </param>
+void SetupMotionVectorPipeline(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, out float2 motionVector, out float4 history)
 {
-    static const float2 offs[9] =
-    {
-        float2(-1, -1), float2(0, -1), float2(1, -1),
-        float2(-1, 0), float2(0, 0), float2(1, 0),
-        float2(-1, 1), float2(0, 1), float2(1, 1)
-    };
-
-    [unroll]
-    for (int i = 0; i < 9; ++i)
-    {
-        float2 uv = texcoord + offs[i] * historyTexelSize;
-        float4 sample = SAMPLE_TEXTURE2D(historyTexture, historySampler, uv);
-        
-        neighborhood[i] = sample.rgb;
-        if (i == 4)
-        {
-            centreHistory = sample;
-        }
-    }
+    motionVector = SAMPLE_TEXTURE2D_X(_TAA_MotionVectorTexture, sampler_TAA_MotionVectorTexture, currentUV).rg;
+    history = SampleHistoryMotionVectors(historyTexture, historySampler, currentUV, motionVector);
 }
 
-float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler), float2 historyTexelSize, float2 currentUV, float3 currentColor, ReprojectionParams params)
+/// <summary>
+/// Determines whether the given motion vector indicates noticeable motion.
+/// </summary>
+/// <param name="motionVector">The motion vector to test.</param>
+/// <returns>
+/// True if the magnitude of the motion vector exceeds a small threshold;
+/// otherwise false.
+/// </returns>
+bool HasMotion(float2 motionVector)
+{
+    return dot(motionVector, motionVector) > 1e-6;
+}
+
+/// <summary>
+/// Checks whether depth rejection should occur and updates the result
+/// accordingly. If a depth mismatch is detected, the history is discarded
+/// and the current color is used.
+/// </summary>
+/// <param name="currentUV">The UV coordinate of the current pixel.</param>
+/// <param name="currentColor">The current frame's color at this pixel.</param>
+/// <param name="history">
+/// The history color, where the alpha channel contains previous-frame depth.
+/// </param>
+/// <param name="threshold">
+/// Depth threshold used to determine whether the history is valid.
+/// </param>
+/// <param name="result">
+/// In/out: On rejection, this is filled with the current color and updated depth.
+/// </param>
+/// <returns>
+/// True if depth rejection occurred; otherwise false.
+/// </returns>
+bool CheckAndSetupDepthRejection(float2 currentUV, float3 currentColor, float4 history, float threshold, inout float4 result)
+{
+    float currentDepth = SAMPLE_TEXTURE2D_X(_TAA_DepthTexture, sampler_TAA_DepthTexture, currentUV).r;
+    currentDepth = Linear01Depth(currentDepth, _ZBufferParams);
+
+    float prevDepth = history.a;
+    result.a = currentDepth;
+
+    if (DepthReject(currentDepth, prevDepth, threshold))
+    {
+        result.rgb = currentColor;
+        return true;
+    }
+    return false;
+}
+
+/// <summary>
+/// Reduces the history weight if the pixel is likely disoccluded,
+/// based on motion vector magnitude.
+/// </summary>
+/// <param name="motionVector">The pixel's motion vector.</param>
+/// <param name="threshold">
+/// Motion magnitude threshold for detecting disocclusion.
+/// </param>
+/// <param name="scale">
+/// Additional scale factor to amplify or diminish disocclusion sensitivity.
+/// </param>
+/// <param name="historyWeight">
+/// In/out: The blending weight applied to the history color.
+/// Reduced when disocclusion is detected.
+/// </param>
+void SetupVelocityDisocclusion(float2 motionVector, float threshold, float scale, inout float historyWeight)
+{
+    float disocclusion = VelocityMagnitudeDisocclusion(motionVector, threshold, scale);
+    historyWeight *= (1.0 - disocclusion);
+}
+
+/// <summary>
+/// Reprojects and blends the history color for the current pixel using motion vectors
+/// and optional rejection heuristics. This variant uses only the current pixel color,
+/// without neighborhood-based color clamping.
+/// </summary>
+/// <param name="historyTexture">
+/// The history color texture from the previous frame.
+/// </param>
+/// <param name="historySampler">
+/// The sampler used to sample the history texture.
+/// </param>
+/// <param name="currentUV">
+/// The UV coordinate of the current pixel.
+/// </param>
+/// <param name="currentColor">
+/// The current-frame color at this pixel.
+/// </param>
+/// <param name="params">
+/// Reprojection settings controlling depth rejection, velocity disocclusion,
+/// history weighting, and optional color clamping mode.
+/// </param>
+/// <returns>
+/// The blended color result, combining the current color and reprojected history.
+/// </returns>
+float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, float3 currentColor, ReprojectionParams params)
 {
     float4 result = (float4) 0;
 
-    float2 motionVector = SAMPLE_TEXTURE2D_X(_TAA_MotionVectorTexture, sampler_TAA_MotionVectorTexture, currentUV).rg;
-    bool motion = motionVector.x != 0 || motionVector.y != 0;
-
+    float2 motionVector;
     float4 history;
-#if defined(TAA_USE_NEIGHBORHOOD_CLAMP)
-    float3 neighborhood[9];
-    SampleHistoryNeighborhood(historyTexture, historySampler, historyTexelSize, currentUV, neighborhood, history);
-#else
-    history = SampleHistoryMotionVectors(historyTexture, historySampler, currentUV, motionVector);
-#endif
-    
+    SetupMotionVectorPipeline(historyTexture, historySampler, currentUV, motionVector, history);
 
-    if (params.depthRejection)
+    if (params.depthRejection && CheckAndSetupDepthRejection(currentUV, currentColor, history, params.depthThreshold, result))
     {
-        float currentDepth = SAMPLE_TEXTURE2D_X(_TAA_DepthTexture, sampler_TAA_DepthTexture, currentUV).r;
-        currentDepth = Linear01Depth(currentDepth, _ZBufferParams);
-
-        float prevDepth = history.a;
-        result.a = currentDepth;
-
-        if(DepthReject(currentDepth, prevDepth, params.depthThreshold))
-        {
-            result.rgb = currentColor;
-            return result;
-        }
+        return result;
     }
 
-    if(motion)
+    if(HasMotion(motionVector) && params.velocityDisocclusion)
     {
-        if (params.velocityDisocclusion)
+        SetupVelocityDisocclusion(motionVector, params.velocityThreshold, params.velocityScale, params.historyWeight);
+    }
+
+    result.rgb = Blend(currentColor, history.rgb, params.historyWeight);
+    return result;
+}
+
+/// <summary>
+/// Reprojects and blends the history color using motion vectors, with optional
+/// depth rejection, velocity disocclusion, and neighborhood-based color clamping.
+/// This variant requires a full 3×3 neighborhood of current-frame colors.
+/// </summary>
+/// <param name="historyTexture">
+/// The history color texture from the previous frame.
+/// </param>
+/// <param name="historySampler">
+/// The sampler used to sample the history texture.
+/// </param>
+/// <param name="currentUV">
+/// The UV coordinate of the current pixel.
+/// </param>
+/// <param name="currentNeighborhood">
+/// A 3×3 neighborhood of current-frame colors, indexed row-major.
+/// Element [4] must contain the current pixel's color.
+/// </param>
+/// <param name="params">
+/// Reprojection settings controlling depth rejection, velocity disocclusion,
+/// history weighting, and the color clamping mode (None, MinMax, ClipBox).
+/// </param>
+/// <returns>
+/// The blended color result after reprojection, clamping, and temporal filtering.
+/// </returns>
+float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, float3 currentNeighborhood[9], ReprojectionParams params)
+{
+    float4 result = (float4) 0;
+
+    float2 motionVector;
+    float4 history;
+    SetupMotionVectorPipeline(historyTexture, historySampler, currentUV, motionVector, history);
+
+    float3 currentColor = currentNeighborhood[4];
+
+    if (params.depthRejection && CheckAndSetupDepthRejection(currentUV, currentColor, history, params.depthThreshold, result))
+    {
+        return result;
+    }
+
+    if(HasMotion(motionVector))
+    {
+        if(params.velocityDisocclusion)
         {
-            float disocclusion = VelocityMagnitudeDisocclusion(motionVector, params.velocityThreshold, params.velocityScale);
-            params.historyWeight *= (1.0 - disocclusion);
+            SetupVelocityDisocclusion(motionVector, params.velocityThreshold, params.velocityScale, params.historyWeight);
         }
 
-#if defined(TAA_USE_NEIGHBORHOOD_CLAMP)
         switch(params.colorClampingMode)
         {
         default:
         case 0:
             break;
         case 1:
-            currentColor = MinMaxClampCurrent(currentColor, neighborhood);
+            history.rgb = MinMaxClamp(history.rgb, currentNeighborhood);
             break;
         case 2:
-            currentColor = ClipBoxClampCurrent(currentColor, neighborhood, params.clipBoxScale);
+            history.rgb = ClipBoxClamp(history.rgb, currentNeighborhood, params.clipBoxScale);
             break;
         }
-#endif
     }
 
     result.rgb = Blend(currentColor, history.rgb, params.historyWeight);

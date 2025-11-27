@@ -21,45 +21,14 @@ namespace Rayforge.RenderGraphExtensions.Rendering
 
         /// <summary>
         /// Performs a simple min/max clamp of the current color against the 3×3 history neighborhood.
-        /// <para>
-        /// Note: This mode requires the shader keyword <c>TAA_USE_NEIGHBORHOOD_CLAMP</c> to be enabled,
-        /// otherwise the neighborhood will not be sampled and this mode has no effect.
-        /// </para>
         /// </summary>
         ColorClamp = 1,
 
         /// <summary>
         /// Performs clip-box clamping on the current color using the mean and standard deviation
         /// of the 3×3 history neighborhood.
-        /// <para>
-        /// Note: This mode requires the shader keyword <c>TAA_USE_NEIGHBORHOOD_CLAMP</c> to be enabled,
-        /// otherwise the neighborhood will not be sampled and this mode has no effect.
-        /// </para>
         /// </summary>
         ClipBoxClamp = 2
-    }
-
-    /// <summary>
-    /// Contains shader keywords related to temporal anti-aliasing (TAA) functionality.
-    /// Use these keywords to enable optional features in the shader, such as neighborhood-based
-    /// color clamping.
-    /// </summary>
-    public static class TemporalShaderKeywords
-    {
-        /// <summary>
-        /// Shader keyword that enables sampling of a 3×3 history neighborhood for color clamping modes
-        /// (<see cref="TemporalColorClampMode.ColorClamp"/> and <see cref="TemporalColorClampMode.ClipBoxClamp"/>).
-        /// <para>
-        /// This keyword must be set globally or per-material for the modes to take effect in the shader.
-        /// Without this keyword, the neighborhood sampling is skipped and clamping has no effect.
-        /// </para>
-        /// </summary>
-        private static readonly string k_TaaUseNeighborhoodClampKeyword = "TAA_USE_NEIGHBORHOOD_CLAMP";
-
-        /// <summary>
-        /// Gets the shader keyword string for enabling neighborhood-based color clamping in TAA.
-        /// </summary>
-        public static string TaaUseNeighborhoodClampKeyword => k_TaaUseNeighborhoodClampKeyword;
     }
 
     /// <summary>
