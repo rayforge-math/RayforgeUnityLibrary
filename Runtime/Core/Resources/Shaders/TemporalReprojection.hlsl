@@ -36,6 +36,7 @@
 
 CBUFFER_START(UnityPerCamera)
 float4x4 _Rayforge_Matrix_Prev_VP;
+float4x4 _Rayforge_Matrix_Inv_VP;
 CBUFFER_END
 
 #if !defined(RAYFORGE_DEPTH_TEXTURE)
@@ -194,9 +195,9 @@ float3 VarianceClamp(float3 historyColor, float3 currentNeighborhood[9], float s
 /// around the current pixel from the current frame.
 /// </param>
 /// <param name="clipBoxScale">
-/// Controls the width of the clip box.  
-/// Typical values: 1.0–3.0  
-/// Lower = more aggressive clamping (less ghosting, more flicker)  
+/// Controls the width of the clip box.
+/// Typical values: 1.0–3.0
+/// Lower = more aggressive clamping (less ghosting, more flicker)
 /// Higher = smoother but more ghosting risk.
 /// </param>
 /// <returns>
@@ -224,7 +225,7 @@ float3 ClipBoxClamp(float3 historyColor, float3 currentNeighborhood[9], float cl
     float3 deltaHistory = historyColor - mean;
     float proj = dot(deltaHistory, lumaDir);
     
-    // limit by standard deviation, scale lumaDir (unit vector) by projected history difference
+    // limit by standard deviation, scale lumaDir (normalized vector) by projected history difference
     float limit = length(stdDev) * clipBoxScale;
     float3 clampedDelta = clamp(proj, -limit, limit) * lumaDir;
 
@@ -344,6 +345,59 @@ void SetupMotionVectorPipeline(TEXTURE2D_PARAM(historyTexture, historySampler), 
 {
     motionVector = SAMPLE_TEXTURE2D_X(_TAA_MotionVectorTexture, sampler_TAA_MotionVectorTexture, currentUV).rg;
     history = SampleHistoryMotionVectors(historyTexture, historySampler, currentUV, motionVector);
+}
+
+/// <summary>
+/// Reconstructs the world-space position of the current pixel using its UV
+/// coordinate and depth value from the depth buffer.
+/// </summary>
+/// <param name="uv">
+/// The UV coordinate of the current pixel in normalized screen space [0..1].
+/// </param>
+/// <param name="depth">
+/// The non-linear clip-space depth value sampled from the depth buffer.
+/// </param>
+/// <returns>
+/// The reconstructed world-space position of the pixel.
+/// </returns>
+float3 ReconstructWorldPos(float2 uv, float depth)
+{
+    float2 ndc = uv * 2.0 - 1.0;
+    float4 posCS = float4(ndc, depth, 1.0);
+
+    float4 posWS = mul(_Rayforge_Matrix_Inv_VP, posCS);
+    posWS /= posWS.w;
+
+    return posWS.xyz;
+}
+
+/// <summary>
+/// Reconstructs the world-space position of the current pixel and samples the
+/// history buffer using that world position. This enables world-space based
+/// reprojection instead of screen-space UV reprojection.
+/// </summary>
+/// <param name="historyTexture">
+/// The history buffer from the previous frame, storing color and depth
+/// (depth typically in the alpha channel).
+/// </param>
+/// <param name="historySampler">
+/// The sampler used to sample the history texture.
+/// </param>
+/// <param name="currentUV">
+/// The UV coordinate of the current pixel in the current frame.
+/// </param>
+/// <param name="depth">
+/// The non-linear depth value for the current pixel, sampled from the current
+/// depth buffer.
+/// </param>
+/// <param name="history">
+/// Output: The history sample reprojected using world-space position lookup.
+/// Includes stored depth in the alpha channel.
+/// </param>
+void SetupWorldPosPipeline(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, float depth, out float4 history)
+{
+    float3 worldPos = ReconstructWorldPos(currentUV, depth);
+    history = SampleHistoryWorldPos(historyTexture, historySampler, worldPos);
 }
 
 /// <summary>
@@ -553,6 +607,111 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
 
         history.rgb = ApplyColorClamping(history.rgb, currentNeighborhood, params.colorClampingMode, params.clipBoxScale);
     }
+
+    result.rgb = Blend(currentColor, history.rgb, params.historyWeight);
+    return result;
+}
+
+/// <summary>
+/// Reprojects history using world-space reconstruction instead of motion vectors,
+/// then blends the reprojected history color with the current pixel color.
+///  
+/// This variant assumes a mostly static world (no velocity-based disocclusion)
+/// and relies on depth-based rejection to avoid ghosting when geometry changes,
+/// moves across edges, or becomes newly visible.
+/// 
+/// Per-object motion is not taken into account.
+/// </summary>
+/// <param name="historyTexture">
+/// The history color texture from the previous frame.  
+/// Expected to store previous-frame depth in the alpha channel.
+/// </param>
+/// <param name="historySampler">
+/// Sampler state used for sampling the history texture.
+/// </param>
+/// <param name="currentUV">
+/// UV coordinate of the current pixel in normalized screen space [0..1].
+/// </param>
+/// <param name="currentColor">
+/// The color computed for the current frame at this pixel (pre-TAA).
+/// </param>
+/// <param name="params">
+/// Reprojection parameters controlling history weighting and depth rejection
+/// behavior.
+/// </param>
+/// <returns>
+/// The blended final color, combining current-frame color with  
+/// world-reprojected history, or the current color alone if history is rejected.
+/// </returns>
+float4 BlendHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, float3 currentColor, ReprojectionParams params)
+{
+    float4 result = (float4) 0;
+
+    float currentDepth = SampleLinear01Depth(currentUV);
+    
+    float4 history;
+    SetupWorldPosPipeline(historyTexture, historySampler, currentUV, currentDepth, history);
+
+    if (params.depthRejection && CheckAndSetupDepthRejection(currentUV, currentColor, currentDepth, history, params.depthThreshold, result))
+    {
+        return result;
+    }
+
+    result.rgb = Blend(currentColor, history.rgb, params.historyWeight);
+    return result;
+}
+
+/// <summary>
+/// Reprojects history using world-space reconstruction and applies optional
+/// color-clamping using a 3×3 neighborhood from the current frame.
+/// 
+/// This variant is similar to the motion-vector version of history blending,
+/// but uses world-space reprojection instead of stored motion vectors,
+/// and therefore does not support velocity-based disocclusion.
+/// 
+/// Per-object motion is not taken into account.
+/// </summary>
+/// <param name="historyTexture">
+/// The previous frame's history color texture.  
+/// The alpha channel is expected to contain previous-frame depth.
+/// </param>
+/// <param name="historySampler">
+/// Sampler state used when sampling the history texture.
+/// </param>
+/// <param name="currentUV">
+/// UV coordinate of the current pixel in normalized screen space [0..1].
+/// </param>
+/// <param name="currentNeighborhood">
+/// A 3×3 array of current-frame color samples centered at the current pixel.
+/// Used for statistical color clamping (mean, variance, clip box, etc.).
+/// </param>
+/// <param name="params">
+/// Reprojection settings controlling depth rejection, history weighting,
+/// color-clamping mode, and clip-box parameters.
+/// </param>
+/// <returns>
+/// The final TAA-filtered color for the pixel, combining the reprojected
+/// history with the current frame's color after optional clamping.  
+/// If history is rejected, returns the current color.
+/// </returns>
+float4 BlendHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, float3 currentNeighborhood[9], ReprojectionParams params)
+{
+    float4 result = (float4) 0;
+
+    float currentDepth = SampleLinear01Depth(currentUV);
+    
+    float4 history;
+    SetupWorldPosPipeline(historyTexture, historySampler, currentUV, currentDepth, history);
+
+    float3 currentColor = currentNeighborhood[4];
+
+
+    if (params.depthRejection && CheckAndSetupDepthRejection(currentUV, currentColor, currentDepth, history, params.depthThreshold, result))
+    {
+        return result;
+    }
+
+    history.rgb = ApplyColorClamping(history.rgb, currentNeighborhood, params.colorClampingMode, params.clipBoxScale);
 
     result.rgb = Blend(currentColor, history.rgb, params.historyWeight);
     return result;
