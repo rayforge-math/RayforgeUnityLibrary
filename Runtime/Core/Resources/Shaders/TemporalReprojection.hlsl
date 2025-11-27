@@ -147,17 +147,51 @@ void ComputeMeanAndStdDev9(in float3 neighborhood[9], out float3 mean, out float
 }
 
 /// <summary>
-/// Performs clip-box clamping on the current frame color using the mean and
+/// Performs variance-based clip-box clamping on the history color using the mean and
 /// standard deviation of a 3×3 neighborhood from the *current frame*.
-/// This limits the current color to a statistically plausible range,
+/// This constrains the history color to a statistically plausible range,
 /// reducing flicker and preventing extreme outliers before temporal accumulation.
+/// </summary>
+/// <param name="historyColor">
+/// The input color from the history buffer.
+/// </param>
+/// <param name="currentNeighborhood">
+/// A fixed array of 9 float3 samples representing the local 3×3 neighborhood
+/// around the current pixel from the current frame.
+/// </param>
+/// <param name="scale">
+/// Controls the width of the variance clip box.  
+/// Typical values: 1.0–3.0  
+/// Lower = more aggressive clamping (less ghosting, more flicker)  
+/// Higher = looser clamping (smoother, more risk of ghosting).
+/// </param>
+/// <returns>
+/// The history color clamped to [mean - stdDev * scale, mean + stdDev * scale].
+/// </returns>
+float3 VarianceClamp(float3 historyColor, float3 currentNeighborhood[9], float scale)
+{
+    float3 mean, stdDev;
+    ComputeMeanAndStdDev9(currentNeighborhood, mean, stdDev);
+
+    float3 minC = mean - stdDev * scale;
+    float3 maxC = mean + stdDev * scale;
+
+    return clamp(historyColor, minC, maxC);
+}
+
+/// <summary>
+/// Performs luma-oriented clip-box clamping on the history color using the 3×3 neighborhood 
+/// from the current frame. The clip box is aligned along the principal luma direction.
+///
+/// This is roughly the approach Unreal Engine uses for temporal AA:
+/// see <see href="https://de45xmedrsdbp.cloudfront.net/Resources/files/TemporalAA_small-59732822.pdf#page=34">Unreal TAA Variance Clamping</see>.
 /// </summary>
 /// <param name="historyColor">
 /// The input color of the history.
 /// </param>
 /// <param name="currentNeighborhood">
 /// A fixed array of 9 float3 samples representing the local 3×3 neighborhood
-/// around the current pixel from the *current frame*.
+/// around the current pixel from the current frame.
 /// </param>
 /// <param name="clipBoxScale">
 /// Controls the width of the clip box.  
@@ -173,10 +207,29 @@ float3 ClipBoxClamp(float3 historyColor, float3 currentNeighborhood[9], float cl
     float3 mean, stdDev;
     ComputeMeanAndStdDev9(currentNeighborhood, mean, stdDev);
 
-    float3 minC = mean - stdDev * clipBoxScale;
-    float3 maxC = mean + stdDev * clipBoxScale;
+    float meanLuma = dot(mean, float3(0.2126, 0.7152, 0.0722));
 
-    return clamp(historyColor, minC, maxC);
+    // Compute the direction of largest difference in luminance (in color space) -> normalized gradient
+    float3 lumaDir = (float3) 0;
+    [unroll]
+    for (int j = 0; j < 9; ++j)
+    {
+        float3 delta = currentNeighborhood[j] - mean;
+        float lumaDelta = dot(currentNeighborhood[j], float3(0.2126, 0.7152, 0.0722)) - meanLuma;
+        lumaDir += delta * lumaDelta;   // scale delta (direction) based on luminance delta
+    }
+    lumaDir = normalize(lumaDir + 1e-6);
+
+    // project vector from history to mean onto axis along luminance gradient -> get amount of history along largest difference in lumiance
+    float3 deltaHistory = historyColor - mean;
+    float proj = dot(deltaHistory, lumaDir);
+    
+    // limit by standard deviation, scale lumaDir (unit vector) by projected history difference
+    float limit = length(stdDev) * clipBoxScale;
+    float3 clampedDelta = clamp(proj, -limit, limit) * lumaDir;
+
+    // return mean + the projected and scaled history offset
+    return mean + clampedDelta;
 }
 
 /// <summary>
@@ -307,12 +360,25 @@ bool HasMotion(float2 motionVector)
 }
 
 /// <summary>
+/// Samples the TAA depth texture at the given UV coordinates and converts it
+/// to linear 0–1 depth using the global z-buffer parameters.
+/// </summary>
+/// <param name="uv">UV coordinates to sample at.</param>
+/// <returns>Linear depth in the range [0,1].</returns>
+float SampleLinear01Depth(float2 uv)
+{
+    float rawDepth = SAMPLE_TEXTURE2D_X(_TAA_DepthTexture, sampler_TAA_DepthTexture, uv).r;
+    return Linear01Depth(rawDepth, _ZBufferParams);
+}
+
+/// <summary>
 /// Checks whether depth rejection should occur and updates the result
 /// accordingly. If a depth mismatch is detected, the history is discarded
 /// and the current color is used.
 /// </summary>
 /// <param name="currentUV">The UV coordinate of the current pixel.</param>
 /// <param name="currentColor">The current frame's color at this pixel.</param>
+/// <param name="currentDepth">The current frame's linear 0..1 depth value.</param>
 /// <param name="history">
 /// The history color, where the alpha channel contains previous-frame depth.
 /// </param>
@@ -325,11 +391,8 @@ bool HasMotion(float2 motionVector)
 /// <returns>
 /// True if depth rejection occurred; otherwise false.
 /// </returns>
-bool CheckAndSetupDepthRejection(float2 currentUV, float3 currentColor, float4 history, float threshold, inout float4 result)
+bool CheckAndSetupDepthRejection(float2 currentUV, float3 currentColor, float currentDepth, float4 history, float threshold, inout float4 result)
 {
-    float currentDepth = SAMPLE_TEXTURE2D_X(_TAA_DepthTexture, sampler_TAA_DepthTexture, currentUV).r;
-    currentDepth = Linear01Depth(currentDepth, _ZBufferParams);
-
     float prevDepth = history.a;
     result.a = currentDepth;
 
@@ -360,6 +423,36 @@ void SetupVelocityDisocclusion(float2 motionVector, float threshold, float scale
 {
     float disocclusion = VelocityMagnitudeDisocclusion(motionVector, threshold, scale);
     historyWeight *= (1.0 - disocclusion);
+}
+
+/// <summary>
+/// Applies the selected temporal color clamping mode to a history color
+/// based on the current 3x3 neighborhood.
+/// </summary>
+/// <param name="historyColor">The reprojected history color to potentially clamp.</param>
+/// <param name="currentNeighborhood">The 3x3 neighborhood of current frame colors.</param>
+/// <param name="clampMode">Clamping mode (0 = none, 1 = min/max, 2 = clip-box).</param>
+/// <param name="scale">Scale factor for bounding box clamping, if required.</param>
+/// <returns>The history color after applying the selected clamping mode.</returns>
+float3 ApplyColorClamping(float3 historyColor, float3 currentNeighborhood[9], int clampMode, float scale)
+{
+    switch (clampMode)
+    {
+        default:
+        case 0: // None
+            break;
+        case 1: // Min/Max Clamp
+            historyColor = MinMaxClamp(historyColor, currentNeighborhood);
+            break;
+        case 2: // Variance Clamp
+            historyColor = VarianceClamp(historyColor, currentNeighborhood, scale);
+            break;
+        case 3: // ClipBox Clamp
+            historyColor = ClipBoxClamp(historyColor, currentNeighborhood, scale);
+            break;
+    }
+
+    return historyColor;
 }
 
 /// <summary>
@@ -394,7 +487,9 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
     float4 history;
     SetupMotionVectorPipeline(historyTexture, historySampler, currentUV, motionVector, history);
 
-    if (params.depthRejection && CheckAndSetupDepthRejection(currentUV, currentColor, history, params.depthThreshold, result))
+    float currentDepth = SampleLinear01Depth(currentUV);
+
+    if (params.depthRejection && CheckAndSetupDepthRejection(currentUV, currentColor, currentDepth, history, params.depthThreshold, result))
     {
         return result;
     }
@@ -442,8 +537,9 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
     SetupMotionVectorPipeline(historyTexture, historySampler, currentUV, motionVector, history);
 
     float3 currentColor = currentNeighborhood[4];
+    float currentDepth = SampleLinear01Depth(currentUV);
 
-    if (params.depthRejection && CheckAndSetupDepthRejection(currentUV, currentColor, history, params.depthThreshold, result))
+    if (params.depthRejection && CheckAndSetupDepthRejection(currentUV, currentColor, currentDepth, history, params.depthThreshold, result))
     {
         return result;
     }
@@ -455,18 +551,7 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
             SetupVelocityDisocclusion(motionVector, params.velocityThreshold, params.velocityScale, params.historyWeight);
         }
 
-        switch(params.colorClampingMode)
-        {
-        default:
-        case 0:
-            break;
-        case 1:
-            history.rgb = MinMaxClamp(history.rgb, currentNeighborhood);
-            break;
-        case 2:
-            history.rgb = ClipBoxClamp(history.rgb, currentNeighborhood, params.clipBoxScale);
-            break;
-        }
+        history.rgb = ApplyColorClamping(history.rgb, currentNeighborhood, params.colorClampingMode, params.clipBoxScale);
     }
 
     result.rgb = Blend(currentColor, history.rgb, params.historyWeight);

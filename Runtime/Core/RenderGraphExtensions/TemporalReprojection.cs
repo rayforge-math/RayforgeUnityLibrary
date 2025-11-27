@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -20,15 +20,25 @@ namespace Rayforge.RenderGraphExtensions.Rendering
         None = 0,
 
         /// <summary>
-        /// Performs a simple min/max clamp of the current color against the 3�3 history neighborhood.
+        /// Performs a simple min/max clamp of the current color against the 3×3 neighborhood
+        /// of the current frame or reprojected history.
+        /// Limits extreme deviations without considering statistical variance.
         /// </summary>
         ColorClamp = 1,
 
         /// <summary>
-        /// Performs clip-box clamping on the current color using the mean and standard deviation
-        /// of the 3�3 history neighborhood.
+        /// Performs variance-based clamping using the mean and standard deviation
+        /// of the 3×3 neighborhood of the current frame.
+        /// Simple statistical clamp: historyColor ∈ [mean - stdDev*scale, mean + stdDev*scale].
         /// </summary>
-        ClipBoxClamp = 2
+        VarianceClamp = 2,
+
+        /// <summary>
+        /// Performs luma-oriented clip-box clamping along the principal luma direction,
+        /// roughly following Unreal Engine's approach.
+        /// See: https://de45xmedrsdbp.cloudfront.net/Resources/files/TemporalAA_small-59732822.pdf#page=45
+        /// </summary>
+        ClipBoxClamp = 3
     }
 
     /// <summary>
