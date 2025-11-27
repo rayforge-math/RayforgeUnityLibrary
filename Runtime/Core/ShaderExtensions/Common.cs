@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 /// <summary>
 /// Contains common shader-related utilities, helper functions, enums, and include definitions
@@ -43,94 +44,110 @@ namespace Rayforge.ShaderExtensions.Common
     }
 
     /// <summary>
-    /// Defines the types of blur that can be applied to a texture or render target.
+    /// Provides runtime detection of the active Scriptable Render Pipeline (URP or HDRP)
+    /// and applies matching global shader keywords.
+    /// 
+    /// This allows shaders to use:
+    /// <code>
+    /// #if defined(RAYFORGE_PIPELINE_HDRP)
+    ///     // HDRP path
+    /// #elif defined(RAYFORGE_PIPELINE_URP)
+    ///     // URP path
+    /// #endif
+    /// </code>
     /// </summary>
-    public enum BlurType
+    public static class PipelineDefines
     {
-        /// <summary>No blur is applied.</summary>
-        None = 0,
+        /// <summary>
+        /// Global shader keyword used when the High Definition Render Pipeline (HDRP) is active.
+        /// </summary>
+        public static string HdrpKeyword => k_HdrpKeyword;
+        private static readonly string k_HdrpKeyword = "RAYFORGE_PIPELINE_HDRP";
 
-        /// <summary>Simple box blur (average of neighboring pixels).</summary>
-        Box = 1,
+        /// <summary>
+        /// Global shader keyword used when the Universal Render Pipeline (URP) is active.
+        /// </summary>
+        public static string UrpKeyword => k_UrpKeyword;
+        private static readonly string k_UrpKeyword = "RAYFORGE_PIPELINE_URP";
 
-        /// <summary>Gaussian blur for smooth falloff.</summary>
-        Gaussian = 2,
+        /// <summary>
+        /// True if the currently active render pipeline is HDRP.
+        /// </summary>
+        public static bool IsHDRP
+        {
+            get
+            {
+                DetectPipeline();
+                return s_isHDRP;
+            }
+        }
+        private static bool s_isHDRP = false;
 
-        /// <summary>Tent blur (linear falloff kernel).</summary>
-        Tent = 3,
+        /// <summary>
+        /// True if the currently active render pipeline is URP.
+        /// </summary>
+        public static bool IsURP
+        {
+            get
+            {
+                DetectPipeline();
+                return s_isURP;
+            }
+        }
+        private static bool s_isURP = false;
 
-        /// <summary>Kawase blur (iterative multi-pass blur for performance).</summary>
-        Kawase = 4
+        /// <summary>
+        /// Tracks whether pipeline detection has already been performed.
+        /// </summary>
+        private static bool s_PipelineChecked = false;
+
+        /// <summary>
+        /// Detects whether URP or HDRP is currently in use and applies matching shader keywords.
+        /// Call <c>DetectPipeline(true)</c> to force re-checking.
+        /// </summary>
+        /// <param name="force">If true, forces re-detection even if already checked.</param>
+        public static void DetectPipeline(bool force = false)
+        {
+            if (!s_PipelineChecked || force)
+            {
+                var rp = GraphicsSettings.currentRenderPipeline;
+
+                bool isURP = false;
+                bool isHDRP = false;
+
+                if (rp != null)
+                {
+                    string name = rp.GetType().Name;
+
+                    if (name.Contains("HDRenderPipeline"))
+                        isHDRP = true;
+                    else if (name.Contains("UniversalRenderPipeline"))
+                        isURP = true;
+                }
+
+                s_isHDRP = isHDRP;
+                s_isURP = isURP;
+
+                // Apply shader keywords
+                if (s_isHDRP)
+                {
+                    Shader.EnableKeyword(k_HdrpKeyword);
+                    Shader.DisableKeyword(k_UrpKeyword);
+                }
+                else if (s_isURP)
+                {
+                    Shader.EnableKeyword(k_UrpKeyword);
+                    Shader.DisableKeyword(k_HdrpKeyword);
+                }
+                else
+                {
+                    Shader.DisableKeyword(k_HdrpKeyword);
+                    Shader.DisableKeyword(k_UrpKeyword);
+                }
+
+                s_PipelineChecked = true;
+            }
+        }
     }
 
-    /// <summary>
-    /// Directional blur types; excludes Kawase which is typically 2D.
-    /// </summary>
-    public enum BlurTypeDirectional
-    {
-        None = BlurType.None,
-        Box = BlurType.Box,
-        Gaussian = BlurType.Gaussian,
-        Tent = BlurType.Tent
-    }
-
-    /// <summary>
-    /// 2D blur types; includes Kawase for full 2D passes.
-    /// </summary>
-    public enum BlurType2D
-    {
-        None = BlurType.None,
-        Box = BlurType.Box,
-        Gaussian = BlurType.Gaussian,
-        Tent = BlurType.Tent,
-        Kawase = BlurType.Kawase
-    }
-
-    /// <summary>
-    /// Blur types excluding the 'None' option; used when a blur must always be applied.
-    /// </summary>
-    public enum NoDisableBlurType
-    {
-        Box = BlurType.Box,
-        Gaussian = BlurType.Gaussian,
-        Tent = BlurType.Tent,
-        Kawase = BlurType.Kawase
-    }
-
-    /// <summary>
-    /// Directional blur types without 'None'.</summary>
-    public enum NoDisableBlurTypeDirectional
-    {
-        Box = NoDisableBlurType.Box,
-        Gaussian = NoDisableBlurType.Gaussian,
-        Tent = NoDisableBlurType.Tent
-    }
-
-    /// <summary>
-    /// 2D blur types without 'None'.</summary>
-    public enum NoDisableBlurType2D
-    {
-        Box = NoDisableBlurType.Box,
-        Gaussian = NoDisableBlurType.Gaussian,
-        Tent = NoDisableBlurType.Tent,
-        Kawase = NoDisableBlurType.Kawase
-    }
-
-    /// <summary>
-    /// Brightness filter modes for threshold-based luminance filtering.
-    /// </summary>
-    public enum BrightFilterMode
-    {
-        /// <summary>Hard threshold; colors below the threshold are discarded.</summary>
-        Hard = 0,
-
-        /// <summary>Soft threshold; subtracts the threshold value from color.</summary>
-        Soft = 1,
-
-        /// <summary>Smooth threshold; smooth transition near threshold.</summary>
-        Smooth = 2,
-
-        /// <summary>Exponential threshold; smooth falloff with exponential curve.</summary>
-        Exponential = 3
-    }
 }

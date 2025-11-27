@@ -2,7 +2,8 @@ Shader "Rayforge/RasterChannelBlitter"
 {
     Properties
     {
-        _BlitSource("Source Texture", 2D) = "white" {}
+        _BlitTexture("Source Texture", 2D) = "white" {}
+        _BlitSource_TexelSize ("Source Texel Size", Vector) = (1,1,1,1)
     }
     SubShader
     {
@@ -30,10 +31,10 @@ Shader "Rayforge/RasterChannelBlitter"
                 AddressV = Clamp;
             };
 
-            TEXTURE2D(_BlitSource);
+            TEXTURE2D(_BlitTexture);
             cbuffer UnityPerMaterial : register(b0)
             {
-                float4 _BlitSource_TexelSize : packoffset(c0.x);
+                float4 _BlitTexture_TexelSize : packoffset(c0.x);
             }
 
             cbuffer _ChannelBlitterParams : register(b1)
@@ -56,8 +57,8 @@ Shader "Rayforge/RasterChannelBlitter"
                 Varyings output = (Varyings)0;
                 FullscreenTriangle(id, output.positionCS, output.texcoord);
 
-                float2 offset = _BlitParams.xy * _BlitSource_TexelSize.xy;
-                float2 scale = _BlitParams.zw * _BlitSource_TexelSize.xy;
+                float2 offset = _BlitParams.xy * _BlitTexture_TexelSize.xy;
+                float2 scale = _BlitParams.zw * _BlitTexture_TexelSize.xy;
                 
                 output.texcoord *= scale;
                 output.texcoord += offset;
@@ -67,7 +68,7 @@ Shader "Rayforge/RasterChannelBlitter"
 
             float4 ChannelBlitterFrag(Varyings input) : SV_Target
             {
-                float4 sample = SAMPLE_TEXTURE2D(_BlitSource, sampler_LinearClamp, input.texcoord);
+                float4 sample = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, input.texcoord);
                 
                 float4 dest = (float4) 0;
                 if (_R < None) dest.r = sample[_R];

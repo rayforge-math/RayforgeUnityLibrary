@@ -1,5 +1,6 @@
 using Codice.CM.Common;
 using Rayforge.ManagedResources.NativeMemory;
+using Rayforge.ShaderExtensions.Blitter;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
@@ -75,14 +76,6 @@ namespace Rayforge.Utility.Blitter
         private const string k_ComputeBlitShaderName = "ComputeChannelBlitter";
         private const string k_RasterBlitShaderName = "RasterChannelBlitter";
 
-        /// <summary>Shader property ID for the source texture.</summary>
-        public static readonly int k_BlitSourceId = Shader.PropertyToID("_BlitSource");
-        public static int BlitSourceId => k_BlitSourceId;
-
-        /// <summary>Shader property ID for the destination texture.</summary>
-        public static readonly int k_BlitDestId = Shader.PropertyToID("_BlitDest");
-        public static int BlitDestId => k_BlitDestId;
-
         /// <summary>Shader property ID for the red channel mapping.</summary>
         public static readonly int k_ChannelRId = Shader.PropertyToID("_R");
         /// <summary>Shader property ID for the green channel mapping.</summary>
@@ -146,7 +139,7 @@ namespace Rayforge.Utility.Blitter
         /// <param name="mpb">MaterialPropertyBlock containing channel and blit parameters.</param>
         public static void RasterBlit(Texture source, RenderTexture dest, MaterialPropertyBlock mpb)
         {
-            mpb.SetTexture(k_BlitSourceId, source);
+            mpb.SetTexture(BlitParameters.BlitTextureId, source);
             Graphics.SetRenderTarget(dest);
             Graphics.DrawProcedural(k_RasterBlitMaterial, new Bounds(Vector2.zero, Vector2.one), MeshTopology.Triangles, 3, 1, null, mpb);
             Graphics.SetRenderTarget(null);
@@ -191,8 +184,8 @@ namespace Rayforge.Utility.Blitter
             k_ComputeBlitShader.SetInt(k_ChannelBId, (int)param.B);
             k_ComputeBlitShader.SetInt(k_ChannelAId, (int)param.A);
 
-            k_ComputeBlitShader.SetTexture(0, k_BlitSourceId, source);
-            k_ComputeBlitShader.SetTexture(0, k_BlitDestId, dest);
+            k_ComputeBlitShader.SetTexture(0, BlitParameters.BlitTextureId, source);
+            k_ComputeBlitShader.SetTexture(0, BlitParameters.BlitDestinationId, dest);
 
             var numGroups = new Vector2Int(Mathf.CeilToInt(param.size.x / 8.0f), Mathf.CeilToInt(param.size.y / 8.0f));
             k_ComputeBlitShader.Dispatch(0, numGroups.x, numGroups.y, 1);

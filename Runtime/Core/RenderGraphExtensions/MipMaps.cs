@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.RenderGraphModule;
-
+using UnityEngine.UIElements;
 using static Rayforge.Utility.RuntimeCheck.Asserts;
 
 namespace Rayforge.RenderGraphExtensions.Rendering
@@ -303,10 +303,13 @@ namespace Rayforge.RenderGraphExtensions.Rendering
 
             if (m_Handles.Length != descriptors.MipCount)
             {
+                Resize(descriptors.MipCount);
+                /*
                 var oldHandles = m_Handles;
                 m_Handles = new TextureHandle[descriptors.Length];
                 if (oldHandles != null && startMip > 0)
                     Array.Copy(oldHandles, m_Handles, Math.Min(startMip, oldHandles.Length));
+                */
             }
 
             for (int i = startMip; i < endMip; ++i)
@@ -315,6 +318,79 @@ namespace Rayforge.RenderGraphExtensions.Rendering
                     return false;
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// Resizes the internal handle array to the specified new length.
+        /// Preserves as many existing handles as possible up to the new length.
+        /// </summary>
+        /// <param name="newLength">The new desired array length. Must be ≥ 0.</param>
+        public void Resize(int newLength)
+            => Resize(newLength, 0, MipCount);
+
+        /// <summary>
+        /// Resizes the internal handle array to the specified new length.
+        /// Preserves a subset of existing handles starting at <paramref name="preserveIndex"/>
+        /// up to <paramref name="preserveCount"/> elements. All other slots are left uninitialized (default).
+        /// </summary>
+        /// <param name="newLength">The new desired array length. Must be ≥ 0.</param>
+        /// <param name="preserveIndex">
+        /// The start index in the old array from which to copy handles into the new array.
+        /// </param>
+        /// <param name="preserveCount">
+        /// The number of elements to preserve starting from <paramref name="preserveIndex"/>.
+        /// Clamped automatically to the available range.
+        /// </param>
+        public void Resize(int newLength, int preserveIndex, int preserveCount)
+        {
+            if (newLength < 0)
+                newLength = 0;
+
+            if (MipCount == newLength)
+                return;
+
+            if (newLength == 0)
+            {
+                m_Handles = Array.Empty<TextureHandle>();
+                return;
+            }
+
+            var newHandles = new TextureHandle[newLength];
+
+            if (m_Handles != null && preserveCount > 0)
+            {
+                preserveIndex = Math.Max(0, Math.Min(preserveIndex, m_Handles.Length - 1));
+                preserveCount = Math.Min(preserveCount, m_Handles.Length - preserveIndex);
+                preserveCount = Math.Min(preserveCount, newHandles.Length);
+
+                if (preserveCount > 0)
+                    Array.Copy(m_Handles, preserveIndex, newHandles, 0, preserveCount);
+            }
+
+            m_Handles = newHandles;
+        }
+
+        /// <summary>
+        /// Imports a <see cref="TextureHandle"/> into the mip chain at the specified index.
+        /// </summary>
+        /// <param name="mipLevel">The mip level index where the handle should be stored.</param>
+        /// <param name="handle">The <see cref="TextureHandle"/> to import.</param>
+        /// <returns>
+        /// <c>true</c> if the handle was successfully imported; 
+        /// <c>false</c> if the index is out of range or the handle is invalid.
+        /// </returns>
+        public bool SetMipHandle(int mipLevel, TextureHandle handle)
+        {
+            if (mipLevel < 0 || mipLevel >= MipCount)
+                throw new IndexOutOfRangeException(
+                    $"Mip level {mipLevel} is out of range (0 to {MipCount - 1}).");
+
+            if (!handle.IsValid())
+                throw new ArgumentException(
+                    $"TextureHandle for mip {mipLevel} is invalid.", nameof(handle));
+
+            m_Handles[mipLevel] = handle;
             return true;
         }
 

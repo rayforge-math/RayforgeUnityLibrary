@@ -158,33 +158,6 @@ float2 AlignToTexel(float2 texcoord, float2 texelSize)
 }
 
 /// <summary>
-/// Computes a proportional UV offset or scale based on the screen size.
-/// Optionally aligns the resulting value to the texel grid.
-/// </summary>
-/// <param name="texelSize">
-/// Texel size in UV space (1/width, 1/height), typically from _ScreenParams.
-/// </param>
-/// <param name="screenSize">
-/// The pixel resolution of the target (width, height).
-/// </param>
-/// <param name="align">
-/// If true, the result is aligned to the texel grid to ensure pixel-perfect behavior.
-/// </param>
-/// <returns>
-/// A proportional float2 scaled by screen size, optionally rounded to nearest texel.
-/// </returns>
-float2 ScreenProportional(float2 texelSize, float2 screenSize, bool align)
-{
-    float2 scale = screenSize.xy * Base_TexelSize.xy;
-    float2 result = texelSize * scale;
-    if (align)
-    {
-        result = AlignToTexel(result, texelSize);
-    }
-    return result;
-}
-
-/// <summary>
 /// Checks whether the given UV coordinates are within the normalized [0,1] range.
 /// </summary>
 /// <param name="uv">The UV coordinates to test.</param>
