@@ -244,6 +244,87 @@ namespace Rayforge.RenderGraphExtensions.RenderPasses
         }
     }
 
+    /// <summary>Five-input pass variant.</summary>
+    public class MultiInputPassData5 : MultiInputPassData
+    {
+        private const int k_Capacity = 5;
+        public override int Capacity => k_Capacity;
+
+        private InputTexture m_Input0;
+        private InputTexture m_Input1;
+        private InputTexture m_Input2;
+        private InputTexture m_Input3;
+        private InputTexture m_Input4;
+
+        protected override void SetInput(int index, InputTexture input)
+        {
+            switch (index)
+            {
+                case 0: m_Input0 = input; break;
+                case 1: m_Input1 = input; break;
+                case 2: m_Input2 = input; break;
+                case 3: m_Input3 = input; break;
+                case 4: m_Input4 = input; break;
+                default: throw new IndexOutOfRangeException();
+            }
+        }
+
+        public override InputTexture GetInput(int index)
+        {
+            switch (index)
+            {
+                case 0: return m_Input0;
+                case 1: return m_Input1;
+                case 2: return m_Input2;
+                case 3: return m_Input3;
+                case 4: return m_Input4;
+                default: throw new IndexOutOfRangeException();
+            }
+        }
+    }
+
+    /// <summary>Six-input pass variant.</summary>
+    public class MultiInputPassData6 : MultiInputPassData
+    {
+        private const int k_Capacity = 6;
+        public override int Capacity => k_Capacity;
+
+        private InputTexture m_Input0;
+        private InputTexture m_Input1;
+        private InputTexture m_Input2;
+        private InputTexture m_Input3;
+        private InputTexture m_Input4;
+        private InputTexture m_Input5;
+
+        protected override void SetInput(int index, InputTexture input)
+        {
+            switch (index)
+            {
+                case 0: m_Input0 = input; break;
+                case 1: m_Input1 = input; break;
+                case 2: m_Input2 = input; break;
+                case 3: m_Input3 = input; break;
+                case 4: m_Input4 = input; break;
+                case 5: m_Input5 = input; break;
+                default: throw new IndexOutOfRangeException();
+            }
+        }
+
+        public override InputTexture GetInput(int index)
+        {
+            switch (index)
+            {
+                case 0: return m_Input0;
+                case 1: return m_Input1;
+                case 2: return m_Input2;
+                case 3: return m_Input3;
+                case 4: return m_Input4;
+                case 5: return m_Input5;
+                default: throw new IndexOutOfRangeException();
+            }
+        }
+    }
+
     /// <summary>
     /// Provides helper functions for adding procedural full-screen blit passes
     /// to the RenderGraph API.
