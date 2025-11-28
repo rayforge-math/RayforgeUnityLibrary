@@ -84,7 +84,7 @@ SAMPLER(sampler_TAA_MotionVectorTexture);
 /// </summary>
 /// <param name="historyTexture">The history texture to sample.</param>
 /// <param name="historySampler">Sampler state for the texture.</param>
-/// <param name="uv">UV coordinates in [0,1] space.</param>
+/// <param name="uv">UV coordinates in [0,1].</param>
 /// <returns>The sampled color from the history texture, or zero if UV is invalid.</returns>
 float4 SampleHistory(TEXTURE2D_PARAM(historyTexture, historySampler), float2 uv)
 {
@@ -105,7 +105,7 @@ float4 SampleHistory(TEXTURE2D_PARAM(historyTexture, historySampler), float2 uv)
 /// <returns>The sampled color from the history texture at the reprojected position.</returns>
 float4 SampleHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, float2 motionVector)
 {
-    float2 uv = currentUV - motionVector;
+    float2 uv = currentUV - motionVector - (_TAA_Jitter - _TAA_JitterPrev);
     return SampleHistory(historyTexture, historySampler, uv);
 }
 
@@ -161,9 +161,9 @@ void ComputeMeanAndStdDev9(in float3 neighborhood[9], out float3 mean, out float
 
     float3 var = float3(0, 0, 0);
     [unroll]
-    for (int i = 0; i < 9; ++i)
+    for (int j = 0; j < 9; ++j)
     {
-        float3 d = neighborhood[i] - mean;
+        float3 d = neighborhood[j] - mean;
         var += d * d;
     }
     var /= 9.0;
@@ -364,14 +364,8 @@ struct ReprojectionParams
 /// The UV coordinate of the current pixel in screen space [0..1].
 /// </param>
 /// <param name="motionVector">
-/// Output: The motion vector retrieved from the motion vector buffer,
-/// corrected by subtracting the previous frame's jitter (_TAA_JitterPrev).
-/// This is necessary because:
-/// - Motion vectors are generated using the previous frame's jitter.
-/// - Between frames, the motion vector encodes: old jitter + true motion + new jitter.
-/// - The current frame already has its own jitter applied.
-/// Subtracting the previous jitter ensures the history is reprojected accurately
-/// to the current jittered frame without ghosting or temporal artifacts.
+/// Output: The motion vector retrieved from the motion vector buffer.
+/// Unity motion vectors are based on unjittered projection matrices (as far as I know).
 /// </param>
 /// <param name="history">
 /// Output: The reprojected history color from the previous frame, including
@@ -380,7 +374,6 @@ struct ReprojectionParams
 void SetupMotionVectorPipeline(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, out float2 motionVector, out float4 history)
 {
     motionVector = SAMPLE_TEXTURE2D_X(_TAA_MotionVectorTexture, sampler_TAA_MotionVectorTexture, currentUV).rg;
-    motionVector -= _TAA_JitterPrev;
     history = SampleHistoryMotionVectors(historyTexture, historySampler, currentUV, motionVector);
 }
 
