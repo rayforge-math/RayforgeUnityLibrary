@@ -11,14 +11,37 @@
 // ============================================================================
 
 #if defined(RAYFORGE_PIPELINE_HDRP)
+    
     #define _TAA_MotionVectorTexture        _CameraMotionVectorsTexture
     #define sampler_TAA_MotionVectorTexture sampler_CameraMotionVectorsTexture
+    #define _TAA_Jitter                     _TaaJitter
+    #define _TAA_JitterPrev                 _TaaJitterPrev
+
 #elif defined(RAYFORGE_PIPELINE_URP)
+    
     #define _TAA_MotionVectorTexture        _MotionVectorTexture
     #define sampler_TAA_MotionVectorTexture sampler_MotionVectorTexture
+
+    #if !defined(_TaaJitter)
+        #define _TAA_Jitter                 _TAA_Jitter
+    #else
+        #define _TAA_Jitter                 _TaaJitter
+    #endif
+
+    #if !defined(_TaaJitterPrev)
+        #define _TAA_JitterPrev             _TAA_JitterPrev
+    #else
+        #define _TAA_JitterPrev             _TaaJitterPrev
+    #endif
+
 #else
+
     #define _TAA_MotionVectorTexture        _MotionVectorTexture
     #define sampler_TAA_MotionVectorTexture sampler_MotionVectorTexture
+
+    #define _TAA_Jitter                     float2(0.0, 0.0)
+    #define _TAA_JitterPrev                 float2(0.0, 0.0)
+
 #endif
 
 #define _TAA_DepthTexture               _CameraDepthTexture
@@ -329,21 +352,35 @@ struct ReprojectionParams
 
 /// <summary>
 /// Samples the motion vector at the current UV and fetches the reprojected
-/// history color from the previous frame.
+/// history color from the previous frame, correcting for TAA jitter.
 /// </summary>
-/// <param name="historyTexture">The history color texture from the previous frame.</param>
-/// <param name="historySampler">The sampler used to sample the history texture.</param>
-/// <param name="currentUV">The UV coordinate of the current pixel.</param>
+/// <param name="historyTexture">
+/// The history color texture from the previous frame.
+/// </param>
+/// <param name="historySampler">
+/// The sampler used to sample the history texture.
+/// </param>
+/// <param name="currentUV">
+/// The UV coordinate of the current pixel in screen space [0..1].
+/// </param>
 /// <param name="motionVector">
-/// Output: The motion vector retrieved from the motion vector buffer.
+/// Output: The motion vector retrieved from the motion vector buffer,
+/// corrected by subtracting the previous frame's jitter (_TAA_JitterPrev).
+/// This is necessary because:
+/// - Motion vectors are generated using the previous frame's jitter.
+/// - Between frames, the motion vector encodes: old jitter + true motion + new jitter.
+/// - The current frame already has its own jitter applied.
+/// Subtracting the previous jitter ensures the history is reprojected accurately
+/// to the current jittered frame without ghosting or temporal artifacts.
 /// </param>
 /// <param name="history">
-/// Output: The reprojected history color, including depth stored
-/// in the alpha channel.
+/// Output: The reprojected history color from the previous frame, including
+/// depth information typically stored in the alpha channel.
 /// </param>
 void SetupMotionVectorPipeline(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, out float2 motionVector, out float4 history)
 {
     motionVector = SAMPLE_TEXTURE2D_X(_TAA_MotionVectorTexture, sampler_TAA_MotionVectorTexture, currentUV).rg;
+    motionVector -= _TAA_JitterPrev;
     history = SampleHistoryMotionVectors(historyTexture, historySampler, currentUV, motionVector);
 }
 

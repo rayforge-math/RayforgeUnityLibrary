@@ -1,5 +1,5 @@
 {
-  "name": "CustomUnityLibrary.Core.Runtime",
+  "name": "RayforgeUnityLibrary.Core.Runtime",
   "references": [
     "Unity.RenderPipelines.Core.Runtime"
   ],
