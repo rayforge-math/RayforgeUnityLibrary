@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 // ============================================================================
 // CustomUnityLibrary - Temporal Reprojection Shader Include
@@ -11,14 +11,37 @@
 // ============================================================================
 
 #if defined(RAYFORGE_PIPELINE_HDRP)
+    
     #define _TAA_MotionVectorTexture        _CameraMotionVectorsTexture
     #define sampler_TAA_MotionVectorTexture sampler_CameraMotionVectorsTexture
+    #define _TAA_Jitter                     _TaaJitter
+    #define _TAA_JitterPrev                 _TaaJitterPrev
+
 #elif defined(RAYFORGE_PIPELINE_URP)
+    
     #define _TAA_MotionVectorTexture        _MotionVectorTexture
     #define sampler_TAA_MotionVectorTexture sampler_MotionVectorTexture
+
+    #if !defined(_TaaJitter)
+        #define _TAA_Jitter                 _TAA_Jitter
+    #else
+        #define _TAA_Jitter                 _TaaJitter
+    #endif
+
+    #if !defined(_TaaJitterPrev)
+        #define _TAA_JitterPrev             _TAA_JitterPrev
+    #else
+        #define _TAA_JitterPrev             _TaaJitterPrev
+    #endif
+
 #else
+
     #define _TAA_MotionVectorTexture        _MotionVectorTexture
     #define sampler_TAA_MotionVectorTexture sampler_MotionVectorTexture
+
+    #define _TAA_Jitter                     float2(0.0, 0.0)
+    #define _TAA_JitterPrev                 float2(0.0, 0.0)
+
 #endif
 
 #define _TAA_DepthTexture               _CameraDepthTexture
@@ -110,7 +133,7 @@ float4 SampleHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), fl
 }
 
 /// <summary>
-/// Computes the per-channel mean and standard deviation from a 3×3 neighborhood
+/// Computes the per-channel mean and standard deviation from a 3ï¿½3 neighborhood
 /// of history samples.  
 ///  
 /// This statistical analysis is used for advanced temporal anti-aliasing
@@ -118,7 +141,7 @@ float4 SampleHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), fl
 /// outlier history values that may cause ghosting.
 /// </summary>
 /// <param name="neighborhood">
-/// A fixed array of 9 float3 color samples representing the 3×3 neighborhood
+/// A fixed array of 9 float3 color samples representing the 3ï¿½3 neighborhood
 /// around the reprojected history pixel.
 /// </param>
 /// <param name="mean">
@@ -149,7 +172,7 @@ void ComputeMeanAndStdDev9(in float3 neighborhood[9], out float3 mean, out float
 
 /// <summary>
 /// Performs variance-based clip-box clamping on the history color using the mean and
-/// standard deviation of a 3×3 neighborhood from the *current frame*.
+/// standard deviation of a 3ï¿½3 neighborhood from the *current frame*.
 /// This constrains the history color to a statistically plausible range,
 /// reducing flicker and preventing extreme outliers before temporal accumulation.
 /// </summary>
@@ -157,12 +180,12 @@ void ComputeMeanAndStdDev9(in float3 neighborhood[9], out float3 mean, out float
 /// The input color from the history buffer.
 /// </param>
 /// <param name="currentNeighborhood">
-/// A fixed array of 9 float3 samples representing the local 3×3 neighborhood
+/// A fixed array of 9 float3 samples representing the local 3ï¿½3 neighborhood
 /// around the current pixel from the current frame.
 /// </param>
 /// <param name="scale">
 /// Controls the width of the variance clip box.  
-/// Typical values: 1.0–3.0  
+/// Typical values: 1.0ï¿½3.0  
 /// Lower = more aggressive clamping (less ghosting, more flicker)  
 /// Higher = looser clamping (smoother, more risk of ghosting).
 /// </param>
@@ -181,7 +204,7 @@ float3 VarianceClamp(float3 historyColor, float3 currentNeighborhood[9], float s
 }
 
 /// <summary>
-/// Performs luma-oriented clip-box clamping on the history color using the 3×3 neighborhood 
+/// Performs luma-oriented clip-box clamping on the history color using the 3ï¿½3 neighborhood 
 /// from the current frame. The clip box is aligned along the principal luma direction.
 ///
 /// This is roughly the approach Unreal Engine uses for temporal AA:
@@ -191,12 +214,12 @@ float3 VarianceClamp(float3 historyColor, float3 currentNeighborhood[9], float s
 /// The input color of the history.
 /// </param>
 /// <param name="currentNeighborhood">
-/// A fixed array of 9 float3 samples representing the local 3×3 neighborhood
+/// A fixed array of 9 float3 samples representing the local 3ï¿½3 neighborhood
 /// around the current pixel from the current frame.
 /// </param>
 /// <param name="clipBoxScale">
 /// Controls the width of the clip box.
-/// Typical values: 1.0–3.0
+/// Typical values: 1.0ï¿½3.0
 /// Lower = more aggressive clamping (less ghosting, more flicker)
 /// Higher = smoother but more ghosting risk.
 /// </param>
@@ -234,7 +257,7 @@ float3 ClipBoxClamp(float3 historyColor, float3 currentNeighborhood[9], float cl
 }
 
 /// <summary>
-/// Clamps the current frame color to the min/max range defined by a 3×3 neighborhood
+/// Clamps the current frame color to the min/max range defined by a 3ï¿½3 neighborhood
 /// of the *current frame*.  
 /// This prevents extreme differences before temporal accumulation.
 /// </summary>
@@ -242,7 +265,7 @@ float3 ClipBoxClamp(float3 historyColor, float3 currentNeighborhood[9], float cl
 /// The input color of the history.
 /// </param>
 /// <param name="currentNeighborhood">
-/// The 3×3 local neighborhood of the current pixel taken from the current frame.
+/// The 3ï¿½3 local neighborhood of the current pixel taken from the current frame.
 /// </param>
 /// <returns>
 /// The current color clamped to the min/max bounding box of the local neighborhood.
@@ -309,7 +332,7 @@ float3 Blend(float3 current, float3 previous, float historyWeight)
 
 /// <summary>
 /// Parameter block controlling temporal reprojection behavior, including 
-/// depth rejection, motion-vector–based disocclusion, history weighting,
+/// depth rejection, motion-vectorï¿½based disocclusion, history weighting,
 /// and optional neighborhood-based color clamping.
 /// </summary>
 /// <remarks>
@@ -329,21 +352,35 @@ struct ReprojectionParams
 
 /// <summary>
 /// Samples the motion vector at the current UV and fetches the reprojected
-/// history color from the previous frame.
+/// history color from the previous frame, correcting for TAA jitter.
 /// </summary>
-/// <param name="historyTexture">The history color texture from the previous frame.</param>
-/// <param name="historySampler">The sampler used to sample the history texture.</param>
-/// <param name="currentUV">The UV coordinate of the current pixel.</param>
+/// <param name="historyTexture">
+/// The history color texture from the previous frame.
+/// </param>
+/// <param name="historySampler">
+/// The sampler used to sample the history texture.
+/// </param>
+/// <param name="currentUV">
+/// The UV coordinate of the current pixel in screen space [0..1].
+/// </param>
 /// <param name="motionVector">
-/// Output: The motion vector retrieved from the motion vector buffer.
+/// Output: The motion vector retrieved from the motion vector buffer,
+/// corrected by subtracting the previous frame's jitter (_TAA_JitterPrev).
+/// This is necessary because:
+/// - Motion vectors are generated using the previous frame's jitter.
+/// - Between frames, the motion vector encodes: old jitter + true motion + new jitter.
+/// - The current frame already has its own jitter applied.
+/// Subtracting the previous jitter ensures the history is reprojected accurately
+/// to the current jittered frame without ghosting or temporal artifacts.
 /// </param>
 /// <param name="history">
-/// Output: The reprojected history color, including depth stored
-/// in the alpha channel.
+/// Output: The reprojected history color from the previous frame, including
+/// depth information typically stored in the alpha channel.
 /// </param>
 void SetupMotionVectorPipeline(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, out float2 motionVector, out float4 history)
 {
     motionVector = SAMPLE_TEXTURE2D_X(_TAA_MotionVectorTexture, sampler_TAA_MotionVectorTexture, currentUV).rg;
+    motionVector -= _TAA_JitterPrev;
     history = SampleHistoryMotionVectors(historyTexture, historySampler, currentUV, motionVector);
 }
 
@@ -415,7 +452,7 @@ bool HasMotion(float2 motionVector)
 
 /// <summary>
 /// Samples the TAA depth texture at the given UV coordinates and converts it
-/// to linear 0–1 depth using the global z-buffer parameters.
+/// to linear 0ï¿½1 depth using the global z-buffer parameters.
 /// </summary>
 /// <param name="uv">UV coordinates to sample at.</param>
 /// <returns>Linear depth in the range [0,1].</returns>
@@ -560,7 +597,7 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
 /// <summary>
 /// Reprojects and blends the history color using motion vectors, with optional
 /// depth rejection, velocity disocclusion, and neighborhood-based color clamping.
-/// This variant requires a full 3×3 neighborhood of current-frame colors.
+/// This variant requires a full 3ï¿½3 neighborhood of current-frame colors.
 /// </summary>
 /// <param name="historyTexture">
 /// The history color texture from the previous frame.
@@ -572,7 +609,7 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
 /// The UV coordinate of the current pixel.
 /// </param>
 /// <param name="currentNeighborhood">
-/// A 3×3 neighborhood of current-frame colors, indexed row-major.
+/// A 3ï¿½3 neighborhood of current-frame colors, indexed row-major.
 /// Element [4] must contain the current pixel's color.
 /// </param>
 /// <param name="params">
@@ -663,7 +700,7 @@ float4 BlendHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), flo
 
 /// <summary>
 /// Reprojects history using world-space reconstruction and applies optional
-/// color-clamping using a 3×3 neighborhood from the current frame.
+/// color-clamping using a 3ï¿½3 neighborhood from the current frame.
 /// 
 /// This variant is similar to the motion-vector version of history blending,
 /// but uses world-space reprojection instead of stored motion vectors,
@@ -682,7 +719,7 @@ float4 BlendHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), flo
 /// UV coordinate of the current pixel in normalized screen space [0..1].
 /// </param>
 /// <param name="currentNeighborhood">
-/// A 3×3 array of current-frame color samples centered at the current pixel.
+/// A 3ï¿½3 array of current-frame color samples centered at the current pixel.
 /// Used for statistical color clamping (mean, variance, clip box, etc.).
 /// </param>
 /// <param name="params">
