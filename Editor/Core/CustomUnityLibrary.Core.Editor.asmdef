@@ -1,7 +1,7 @@
 {
-  "name": "RayforgeUnityLibrary.Core.Editor",
+  "name": "CustomUnityLibrary.Core.Editor",
   "references": [
-    "RayforgeUnityLibrary.Core.Runtime",
+    "CustomUnityLibrary.Core.Runtime",
     "Unity.RenderPipelines.Core.Editor",
     "Unity.RenderPipelines.Core.Runtime"
   ],
