@@ -13,7 +13,7 @@ namespace Rayforge.Utility.Threading
         /// <typeparam name="T">A struct implementing <see cref="IJob"/>.</typeparam>
         /// <param name="job">The job to schedule.</param>
         /// <returns>The <see cref="JobHandle"/> representing the scheduled job.</returns>
-        public static JobHandle Run<T>(T job) 
+        public static JobHandle Schedule<T>(T job) 
             where T : struct, IJob
             => job.Schedule();
 
@@ -25,7 +25,7 @@ namespace Rayforge.Utility.Threading
         /// <param name="length">The number of iterations the job should run.</param>
         /// <param name="batchSize">How many iterations should be processed per job batch. Default is 32.</param>
         /// <returns>The <see cref="JobHandle"/> representing the scheduled job.</returns>
-        public static JobHandle RunParallelFor<T>(T job, int length, int batchSize = 32) 
+        public static JobHandle ScheduleParallelFor<T>(T job, int length, int batchSize = 32) 
             where T : struct, IJobParallelFor
             => job.Schedule(length, batchSize);
 

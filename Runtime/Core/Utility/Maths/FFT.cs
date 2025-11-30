@@ -1,8 +1,14 @@
 ﻿using Rayforge.ManagedResources.NativeMemory;
+using Rayforge.Utility.Threading;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UIElements;
 using static Unity.Mathematics.math;
 
@@ -244,5 +250,118 @@ namespace Rayforge.Utility.Maths.FFT
         }
 
         #endregion // --- HLSL-Compatible FFT Normalize ---
+    }
+
+    /// <summary>
+    /// Dispatcher for scheduling and completing 1D FFT and IFFT jobs.
+    /// </summary>
+    public static class FFTJobDispatcher
+    {
+        /// <summary>
+        /// Schedules a 1D FFT or IFFT job on the given samples.
+        /// </summary>
+        /// <param name="samples">The complex samples to transform.</param>
+        /// <param name="inverse">Whether to perform an inverse FFT.</param>
+        /// <param name="normalize">Whether to normalize the result.</param>
+        /// <returns>A JobHandle representing the scheduled job.</returns>
+        private static JobHandle ScheduleFFT(NativeArray<Complex> samples, bool inverse, bool normalize)
+        {
+            FFTJob job = new FFTJob
+            {
+                _Samples = samples,
+                _Inverse = inverse,
+                _Normalize = normalize
+            };
+            return UnityJobDispatcher.Schedule(job);
+        }
+
+        /// <summary>
+        /// Schedules and immediately completes a 1D FFT or IFFT on the given samples.
+        /// </summary>
+        /// <param name="samples">The complex samples to transform.</param>
+        /// <param name="inverse">Whether to perform an inverse FFT.</param>
+        /// <param name="normalize">Whether to normalize the result.</param>
+        private static void CompleteFFT(NativeArray<Complex> samples, bool inverse, bool normalize)
+            => ScheduleFFT(samples, inverse, normalize).Complete();
+
+        /// <summary>
+        /// Allocates a ManagedSystemBuffer of Complex numbers with size rounded up to the next power of two.
+        /// </summary>
+        /// <param name="size">Requested number of elements.</param>
+        /// <returns>A persistent ManagedSystemBuffer of Complex numbers.</returns>
+        private static ManagedSystemBuffer<Complex> AllocateFFTBuffer(int size)
+        {
+            SystemBufferDescriptor desc = new SystemBufferDescriptor
+            {
+                count = Mathf.NextPowerOfTwo(size),
+                allocator = Allocator.Persistent
+            };
+            return new ManagedSystemBuffer<Complex>(desc);
+        }
+
+        /// <summary>
+        /// Allocates a ManagedSystemBuffer and initializes it with real samples, setting the imaginary parts to zero.
+        /// </summary>
+        /// <param name="collection">Collection of float samples.</param>
+        /// <returns>ManagedSystemBuffer of Complex numbers with imaginary parts set to zero.</returns>
+        private static ManagedSystemBuffer<Complex> AllocateAndInitializeFFTBuffer(IEnumerable<float> collection)
+        {
+            var buffer = AllocateFFTBuffer(collection.Count());
+
+            int i = 0;
+            var internalBuffer = buffer.Buffer;
+
+            foreach (var item in collection)
+            {
+                internalBuffer[i] = new Complex(item, 0);
+                i++; // increment index
+            }
+
+            return buffer;
+        }
+
+        /// <summary>
+        /// Schedules a forward 1D FFT job.
+        /// </summary>
+        /// <param name="samples">The complex samples to transform.</param>
+        /// <returns>A JobHandle representing the scheduled job.</returns>
+        public static JobHandle ScheduleFFT1D(NativeArray<Complex> samples)
+            => ScheduleFFT(samples, false, false);
+
+        /// <summary>
+        /// Schedules an inverse 1D FFT job.
+        /// </summary>
+        /// <param name="samples">The complex samples to transform.</param>
+        /// <param name="normalize">Whether to normalize the result.</param>
+        /// <returns>A JobHandle representing the scheduled job.</returns>
+        public static JobHandle ScheduleIFFT1D(NativeArray<Complex> samples, bool normalize = false)
+            => ScheduleFFT(samples, true, normalize);
+
+        /// <summary>
+        /// Completes a forward 1D FFT immediately.
+        /// </summary>
+        /// <param name="samples">The complex samples to transform.</param>
+        public static void CompleteFFT1D(NativeArray<Complex> samples)
+            => CompleteFFT(samples, false, false);
+
+        /// <summary>
+        /// Completes an inverse 1D FFT immediately.
+        /// </summary>
+        /// <param name="samples">The complex samples to transform.</param>
+        /// <param name="normalize">Whether to normalize the result.</param>
+        public static void CompleteIFFT1D(NativeArray<Complex> samples, bool normalize = false)
+            => CompleteFFT(samples, true, normalize);
+
+        /// <summary>
+        /// Allocates a buffer from float samples, performs a forward 1D FFT, and returns the buffer.
+        /// </summary>
+        /// <param name="samples">Collection of float samples to transform.</param>
+        /// <returns>ManagedSystemBuffer containing the complex FFT result.</returns>
+        public static ManagedSystemBuffer<Complex> CompleteFFT1D(IEnumerable<float> samples)
+        {
+            var buffer = AllocateAndInitializeFFTBuffer(samples);
+            CompleteFFT1D(buffer.Buffer);
+            return buffer;
+        }
     }
 }
