@@ -255,6 +255,21 @@ namespace Rayforge.Utility.Maths.FFT
     /// <summary>
     /// Dispatcher for scheduling and completing 1D FFT and IFFT jobs.
     /// </summary>
+    /// <remarks>
+    /// The provided wrapper methods are convenience helpers designed to simplify
+    /// common FFT workflows and to serve as reference examples for how to use the
+    /// underlying FFT job system.  
+    /// <para>
+    /// While these wrappers are suitable for general use, they may not always be
+    /// the most optimal choice for performance–critical scenarios, such as large 2D
+    /// transforms, where custom memory management, buffer reuse, or batched job
+    /// scheduling may yield better performance.
+    /// </para>
+    /// <para>
+    /// Nonetheless, the wrappers demonstrate correct usage patterns and can be
+    /// safely used as a baseline or starting point for more specialized FFT pipelines.
+    /// </para>
+    /// </remarks>
     public static class FFTJobDispatcher
     {
         /// <summary>
@@ -264,8 +279,12 @@ namespace Rayforge.Utility.Maths.FFT
         /// <param name="inverse">Whether to perform an inverse FFT.</param>
         /// <param name="normalize">Whether to normalize the result.</param>
         /// <returns>A JobHandle representing the scheduled job.</returns>
+        /// <exception cref="ArgumentException">Thrown if the length of samples is not a power of two.</exception>
         private static JobHandle ScheduleFFT(NativeArray<Complex> samples, bool inverse, bool normalize)
         {
+            if (!Mathf.IsPowerOfTwo(samples.Length))
+                throw new ArgumentException($"Length of samples ({samples.Length}) must be a power of two for Radix-2 FFT.");
+
             FFTJob job = new FFTJob
             {
                 _Samples = samples,
@@ -314,7 +333,7 @@ namespace Rayforge.Utility.Maths.FFT
             foreach (var item in collection)
             {
                 internalBuffer[i] = new Complex(item, 0);
-                i++; // increment index
+                i++;
             }
 
             return buffer;
@@ -363,5 +382,90 @@ namespace Rayforge.Utility.Maths.FFT
             CompleteFFT1D(buffer.Buffer);
             return buffer;
         }
+
+        /// <summary>
+        /// Performs a full 2D FFT (or IFFT) on a 1D NativeArray representing
+        /// a 2D grid stored in row-major order.
+        /// Processing is done column-by-column first, then row-by-row.
+        /// </summary>
+        /// <param name="samples">1D array containing Complex samples in row-major layout.</param>
+        /// <param name="width">Width of the 2D data.</param>
+        /// <param name="height">Height of the 2D data.</param>
+        /// <param name="fftFunc">Delegate to execute a 1D FFT/IFFT.</param>
+        private static void CompleteFFT2D_internal(NativeArray<Complex> samples, int width, int height, Action<NativeArray<Complex>> fftFunc)
+        {
+            if (!samples.IsCreated || samples.Length == 0)
+                throw new ArgumentException(nameof(samples));
+
+            if (width * height != samples.Length)
+                throw new ArgumentException("width * height must match the length of the samples array.");
+
+
+            using (var buffer = AllocateFFTBuffer(height))
+            {
+                for (int x = 0; x < width; ++x)
+                {
+                    var internalBuffer = buffer.Buffer;
+
+                    for (int y = 0; y < height; ++y)
+                    {
+                        internalBuffer[y] = samples[y * width + x];
+                    }
+                    fftFunc.Invoke(internalBuffer);
+                    for (int y = 0; y < height; ++y)
+                    {
+                        samples[y * width + x] = internalBuffer[y];
+                    }
+                }
+            }
+
+            using (var buffer = AllocateFFTBuffer(width))
+            {
+                for (int y = 0; y < height; ++y)
+                {
+                    var internalBuffer = buffer.Buffer;
+
+                    for (int x = 0; x < width; ++x)
+                    {
+                        internalBuffer[x] = samples[y * width + x];
+                    }
+                    fftFunc.Invoke(internalBuffer);
+                    for (int x = 0; x < width; ++x)
+                    {
+                        samples[y * width + x] = internalBuffer[x];
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Performs an in-place 2D forward FFT on a 1D NativeArray representing
+        /// a 2D grid in row-major layout.
+        /// </summary>
+        /// <param name="samples">
+        /// Complex sample grid stored as a 1D array in row-major order.
+        /// The result overwrites the input.
+        /// </param>
+        /// <param name="width">Width of the 2D sample grid.</param>
+        /// <param name="height">Height of the 2D sample grid.</param>
+        public static void CompleteFFT2D(NativeArray<Complex> samples, int width, int height)
+            => CompleteFFT2D_internal(samples, width, height, (_) => { CompleteFFT1D(_); });
+
+        /// <summary>
+        /// Performs an in-place 2D inverse FFT on a 1D NativeArray representing
+        /// a 2D grid in row-major layout.
+        /// </summary>
+        /// <param name="samples">
+        /// Complex frequency-domain samples stored as a 1D array in row-major order.
+        /// The result overwrites the input.
+        /// </param>
+        /// <param name="width">Width of the 2D sample grid.</param>
+        /// <param name="height">Height of the 2D sample grid.</param>
+        /// <param name="normalize">
+        /// If true, divides the result by (width * height), producing a normalized IFFT.
+        /// Defaults to false.
+        /// </param>
+        public static void CompleteIFFT2D(NativeArray<Complex> samples, int width, int height, bool normalize = false)
+            => CompleteFFT2D_internal(samples, width, height, (_) => { CompleteIFFT1D(_, normalize); });
     }
 }
