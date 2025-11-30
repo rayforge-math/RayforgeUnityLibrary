@@ -253,6 +253,92 @@ namespace Rayforge.Utility.Maths.FFT
     }
 
     /// <summary>
+    /// Job that performs element-wise complex multiplication between two
+    /// frequency-domain signals (i.e., frequency-domain convolution).
+    /// </summary>
+    /// <remarks>
+    /// This job assumes that both <see cref="_Samples"/> and <see cref="_Filter"/>:
+    /// <list type="bullet">
+    /// <item><description>are the same length</description></item>
+    /// <item><description>represent forward FFT output</description></item>
+    /// <item><description>are already aligned for convolution (e.g., zero-padded to avoid circular convolution artifacts)</description></item>
+    /// </list>
+    /// <para>
+    /// The job performs pointwise multiplication:
+    /// <c>H[k] = X[k] * W[k]</c>,
+    /// which corresponds to convolution in the time domain.
+    /// </para>
+    /// </remarks>
+    [BurstCompile]
+    public struct FrequencyConvolutionJob : IJob
+    {
+        /// <summary>
+        /// The target frequency-domain samples to be modified in place.
+        /// This buffer will hold the convolution result.
+        /// </summary>
+        [NativeDisableContainerSafetyRestriction]
+        public NativeArray<Complex> _Samples;
+
+        /// <summary>
+        /// The frequency-domain filter kernel.
+        /// Must have the same length as <see cref="_Samples"/>.
+        /// </summary>
+        [ReadOnly]
+        public NativeArray<Complex> _Filter;
+
+        /// <summary>
+        /// Total number of frequency bins (length of both arrays).
+        /// </summary>
+        private int _Length;
+
+        /// <summary>
+        /// Executes the frequency-domain convolution job.
+        /// Performs element-wise complex multiplication and optional normalization.
+        /// </summary>
+        public void Execute()
+        {
+            _Length = _Samples.Length;
+
+            Convolute();
+        }
+
+        // --- HLSL-Bridge ---
+        // (Functions in this region make hlsl-style code compatible with C# functionality)
+        #region HLSL-Bridge
+
+        /// <summary>
+        /// Complex multiplication (matches HLSL implementation).
+        /// </summary>
+        /// <param name="lhs">Left operand.</param>
+        /// <param name="rhs">Right operand.</param>
+        /// <returns>Complex product.</returns>
+        private static Complex ComplexMul(Complex lhs, Complex rhs)
+            => lhs * rhs;
+
+        #endregion
+
+        // --- HLSL-Compatible Frequency Domain Convolution ---
+        // (Functions in this region mirror their HLSL equivalents)
+        #region HLSL-Compatible
+
+        /// <summary>
+        /// Performs pointwise complex multiplication:
+        /// S[k] = S[k] * F[k]
+        /// </summary>
+        [BurstCompile]
+        private void Convolute()
+        {
+            for (int i = 0; i < _Length; ++i)
+            {
+                _Samples[i] = ComplexMul(_Samples[i], _Filter[i]);
+            }
+        }
+
+        #endregion // --- HLSL-Compatible Frequency Domain Convolution ---
+    }
+
+
+    /// <summary>
     /// Dispatcher for scheduling and completing 1D FFT and IFFT jobs.
     /// </summary>
     /// <remarks>
@@ -280,8 +366,11 @@ namespace Rayforge.Utility.Maths.FFT
         /// <param name="normalize">Whether to normalize the result.</param>
         /// <returns>A JobHandle representing the scheduled job.</returns>
         /// <exception cref="ArgumentException">Thrown if the length of samples is not a power of two.</exception>
-        private static JobHandle ScheduleFFT(NativeArray<Complex> samples, bool inverse, bool normalize)
+        private static JobHandle ScheduleFFT_internal(NativeArray<Complex> samples, bool inverse, bool normalize)
         {
+            if (!samples.IsCreated || samples.Length == 0)
+                throw new ArgumentException("Samples array is not created or has length 0.");
+
             if (!Mathf.IsPowerOfTwo(samples.Length))
                 throw new ArgumentException($"Length of samples ({samples.Length}) must be a power of two for Radix-2 FFT.");
 
@@ -300,8 +389,8 @@ namespace Rayforge.Utility.Maths.FFT
         /// <param name="samples">The complex samples to transform.</param>
         /// <param name="inverse">Whether to perform an inverse FFT.</param>
         /// <param name="normalize">Whether to normalize the result.</param>
-        private static void CompleteFFT(NativeArray<Complex> samples, bool inverse, bool normalize)
-            => ScheduleFFT(samples, inverse, normalize).Complete();
+        private static void CompleteFFT_internal(NativeArray<Complex> samples, bool inverse, bool normalize)
+            => ScheduleFFT_internal(samples, inverse, normalize).Complete();
 
         /// <summary>
         /// Allocates a ManagedSystemBuffer of Complex numbers with size rounded up to the next power of two.
@@ -345,7 +434,7 @@ namespace Rayforge.Utility.Maths.FFT
         /// <param name="samples">The complex samples to transform.</param>
         /// <returns>A JobHandle representing the scheduled job.</returns>
         public static JobHandle ScheduleFFT1D(NativeArray<Complex> samples)
-            => ScheduleFFT(samples, false, false);
+            => ScheduleFFT_internal(samples, false, false);
 
         /// <summary>
         /// Schedules an inverse 1D FFT job.
@@ -354,14 +443,14 @@ namespace Rayforge.Utility.Maths.FFT
         /// <param name="normalize">Whether to normalize the result.</param>
         /// <returns>A JobHandle representing the scheduled job.</returns>
         public static JobHandle ScheduleIFFT1D(NativeArray<Complex> samples, bool normalize = false)
-            => ScheduleFFT(samples, true, normalize);
+            => ScheduleFFT_internal(samples, true, normalize);
 
         /// <summary>
         /// Completes a forward 1D FFT immediately.
         /// </summary>
         /// <param name="samples">The complex samples to transform.</param>
         public static void CompleteFFT1D(NativeArray<Complex> samples)
-            => CompleteFFT(samples, false, false);
+            => CompleteFFT_internal(samples, false, false);
 
         /// <summary>
         /// Completes an inverse 1D FFT immediately.
@@ -369,7 +458,7 @@ namespace Rayforge.Utility.Maths.FFT
         /// <param name="samples">The complex samples to transform.</param>
         /// <param name="normalize">Whether to normalize the result.</param>
         public static void CompleteIFFT1D(NativeArray<Complex> samples, bool normalize = false)
-            => CompleteFFT(samples, true, normalize);
+            => CompleteFFT_internal(samples, true, normalize);
 
         /// <summary>
         /// Allocates a buffer from float samples, performs a forward 1D FFT, and returns the buffer.
@@ -467,5 +556,76 @@ namespace Rayforge.Utility.Maths.FFT
         /// </param>
         public static void CompleteIFFT2D(NativeArray<Complex> samples, int width, int height, bool normalize = false)
             => CompleteFFT2D_internal(samples, width, height, (_) => { CompleteIFFT1D(_, normalize); });
+
+        /// <summary>
+        /// Schedules a frequency-domain convolution job between two equal-length complex arrays.
+        /// </summary>
+        /// <param name="samples">The target complex samples in frequency domain, which will be modified in place.</param>
+        /// <param name="filter">The complex frequency-domain filter to multiply with.</param>
+        /// <returns>A <see cref="JobHandle"/> representing the scheduled convolution job.</returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown if:
+        /// <list type="bullet">
+        /// <item><description>Either <paramref name="samples"/> or <paramref name="filter"/> is not created.</description></item>
+        /// <item><description>Either array has zero length.</description></item>
+        /// <item><description>Arrays are not of equal length.</description></item>
+        /// </list>
+        /// </exception>
+        /// <remarks>
+        /// This method schedules a pointwise complex multiplication:
+        /// <c>samples[k] = samples[k] * filter[k]</c>,
+        /// which corresponds to convolution in the time domain.  
+        /// This is a convenience wrapper around <see cref="FrequencyConvolutionJob"/>.
+        /// </remarks>
+        private static JobHandle ScheduleConvolution_internal(NativeArray<Complex> samples, NativeArray<Complex> filter)
+        {
+            if (!samples.IsCreated || !filter.IsCreated)
+                throw new ArgumentException("Samples and filter arrays must be created before convolution.");
+
+            if (samples.Length == 0 || filter.Length == 0)
+                throw new ArgumentException("Samples and filter arrays must not have zero length.");
+
+            if (samples.Length != filter.Length)
+                throw new ArgumentException(
+                    $"Samples and filter must have the same length for frequency-domain convolution. " +
+                    $"(samples={samples.Length}, filter={filter.Length})");
+
+            FrequencyConvolutionJob job = new FrequencyConvolutionJob
+            {
+                _Samples = samples,
+                _Filter = filter
+            };
+            return UnityJobDispatcher.Schedule(job);
+        }
+
+        /// <summary>
+        /// Schedules and immediately completes a frequency-domain convolution job between two equal-length complex arrays.
+        /// </summary>
+        /// <param name="samples">The target complex samples in frequency domain, modified in place.</param>
+        /// <param name="filter">The complex frequency-domain filter to multiply with.</param>
+        /// <remarks>
+        /// This is a convenience wrapper for quickly performing a convolution
+        /// without manually handling the job scheduling.  
+        /// It internally calls <see cref="ScheduleConvolution_internal"/> and completes the job immediately.
+        /// </remarks>
+        private static void CompleteConvolution_internal(NativeArray<Complex> samples, NativeArray<Complex> filter)
+            => ScheduleConvolution_internal(samples, filter).Complete();
+
+        /// <summary>
+        /// Public wrapper for scheduling a frequency-domain convolution job.
+        /// </summary>
+        /// <param name="samples">The target complex samples in frequency domain.</param>
+        /// <param name="filter">The complex frequency-domain filter.</param>
+        /// <returns>A <see cref="JobHandle"/> for the scheduled convolution job.</returns>
+        public static JobHandle ScheduleConvolution(NativeArray<Complex> samples, NativeArray<Complex> filter)
+            => ScheduleConvolution_internal(samples, filter);
+
+        /// <summary>
+        /// Public wrapper for completing a frequency-domain convolution job immediately.
+        /// </summary>
+        /// <param name="samples">The target complex samples in frequency domain, modified in place.</param>
+        /// <param name="filter">The complex frequency-domain filter.</param>
+        public static void CompleteConvolution(NativeArray<Complex> samples, NativeArray<Complex> filter)
+            => CompleteConvolution_internal(samples, filter);
     }
 }
