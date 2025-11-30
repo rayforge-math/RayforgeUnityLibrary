@@ -1,5 +1,6 @@
 ﻿using Unity.Mathematics;
 using Unity.Burst;
+using System.Runtime.CompilerServices;
 
 using static Unity.Mathematics.math;
 
@@ -96,32 +97,24 @@ namespace Rayforge.Utility.Maths
              => new Polar(Magnitude(), Phase());
 
         /// <summary>Adds two complex numbers.</summary>
-        /// <param name="lhs">Left-hand side.</param>
-        /// <param name="rhs">Right-hand side.</param>
-        /// <returns>Sum of lhs and rhs.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Complex operator +(Complex lhs, Complex rhs)
             => new Complex(lhs.real + rhs.real, lhs.imaginary + rhs.imaginary);
 
         /// <summary>Subtracts two complex numbers.</summary>
-        /// <param name="lhs">Left-hand side.</param>
-        /// <param name="rhs">Right-hand side.</param>
-        /// <returns>Difference of lhs and rhs.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Complex operator -(Complex lhs, Complex rhs)
             => new Complex(lhs.real - rhs.real, lhs.imaginary - rhs.imaginary);
 
         /// <summary>Multiplies two complex numbers.</summary>
-        /// <param name="lhs">Left-hand side.</param>
-        /// <param name="rhs">Right-hand side.</param>
-        /// <returns>Product of lhs and rhs.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Complex operator *(Complex lhs, Complex rhs)
             => new Complex(
                 lhs.real * rhs.real - lhs.imaginary * rhs.imaginary,
                 lhs.real * rhs.imaginary + lhs.imaginary * rhs.real);
 
         /// <summary>Divides two complex numbers.</summary>
-        /// <param name="lhs">Dividend.</param>
-        /// <param name="rhs">Divisor.</param>
-        /// <returns>Quotient lhs / rhs.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Complex operator /(Complex lhs, Complex rhs)
         {
             float denom = rhs.real * rhs.real + rhs.imaginary * rhs.imaginary;
@@ -129,6 +122,27 @@ namespace Rayforge.Utility.Maths
                 (lhs.real * rhs.real + lhs.imaginary * rhs.imaginary) / denom,
                 (lhs.imaginary * rhs.real - lhs.real * rhs.imaginary) / denom);
         }
+
+        /// <summary>Scales a complex number by a scalar (Complex * float).</summary>
+        /// <param name="lhs">Complex number to scale.</param>
+        /// <param name="rhs">Scalar multiplier.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex operator *(Complex lhs, float rhs)
+            => lhs * new Complex(rhs, 0);
+
+        /// <summary>Scales a complex number by a scalar (float * Complex).</summary>
+        /// <param name="lhs">Scalar multiplier.</param>
+        /// <param name="rhs">Complex number to scale.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex operator *(float lhs, Complex rhs)
+            => rhs * lhs;
+
+        /// <summary>Divides a complex number by a scalar.</summary>
+        /// <param name="lhs">Complex number to scale.</param>
+        /// <param name="rhs">Scalar divisor.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex operator /(Complex lhs, float rhs)
+            => lhs / new Complex(rhs, 0);
     }
 
     [BurstCompile]
@@ -179,42 +193,43 @@ namespace Rayforge.Utility.Maths
             => new Complex(radius * cos(phase), radius * sin(phase));
 
         /// <summary>Multiplication of two polar numbers (multiply radii, add angles).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Polar operator *(Polar lhs, Polar rhs)
             => new Polar(lhs.radius * rhs.radius, lhs.phase + rhs.phase);
 
         /// <summary>Division of two polar numbers (divide radii, subtract angles).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Polar operator /(Polar lhs, Polar rhs)
             => new Polar(lhs.radius / rhs.radius, lhs.phase - rhs.phase);
 
         /// <summary>Addition via conversion to complex numbers.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Polar operator +(Polar lhs, Polar rhs)
             => (lhs.ToComplex() + rhs.ToComplex()).ToPolar();
 
         /// <summary>Subtraction via conversion to complex numbers.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Polar operator -(Polar lhs, Polar rhs)
             => (lhs.ToComplex() - rhs.ToComplex()).ToPolar();
 
         /// <summary>Complex conjugate in polar form (invert phase).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Polar Conjugate()
             => new Polar(radius, -phase);
 
-        /// <summary>Multiplication with a scalar (scales radius).</summary>
-        public static Polar operator *(Polar p, float s)
-        {
-            p.Scale(s);
-            return p;
-        }
+        /// <summary>Scales a polar number by a scalar (Polar * float).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Polar operator *(Polar lhs, float rhs)
+            => lhs * new Polar(rhs, 0);
 
-        /// <summary>Division by a scalar (scales radius).</summary>
-        public static Polar operator /(Polar p, float s)
-        {
-            p.Scale(1.0f / s);
-            return p;
-        }
+        /// <summary>Scales a polar number by a scalar (float * Polar).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Polar operator *(float lhs, Polar rhs)
+            => rhs * lhs;
 
-        /// <summary>Scales the radius by a scalar factor.</summary>
-        /// <param name="s">Scalar factor.</param>
-        public void Scale(float s)
-            => radius *= s;
+        /// <summary>Divides a polar number by a scalar (Polar / float).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Polar operator /(Polar lhs, float rhs)
+            => lhs * new Polar(1.0f / rhs, 0);
     }
 }
