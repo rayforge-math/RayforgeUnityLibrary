@@ -1,0 +1,37 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Maths/FFT.hlsl"
+
+[numthreads(8,1,1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)_FftParallelRowCount)
+        return;
+    
+    FFT(id.x);
+}
+
+/// @brief Retrieves a complex sample at the given index.
+/// @param index Zero-based array index.
+/// @return The complex sample stored at the specified index.
+Complex GetSample(int baseOffset, int index)
+{
+    return (Complex)0;
+}
+
+/// @brief Writes a complex sample into the underlying buffer.
+/// @param index Zero-based array index.
+/// @param sample Complex value to store.
+void SetSample(int baseOffset, int index, Complex sample)
+{
+    
+}
+
+/// @brief Retrieves a complex filter coefficient at the given index.
+/// @param index Zero-based array index.
+/// @return Complex filter coefficient.
+Complex GetFilter(int index)
+{
+    return (Complex) 0;
+}

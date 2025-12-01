@@ -3,13 +3,13 @@ using Rayforge.Utility.Threading;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UIElements;
+
 using static Unity.Mathematics.math;
 
 namespace Rayforge.Utility.Maths.FFT
@@ -26,12 +26,7 @@ namespace Rayforge.Utility.Maths.FFT
         /// Must have a length that is a power of 2.
         /// </summary>
         [NativeDisableContainerSafetyRestriction]
-        public NativeArray<Complex> _FftSamples;
-
-        /// <summary>
-        /// Number of elements in array, internally used for HLSL compatibility.
-        /// </summary>
-        private int _FftLength;
+        public NativeArray<Complex> _Samples;
 
         /// <summary>
         /// If true, performs the inverse FFT (IFFT); otherwise, performs the forward FFT.
@@ -46,14 +41,39 @@ namespace Rayforge.Utility.Maths.FFT
         public bool _FftNormalize;
 
         /// <summary>
-        /// Executes the FFT on the provided <see cref="_FftSamples"/> array.
+        /// Executes the FFT on the provided <see cref="_Samples"/> array.
         /// Calls <see cref="FFT()"/> internally.
         /// </summary>
         public void Execute()
         {
-            _FftLength = _FftSamples.Length;
-            FFT();
+            FFT(0);
         }
+
+        /// <summary>
+        /// Retrieves a complex sample from the internal working buffer.
+        /// </summary>
+        /// <param name="baseOffset">Buffer segment base offset, for HLSL implementation.</param>
+        /// <param name="index">Zero-based index of the sample to read.</param>
+        /// <returns>The complex value stored at the specified index.</returns>
+        private Complex GetSample(int baseOffset, int index)
+            => _Samples[index];
+
+        /// <summary>
+        /// Writes a complex sample into the internal working buffer.
+        /// </summary>
+        /// <param name="baseOffset">Buffer segment base offset, for HLSL implementation.</param>
+        /// <param name="index">Zero-based index of the sample to modify.</param>
+        /// <param name="sample">The complex value to assign.</param>
+        private void SetSample(int baseOffset, int index, Complex sample)
+            => _Samples[index] = sample;
+
+        /// <summary>
+        /// Returns the total number of complex samples stored
+        /// in the internal working buffer.
+        /// </summary>
+        /// <returns>The number of elements in the sample array.</returns>
+        private int GetLength()
+            => _Samples.Length;
 
         // --- HLSL-Bridge ---
         // (Functions in this region make hlsl-style code compatible with C# functionality)
@@ -143,9 +163,9 @@ namespace Rayforge.Utility.Maths.FFT
         /// Implements the Cooley-Tukey radix-2 algorithm with bit-reversal ordering.
         /// </summary>
         [BurstCompile]
-        void FFT()
+        void FFT(int baseOffset)
         {
-            int N = _FftLength;
+            int N = GetLength();
             int bits = lg2(N);
 
             // Performs in-place bit reversal on the array to prepare for FFT, 
@@ -155,9 +175,9 @@ namespace Rayforge.Utility.Maths.FFT
                 int j = BitReverse(i, bits);
                 if (i < j)
                 {
-                    Complex tmp = _FftSamples[i];
-                    _FftSamples[i] = _FftSamples[j];
-                    _FftSamples[j] = tmp;
+                    Complex tmp = GetSample(baseOffset, i);
+                    SetSample(baseOffset, i, GetSample(baseOffset, j));
+                    SetSample(baseOffset, j, tmp);
                 }
             }
 
@@ -175,21 +195,21 @@ namespace Rayforge.Utility.Maths.FFT
                         float ang = theta * j;
                         Complex w = TwiddleFactor(ang);
 
-                        Complex p = _FftSamples[k + j];
-                        Complex q = ComplexMul(w, _FftSamples[k + j + m2]);
+                        Complex p = GetSample(baseOffset, k + j);
+                        Complex q = ComplexMul(w, GetSample(baseOffset, k + j + m2));
 
-                        _FftSamples[k + j] = ComplexAdd(p, q);
-                        _FftSamples[k + j + m2] = ComplexSub(p, q);
+                        SetSample(baseOffset, k + j, ComplexAdd(p, q));
+                        SetSample(baseOffset, k + j + m2, ComplexSub(p, q));
                     }
                 }
             }
 
             if (_FftInverse && _FftNormalize)
             {
-                float invN = 1.0f / _FftLength;
-                for (int i = 0; i < _FftLength; ++i)
+                float invN = 1.0f / GetLength();
+                for (int i = 0; i < GetLength(); ++i)
                 {
-                    _FftSamples[i] = ComplexScale(_FftSamples[i], invN);
+                    SetSample(baseOffset, i, ComplexScale(GetSample(baseOffset, i), invN));
                 }
             }
         }
@@ -209,22 +229,42 @@ namespace Rayforge.Utility.Maths.FFT
         /// The array of complex numbers to normalize.
         /// </summary>
         [NativeDisableContainerSafetyRestriction]
-        public NativeArray<Complex> _FftSamples;
+        public NativeArray<Complex> _Samples;
 
         /// <summary>
-        /// Number of elements in array, internally used for HLSL compatibility.
-        /// </summary>
-        private int _FftLength;
-
-        /// <summary>
-        /// Executes the normalization on the <see cref="_FftSamples"/> array.
+        /// Executes the normalization on the <see cref="_Samples"/> array.
         /// Each element is divided by the length of the array.
         /// </summary>
         public void Execute()
         {
-            _FftLength = _FftSamples.Length;
-            NormalizeFFT();
+            NormalizeFFT(0);
         }
+
+        /// <summary>
+        /// Retrieves a complex sample from the internal working buffer.
+        /// </summary>
+        /// <param name="baseOffset">Buffer segment base offset, for HLSL implementation.</param>
+        /// <param name="index">Zero-based index of the sample to read.</param>
+        /// <returns>The complex value stored at the specified index.</returns>
+        private Complex GetSample(int baseOffset, int index)
+            => _Samples[index];
+
+        /// <summary>
+        /// Writes a complex sample into the internal working buffer.
+        /// </summary>
+        /// <param name="baseOffset">Buffer segment base offset, for HLSL implementation.</param>
+        /// <param name="index">Zero-based index of the sample to modify.</param>
+        /// <param name="sample">The complex value to assign.</param>
+        private void SetSample(int baseOffset, int index, Complex sample)
+            => _Samples[index] = sample;
+
+        /// <summary>
+        /// Returns the total number of complex samples stored
+        /// in the internal working buffer.
+        /// </summary>
+        /// <returns>The number of elements in the sample array.</returns>
+        private int GetLength()
+            => _Samples.Length;
 
         // --- HLSL-Bridge ---
         // (Functions in this region make hlsl-style code compatible with C# functionality)
@@ -248,13 +288,13 @@ namespace Rayforge.Utility.Maths.FFT
         /// Useful after an unnormalized inverse FFT (IFFT).
         /// </summary>
         [BurstCompile]
-        void NormalizeFFT()
+        void NormalizeFFT(int baseOffset)
         {
-            float invN = 1.0f / _FftLength;
+            float invN = 1.0f / GetLength();
 
-            for (int i = 0; i < _FftLength; ++i)
+            for (int i = 0; i < GetLength(); ++i)
             {
-                _FftSamples[i] = ComplexScale(_FftSamples[i], invN);
+                SetSample(baseOffset, i, ComplexScale(GetSample(baseOffset, i), invN));
             }
         }
 
@@ -267,7 +307,7 @@ namespace Rayforge.Utility.Maths.FFT
     /// Convolution in the frequency domain is commutative, which holds for n-dimensional separable transforms as well.
     /// </summary>
     /// <remarks>
-    /// This job assumes that both <see cref="_FftSamples"/> and <see cref="_FftFilter"/>:
+    /// This job assumes that both <see cref="_Samples"/> and <see cref="_Filter"/>:
     /// <list type="bullet">
     /// <item><description>are the same length</description></item>
     /// <item><description>represent forward FFT output</description></item>
@@ -287,19 +327,14 @@ namespace Rayforge.Utility.Maths.FFT
         /// This buffer will hold the convolution result.
         /// </summary>
         [NativeDisableContainerSafetyRestriction]
-        public NativeArray<Complex> _FftSamples;
+        public NativeArray<Complex> _Samples;
 
         /// <summary>
         /// The frequency-domain filter kernel.
-        /// Must have the same length as <see cref="_FftSamples"/>.
+        /// Must have the same length as <see cref="_Samples"/>.
         /// </summary>
         [ReadOnly]
-        public NativeArray<Complex> _FftFilter;
-
-        /// <summary>
-        /// Total number of frequency bins (length of both arrays).
-        /// </summary>
-        private int _FftLength;
+        public NativeArray<Complex> _Filter;
 
         /// <summary>
         /// Executes the frequency-domain convolution job.
@@ -307,10 +342,42 @@ namespace Rayforge.Utility.Maths.FFT
         /// </summary>
         public void Execute()
         {
-            _FftLength = _FftSamples.Length;
-
-            Convolute();
+            Convolute(0);
         }
+
+        /// <summary>
+        /// Retrieves a complex sample from the internal working buffer.
+        /// </summary>
+        /// <param name="baseOffset">Buffer segment base offset, for HLSL implementation.</param>
+        /// <param name="index">Zero-based index of the sample to read.</param>
+        /// <returns>The complex value stored at the specified index.</returns>
+        private Complex GetSample(int baseOffset, int index)
+            => _Samples[index];
+
+        /// <summary>
+        /// Writes a complex sample into the internal working buffer.
+        /// </summary>
+        /// <param name="baseOffset">Buffer segment base offset, for HLSL implementation.</param>
+        /// <param name="index">Zero-based index of the sample to modify.</param>
+        /// <param name="sample">The complex value to assign.</param>
+        private void SetSample(int baseOffset, int index, Complex sample)
+            => _Samples[index] = sample;
+
+        /// <summary>
+        /// Returns the total number of complex samples stored
+        /// in the internal working buffer.
+        /// </summary>
+        /// <returns>The number of elements in the sample array.</returns>
+        private int GetLength()
+            => _Samples.Length;
+
+        /// <summary>
+        /// Retrieves a complex filter sample from the internal filter buffer.
+        /// </summary>
+        /// <param name="index">Zero-based index of the sample to read.</param>
+        /// <returns>The complex value stored at the specified index.</returns>
+        private Complex GetFilter(int index)
+            => _Filter[index];
 
         // --- HLSL-Bridge ---
         // (Functions in this region make hlsl-style code compatible with C# functionality)
@@ -336,11 +403,11 @@ namespace Rayforge.Utility.Maths.FFT
         /// S[k] = S[k] * F[k]
         /// </summary>
         [BurstCompile]
-        void Convolute()
+        void Convolute(int baseOffset)
         {
-            for (int i = 0; i < _FftLength; ++i)
+            for (int i = 0; i < GetLength(); ++i)
             {
-                _FftSamples[i] = ComplexMul(_FftSamples[i], _FftFilter[i]);
+                SetSample(baseOffset, i, ComplexMul(GetSample(baseOffset, i), GetFilter(i)));
             }
         }
 
@@ -386,7 +453,7 @@ namespace Rayforge.Utility.Maths.FFT
 
             FFTJob job = new FFTJob
             {
-                _FftSamples = samples,
+                _Samples = samples,
                 _FftInverse = inverse,
                 _FftNormalize = normalize
             };
@@ -603,8 +670,8 @@ namespace Rayforge.Utility.Maths.FFT
 
             FrequencyConvolutionJob job = new FrequencyConvolutionJob
             {
-                _FftSamples = samples,
-                _FftFilter = filter
+                _Samples = samples,
+                _Filter = filter
             };
             return UnityJobDispatcher.Schedule(job);
         }
@@ -648,5 +715,19 @@ namespace Rayforge.Utility.Maths.FFT
         /// </remarks>
         public static void CompleteConvolution(NativeArray<Complex> samples, NativeArray<Complex> filter)
             => CompleteConvolution_internal(samples, filter);
+    }
+
+    public static class FFTShaderDispatcher
+    {
+        /// <summary>
+        /// Name of the compute shader inside the Resources folder.
+        /// Used for performing FFTs over image data.
+        /// Loaded through <c>Shader.Find()</c> or <c>Resources.Load()</c>.
+        /// </summary>
+        private const string k_ComputeFftShaderName = "ComputeFft";
+
+        
+
+
     }
 }

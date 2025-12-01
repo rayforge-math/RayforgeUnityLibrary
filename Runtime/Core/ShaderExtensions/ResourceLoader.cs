@@ -12,8 +12,6 @@ namespace Rayforge.ShaderExtensions.ResourceLoader
     /// </summary>
     public static class SharedResources
     {
-        private const string k_TexturesFolder = "Textures/";
-
         private const string k_BlueNoiseTextureName = "_Rayforge_BlueNoise";
         /// <summary>
         /// Gets the global shader property name used to bind the blue noise texture.
@@ -55,7 +53,7 @@ namespace Rayforge.ShaderExtensions.ResourceLoader
                     $"is not a Texture2D (type: {existing.GetType().Name}). Replacing it.");
             }
 
-            s_BlueNoiseTexture = Resources.Load<Texture2D>(k_TexturesFolder + k_BlueNoiseResourceName);
+            s_BlueNoiseTexture = Resources.Load<Texture2D>(ResourcePaths.TextureResourceFolder + k_BlueNoiseResourceName);
 
             Validate(
                 s_BlueNoiseTexture,

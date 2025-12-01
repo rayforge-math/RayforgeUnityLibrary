@@ -1,18 +1,46 @@
 #pragma once
 
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Maths/Coords.hlsl"
 
-RWStructuredBuffer<Complex> _FftSamples;
-StructuredBuffer<Complex> _FftFilter;
+// ============================================================================
+// 1. Inputs
+// ============================================================================
 
 CBUFFER_START(_FftParams)
 int _FftLength;
 bool _FftInverse;
 bool _FftNormalize;
+int _FftParallelRowCount;
 CBUFFER_END
 
+/// @brief Returns the FFT length configured for the current transform.
+/// @return Integer value representing the number of samples processed by the FFT.
+int GetLength()
+{
+    return _FftLength;
+}
 // ============================================================================
-// 2. Utility Functions
+// 2. Prototypes - for abstracting the precise data layout
+// ============================================================================
+
+/// @brief Retrieves a complex sample at the given index.
+/// @param index Zero-based array index.
+/// @return The complex sample stored at the specified index.
+Complex GetSample(int baseOffset, int index);
+
+/// @brief Writes a complex sample into the underlying buffer.
+/// @param index Zero-based array index.
+/// @param sample Complex value to store.
+void SetSample(int baseOffset, int index, Complex sample);
+
+/// @brief Retrieves a complex filter coefficient at the given index.
+/// @param index Zero-based array index.
+/// @return Complex filter coefficient.
+Complex GetFilter(int index);
+
+// ============================================================================
+// 3. Utility Functions
 // ============================================================================
 
 // --- HLSL-Bridge ---
@@ -69,9 +97,10 @@ int BitReverse(int x, int log2n)
 /// @brief Performs an in-place iterative FFT or inverse FFT
 /// @details Cooley-Tukey radix-2 algorithm, bit-reversed ordering
 /// @note Mirrors the C# FFT implementation exactly
-void FFT()
+/// @param baseOffset: baseOffset of the unterlying array.
+void FFT(int baseOffset)
 {
-    int N = _FftLength;
+    int N = GetLength();
     int bits = lg2(N);
 
     // Performs in-place bit reversal on the array to prepare for FFT, 
@@ -81,9 +110,9 @@ void FFT()
         int j = BitReverse(i, bits);
         if (i < j)
         {
-            Complex tmp = _FftSamples[i];
-            _FftSamples[i] = _FftSamples[j];
-            _FftSamples[j] = tmp;
+            Complex tmp = GetSample(baseOffset, i);
+            SetSample(baseOffset, i, GetSample(baseOffset, j));
+            SetSample(baseOffset, j, tmp);
         }
     }
 
@@ -101,21 +130,21 @@ void FFT()
                 float ang = theta * j;
                 Complex w = TwiddleFactor(ang);
 
-                Complex p = _FftSamples[k + j];
-                Complex q = ComplexMul(w, _FftSamples[k + j + m2]);
+                Complex p = GetSample(baseOffset, k + j);
+                Complex q = ComplexMul(w, GetSample(baseOffset, k + j + m2));
 
-                _FftSamples[k + j] = ComplexAdd(p, q);
-                _FftSamples[k + j + m2] = ComplexSub(p, q);
+                SetSample(baseOffset, k + j, ComplexAdd(p, q));
+                SetSample(baseOffset, k + j + m2, ComplexSub(p, q));
             }
         }
     }
 
     if (_FftInverse && _FftNormalize)
     {
-        float invN = 1.0f / _FftLength;
-        for (int i = 0; i < _FftLength; ++i)
+        float invN = 1.0f / GetLength();
+        for (int i = 0; i < GetLength(); ++i)
         {
-            _FftSamples[i] = ComplexScale(_FftSamples[i], invN);
+            SetSample(baseOffset, i, ComplexScale(GetSample(baseOffset, i), invN));
         }
     }
 }
@@ -128,13 +157,13 @@ void FFT()
 // You can copy the logic to C# with minimal changes.
 
 /// @brief Normalizes an array of complex numbers by dividing each element by the FFT length.
-void NormalizeFFT()
+void NormalizeFFT(int baseOffset)
 {
-    float invN = 1.0f / _FftLength;
+    float invN = 1.0f / GetLength();
 
-    for (int i = 0; i < _FftLength; ++i)
+    for (int i = 0; i < GetLength(); ++i)
     {
-        _FftSamples[i] = ComplexScale(_FftSamples[i], invN);
+        SetSample(baseOffset, i, ComplexScale(GetSample(baseOffset, i), invN));
     }
 }
 
@@ -144,11 +173,11 @@ void NormalizeFFT()
 // (Functions in this region mirror their HLSL equivalents)
 
 /// @brief: Performs pointwise complex multiplication (Convolution in frequency domain): S[k] = S[k] * F[k]
-void Convolute()
+void Convolute(int baseOffset)
 {
-    for (int i = 0; i < _FftLength; ++i)
+    for (int i = 0; i < GetLength(); ++i)
     {
-        _FftSamples[i] = ComplexMul(_FftSamples[i], _FftFilter[i]);
+        SetSample(baseOffset, i, ComplexMul(GetSample(baseOffset, i), GetFilter(i)));
     }
 }
 
