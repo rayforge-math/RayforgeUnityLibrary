@@ -90,8 +90,8 @@ void FFT()
     // Performs actual FFT
     for (int s = 1; s <= bits; ++s)
     {
-        int m = 1 << s; // current sub-FFT length
-        int m2 = m >> 1; // half-length
+        int m = 1 << s;                                             // current sub-FFT length
+        int m2 = m >> 1;                                            // half-length
         float theta = (_FftInverse ? 1.0f : -1.0f) * 2.0f * PI / m; // twiddle angle
 
         for (int k = 0; k < N; k += m)                              // iterate over blocks

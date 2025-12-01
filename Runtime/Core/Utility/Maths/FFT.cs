@@ -60,7 +60,7 @@ namespace Rayforge.Utility.Maths.FFT
         #region HLSL-Bridge
 
         /// <summary>
-        /// Computes the twiddle factor e^{i·angle}.
+        /// Computes the twiddle factor e^{i·angle} for the FFT, using euler's identity (see <see href="https://en.wikipedia.org/wiki/Euler%27s_identity" />)
         /// </summary>
         /// <param name="angle">Angle in radians.</param>
         /// <returns>Unit-magnitude complex number.</returns>
