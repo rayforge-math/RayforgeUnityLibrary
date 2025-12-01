@@ -617,6 +617,11 @@ namespace Rayforge.Utility.Maths.FFT
         /// <param name="samples">The target complex samples in frequency domain.</param>
         /// <param name="filter">The complex frequency-domain filter.</param>
         /// <returns>A <see cref="JobHandle"/> for the scheduled convolution job.</returns>
+        /// /// <remarks>
+        /// This is a convenience wrapper for quickly performing a convolution
+        /// without manually handling the job scheduling.  
+        /// It internally calls <see cref="CompleteConvolution_internal"/>.
+        /// </remarks>
         public static JobHandle ScheduleConvolution(NativeArray<Complex> samples, NativeArray<Complex> filter)
             => ScheduleConvolution_internal(samples, filter);
 
@@ -625,6 +630,11 @@ namespace Rayforge.Utility.Maths.FFT
         /// </summary>
         /// <param name="samples">The target complex samples in frequency domain, modified in place.</param>
         /// <param name="filter">The complex frequency-domain filter.</param>
+        /// /// <remarks>
+        /// This is a convenience wrapper for quickly performing a convolution
+        /// without manually handling the job scheduling.  
+        /// It internally calls <see cref="ScheduleConvolution_internal"/> and completes the job immediately.
+        /// </remarks>
         public static void CompleteConvolution(NativeArray<Complex> samples, NativeArray<Complex> filter)
             => CompleteConvolution_internal(samples, filter);
     }
