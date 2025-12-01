@@ -10,6 +10,13 @@ static const uint B = 2;
 static const uint A = 3;
 static const uint None = 4;
 
+/// @brief Parameters controlling the channel blitter.
+/// @param _R Index of source channel to copy to red output (or None).
+/// @param _G Index of source channel to copy to green output (or None).
+/// @param _B Index of source channel to copy to blue output (or None).
+/// @param _A Index of source channel to copy to alpha output (or None).
+/// @param _BlitParams.xy Pixel offset for source sampling.
+/// @param _BlitParams.zw Width and height of the region to blit.
 cbuffer _ChannelBlitterParams
 {
     uint _R;
@@ -20,6 +27,10 @@ cbuffer _ChannelBlitterParams
     float4 _BlitParams;
 };
 
+/// @brief Copies selected channels from a source texture to a destination texture.
+/// @details Uses the offsets in _BlitParams.xy as the starting pixel coordinate and
+/// clips to the region defined by _BlitParams.zw. Only channels with index less than None are copied.
+/// @param id Dispatch thread ID corresponding to the destination pixel.
 [numthreads(8,8,1)]
 void ChannelBlitter (uint3 id : SV_DispatchThreadID)
 {

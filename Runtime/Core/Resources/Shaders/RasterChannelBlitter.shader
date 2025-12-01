@@ -37,6 +37,13 @@ Shader "Rayforge/RasterChannelBlitter"
                 float4 _BlitTexture_TexelSize : packoffset(c0.x);
             }
 
+            /// @brief Parameters controlling which channels to blit and the source region.
+            /// @param _R Index of source channel to copy to red output (or None).
+            /// @param _G Index of source channel to copy to green output (or None).
+            /// @param _B Index of source channel to copy to blue output (or None).
+            /// @param _A Index of source channel to copy to alpha output (or None).
+            /// @param _BlitParams.xy Pixel offset in source texture (in texels).
+            /// @param _BlitParams.zw Size of the blit region (width, height in texels).
             cbuffer _ChannelBlitterParams : register(b1)
             {
                 uint _R : packoffset(c0.x);
@@ -52,6 +59,9 @@ Shader "Rayforge/RasterChannelBlitter"
                 float2 texcoord : TEXCOORD0;
             };
 
+            /// @brief Vertex shader generating a fullscreen triangle with adjusted UVs for blitting.
+            /// @param id Vertex ID provided by the GPU.
+            /// @return Varyings struct containing clip-space position and adjusted UV coordinates.
             Varyings Vert(uint id : SV_VertexID)
             {
                 Varyings output = (Varyings)0;
@@ -66,6 +76,9 @@ Shader "Rayforge/RasterChannelBlitter"
                 return output;
             }
 
+            /// @brief Fragment shader that copies selected channels from the source texture.
+            /// @param input Varyings struct with UVs and clip-space position.
+            /// @return The output color with selected channels copied from the source.
             float4 ChannelBlitterFrag(Varyings input) : SV_Target
             {
                 float4 sample = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, input.texcoord);

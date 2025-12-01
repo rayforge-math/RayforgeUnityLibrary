@@ -216,14 +216,12 @@ float3 MixColor(float3 color, float3 mixColor, int mixOption, float strength, bo
 /// @param mode The mixing mode passed to MixColor: 0 = No change, 1 = Multiply blend, 2 = Scale by luminance, 3 = Additive blend.
 /// @param strength The interpolation factor for blending, typically in range 0..1.
 /// @return The resulting color after LUT application and blending as float3.
-float3 MixLut(TEXTURE2D( lut),
-float3 color, int mode, float strength)
+float3 MixLut(TEXTURE2D(lut), float3 color, int mode, float strength)
 {
-float luminance = saturate(Luminance(color));
-float3 lutColor = SAMPLE_TEXTURE2D(lut, sampler_LinearClampCustom, float2(luminance, 0.5)).rgb;
+    float luminance = saturate(Luminance(color));
+    float3 lutColor = SAMPLE_TEXTURE2D(lut, sampler_LinearClampCustom, float2(luminance, 0.5)).rgb;
 
     color = MixColor(color, lutColor, mode, strength, true);
 
-    return
-color;
+    return color;
 }

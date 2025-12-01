@@ -23,24 +23,13 @@ struct Polar
 // ============================================================================
 
 // -----------------------------------------------------------------------------
-// Complex Functions (require struct Polar & Complex defined above)
+// Complex Functions
 // -----------------------------------------------------------------------------
-
-/// @brief Creates a complex number.
-/// @param real Real part.
-/// @param imag Imaginary part.
-/// @return Complex struct.
-Complex Complex(float real, float imag)
-{
-    Complex c;
-    c.value = float2(real, imag);
-    return c;
-}
 
 /// @brief Returns the complex conjugate.
 /// @param c Input complex.
 /// @return Conjugated complex.
-Complex Conjugate(Complex c)
+Complex ComplexConjugate(Complex c)
 {
     Complex o;
     o.value = float2(c.value.x, -c.value.y);
@@ -50,7 +39,7 @@ Complex Conjugate(Complex c)
 /// @brief Squared magnitude of the complex number.
 /// @param c Input.
 /// @return Squared magnitude.
-float MagnitudeSquared(Complex c)
+float ComplexMagnitudeSquared(Complex c)
 {
     return dot(c.value, c.value);
 }
@@ -58,15 +47,15 @@ float MagnitudeSquared(Complex c)
 /// @brief Magnitude of the complex number.
 /// @param c Input.
 /// @return Magnitude as float.
-float Magnitude(Complex c)
+float ComplexMagnitude(Complex c)
 {
-    return sqrt(MagnitudeSquared(c));
+    return sqrt(ComplexMagnitudeSquared(c));
 }
 
 /// @brief Phase of the complex number.
 /// @param c Input.
 /// @return Angle in radians.
-float Phase(Complex c)
+float ComplexPhase(Complex c)
 {
     return atan2(c.value.y, c.value.x);
 }
@@ -74,28 +63,29 @@ float Phase(Complex c)
 /// @brief Normalizes the complex number to unit magnitude.
 /// @param c Input.
 /// @return Normalized complex.
-Complex Normalize(Complex c)
+Complex ComplexNormalize(Complex c)
 {
-    float mag = Magnitude(c);
-
+    float mag = ComplexMagnitude(c);
     Complex o;
     o.value = (mag > 0.0f) ? c.value / mag : float2(0, 0);
-
     return o;
 }
 
 /// @brief Converts complex to polar coordinates.
 /// @param c Complex number.
 /// @return Polar (radius, phase).
-Polar ToPolar(Complex c)
+Polar ComplexToPolar(Complex c)
 {
     Polar p;
-    p.value = float2(Magnitude(c), Phase(c));
+    p.value = float2(ComplexMagnitude(c), ComplexPhase(c));
     return p;
 }
 
 /// @brief Adds two complex numbers.
-Complex Add(Complex a, Complex b)
+/// @param a First complex.
+/// @param b Second complex.
+/// @return Sum.
+Complex ComplexAdd(Complex a, Complex b)
 {
     Complex o;
     o.value = a.value + b.value;
@@ -103,7 +93,10 @@ Complex Add(Complex a, Complex b)
 }
 
 /// @brief Subtracts two complex numbers.
-Complex Sub(Complex a, Complex b)
+/// @param a First complex.
+/// @param b Second complex.
+/// @return Difference.
+Complex ComplexSub(Complex a, Complex b)
 {
     Complex o;
     o.value = a.value - b.value;
@@ -113,30 +106,25 @@ Complex Sub(Complex a, Complex b)
 /// @brief Multiplies two complex numbers.
 /// @param a First operand.
 /// @param b Second operand.
-/// @return Complex product.
-Complex Mul(Complex a, Complex b)
+/// @return Product.
+Complex ComplexMul(Complex a, Complex b)
 {
     float ar = a.value.x;
     float ai = a.value.y;
     float br = b.value.x;
     float bi = b.value.y;
-
     Complex o;
-    o.value = float2(
-        ar * br - ai * bi,
-        ar * bi + ai * br
-    );
+    o.value = float2(ar * br - ai * bi, ar * bi + ai * br);
     return o;
 }
 
 /// @brief Divides two complex numbers.
 /// @param a Numerator.
 /// @param b Denominator.
-/// @return Complex quotient.
-Complex Div(Complex a, Complex b)
+/// @return Quotient.
+Complex ComplexDiv(Complex a, Complex b)
 {
     float denom = b.value.x * b.value.x + b.value.y * b.value.y;
-
     Complex o;
     o.value = float2(
         (a.value.x * b.value.x + a.value.y * b.value.y) / denom,
@@ -149,7 +137,7 @@ Complex Div(Complex a, Complex b)
 /// @param c Complex.
 /// @param s Scalar.
 /// @return c*s.
-Complex Scale(Complex c, float s)
+Complex ComplexScale(Complex c, float s)
 {
     Complex o;
     o.value = c.value * s;
@@ -157,43 +145,24 @@ Complex Scale(Complex c, float s)
 }
 
 // -----------------------------------------------------------------------------
-// Polar Functions (require struct Polar & Complex defined above)
+// Polar Functions
 // -----------------------------------------------------------------------------
-
-/// @brief Creates a polar coordinate.
-/// @param radius Distance from origin.
-/// @param phase Angle in radians.
-/// @return Polar struct.
-Polar Create(float radius, float phase)
-{
-    Polar p;
-    p.value = float2(radius, phase);
-    return p;
-}
 
 /// @brief Converts polar → complex.
 /// @param p Polar coordinate.
 /// @return Complex number.
-Complex ToComplex(Polar p)
+Complex PolarToComplex(Polar p)
 {
     Complex c;
-    c.value = float2(
-        p.value.x * cos(p.value.y),
-        p.value.x * sin(p.value.y)
-    );
+    c.value = float2(p.value.x * cos(p.value.y), p.value.x * sin(p.value.y));
     return c;
 }
-
-/// @brief Converts complex → polar.
-/// @param c Complex number.
-/// @return Polar representation.
-Polar ToPolar(Complex c);
 
 /// @brief Multiplies two polar numbers.
 /// @param a First.
 /// @param b Second.
 /// @return (radius = a.r * b.r, phase = a.θ + b.θ)
-Polar Mul(Polar a, Polar b)
+Polar PolarMul(Polar a, Polar b)
 {
     Polar o;
     o.value = float2(a.value.x * b.value.x, a.value.y + b.value.y);
@@ -204,7 +173,7 @@ Polar Mul(Polar a, Polar b)
 /// @param a Numerator.
 /// @param b Denominator.
 /// @return Result in polar form.
-Polar Div(Polar a, Polar b)
+Polar PolarDiv(Polar a, Polar b)
 {
     Polar o;
     o.value = float2(a.value.x / b.value.x, a.value.y - b.value.y);
@@ -215,24 +184,24 @@ Polar Div(Polar a, Polar b)
 /// @param a First.
 /// @param b Second.
 /// @return Result in polar coords.
-Polar Add(Polar a, Polar b)
+Polar PolarAdd(Polar a, Polar b)
 {
-    return ToPolar(Add(ToComplex(a), ToComplex(b)));
+    return ComplexToPolar(ComplexAdd(PolarToComplex(a), PolarToComplex(b)));
 }
 
-/// @brief Subtracts two polar numbers.
+/// @brief Subtracts two polar numbers via complex conversion.
 /// @param a First.
 /// @param b Second.
 /// @return Result in polar coords.
-Polar Sub(Polar a, Polar b)
+Polar PolarSub(Polar a, Polar b)
 {
-    return ToPolar(Sub(ToComplex(a), ToComplex(b)));
+    return ComplexToPolar(ComplexSub(PolarToComplex(a), PolarToComplex(b)));
 }
 
 /// @brief Polar conjugate (invert phase).
 /// @param p Input polar.
 /// @return (radius, -phase).
-Polar Conjugate(Polar p)
+Polar PolarConjugate(Polar p)
 {
     Polar o;
     o.value = float2(p.value.x, -p.value.y);
@@ -243,7 +212,7 @@ Polar Conjugate(Polar p)
 /// @param p Polar input.
 /// @param s Scalar.
 /// @return (radius*s, phase).
-Polar Scale(Polar p, float s)
+Polar PolarScale(Polar p, float s)
 {
     Polar o;
     o.value = float2(p.value.x * s, p.value.y);

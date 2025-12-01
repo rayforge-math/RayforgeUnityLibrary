@@ -26,32 +26,32 @@ namespace Rayforge.Utility.Maths.FFT
         /// Must have a length that is a power of 2.
         /// </summary>
         [NativeDisableContainerSafetyRestriction]
-        public NativeArray<Complex> _Samples;
+        public NativeArray<Complex> _FftSamples;
 
         /// <summary>
         /// Number of elements in array, internally used for HLSL compatibility.
         /// </summary>
-        private int _Length;
+        private int _FftLength;
 
         /// <summary>
         /// If true, performs the inverse FFT (IFFT); otherwise, performs the forward FFT.
         /// The IFFT result is unnormalized, so the output is scaled by the array length.
         /// </summary>
-        public bool _Inverse;
+        public bool _FftInverse;
 
         /// <summary>
         /// If true, the result of the IFFT will be normalized (each element divided by the array length).
         /// Ignored for forward FFT.
         /// </summary>
-        public bool _Normalize;
+        public bool _FftNormalize;
 
         /// <summary>
-        /// Executes the FFT on the provided <see cref="_Samples"/> array.
+        /// Executes the FFT on the provided <see cref="_FftSamples"/> array.
         /// Calls <see cref="FFT()"/> internally.
         /// </summary>
         public void Execute()
         {
-            _Length = _Samples.Length;
+            _FftLength = _FftSamples.Length;
             FFT();
         }
 
@@ -70,10 +70,29 @@ namespace Rayforge.Utility.Maths.FFT
         /// <summary>
         /// Complex multiplication (matches HLSL implementation).
         /// </summary>
-        /// <param name="lhs">Left operand.</param>
-        /// <param name="rhs">Right operand.</param>
         /// <returns>Complex product.</returns>
         private static Complex ComplexMul(Complex lhs, Complex rhs)
+            => lhs * rhs;
+
+        /// <summary>
+        /// Complex addition (matches HLSL implementation).
+        /// </summary>
+        /// <returns>Sum of two complex numbers.</returns>
+        private static Complex ComplexAdd(Complex lhs, Complex rhs)
+            => lhs + rhs;
+
+        /// <summary>
+        /// Complex subtraction (matches HLSL implementation).
+        /// </summary>
+        /// <returns>Difference of two complex numbers.</returns>
+        private static Complex ComplexSub(Complex lhs, Complex rhs)
+            => lhs - rhs;
+
+        /// <summary>
+        /// Scales a complex number by a scalar (matches HLSL implementation).
+        /// </summary>
+        /// <returns>Scaled complex number.</returns>
+        private static Complex ComplexScale(Complex lhs, float rhs)
             => lhs * rhs;
 
         #endregion
@@ -87,7 +106,7 @@ namespace Rayforge.Utility.Maths.FFT
         /// </summary>
         /// <param name="N">Length of the array (power of 2).</param>
         /// <returns>Number of bits required to represent indices.</returns>
-        private static int lg2(int N)
+        int lg2(int N)
         {
             int count = 0;
 
@@ -107,7 +126,7 @@ namespace Rayforge.Utility.Maths.FFT
         /// <param name="x">Original index.</param>
         /// <param name="log2n">Number of bits.</param>
         /// <returns>Bit-reversed index.</returns>
-        private int BitReverse(int x, int log2n)
+        int BitReverse(int x, int log2n)
         {
             int n = 0;
             for (int i = 0; i < log2n; i++)
@@ -120,62 +139,34 @@ namespace Rayforge.Utility.Maths.FFT
         }
 
         /// <summary>
-        /// Swaps two elements in the array.
-        /// </summary>
-        /// <param name="i">Index of first element.</param>
-        /// <param name="j">Index of second element.</param>
-        private void Swap(int i, int j)
-        {
-            var tmp = _Samples[i];
-            _Samples[i] = _Samples[j];
-            _Samples[j] = tmp;
-        }
-
-        /// <summary>
-        /// Performs in-place bit reversal on the array to prepare for FFT, 
-        /// e.g. 0, 1, 2, 3, 4, 5, 6, 7 -> 0, 4, 1, 5, 2, 6, 3, 7
-        /// </summary>
-        private void BitReversalInPlace()
-        {
-            int N = _Length;
-            int bits = lg2(N);
-            for (int i = 0; i < N; ++i)
-            {
-                int j = BitReverse(i, bits);
-                if (i < j) Swap(i, j);
-            }
-        }
-
-        /// <summary>
-        /// Normalizes a NativeArray of complex numbers by dividing each element by number of elements.
-        /// Useful after an unnormalized inverse FFT (IFFT).
-        /// </summary>
-        private void Normalize()
-        {
-            float invN = 1.0f / _Length;
-            for (int i = 0; i < _Length; ++i)
-            {
-                _Samples[i] *= invN;
-            }
-        }
-
-        /// <summary>
         /// Performs an in-place iterative Fast Fourier Transform (FFT) or inverse FFT (IFFT) on a <see cref="NativeArray{Complex}"/>.
         /// Implements the Cooley-Tukey radix-2 algorithm with bit-reversal ordering.
         /// </summary>
         [BurstCompile]
-        private void FFT()
+        void FFT()
         {
-            BitReversalInPlace();
-
-            int N = _Length;
+            int N = _FftLength;
             int bits = lg2(N);
 
+            // Performs in-place bit reversal on the array to prepare for FFT, 
+            // e.g. 0, 1, 2, 3, 4, 5, 6, 7 -> 0, 4, 1, 5, 2, 6, 3, 7
+            for (int i = 0; i < N; ++i)
+            {
+                int j = BitReverse(i, bits);
+                if (i < j)
+                {
+                    Complex tmp = _FftSamples[i];
+                    _FftSamples[i] = _FftSamples[j];
+                    _FftSamples[j] = tmp;
+                }
+            }
+
+            // Performs actual FFT
             for (int s = 1; s <= bits; ++s)
             {
                 int m = 1 << s;                                             // current sub-FFT length
                 int m2 = m >> 1;                                            // half-length
-                float theta = (_Inverse ? 1.0f : -1.0f) * 2.0f * PI / m;    // twiddle angle
+                float theta = (_FftInverse ? 1.0f : -1.0f) * 2.0f * PI / m; // twiddle angle
 
                 for (int k = 0; k < N; k += m)                              // iterate over blocks
                 {
@@ -184,18 +175,22 @@ namespace Rayforge.Utility.Maths.FFT
                         float ang = theta * j;
                         Complex w = TwiddleFactor(ang);
 
-                        Complex p = _Samples[k + j];
-                        Complex q = ComplexMul(w, _Samples[k + j + m2]);
+                        Complex p = _FftSamples[k + j];
+                        Complex q = ComplexMul(w, _FftSamples[k + j + m2]);
 
-                        _Samples[k + j] = p + q;
-                        _Samples[k + j + m2] = p - q;
+                        _FftSamples[k + j] = ComplexAdd(p, q);
+                        _FftSamples[k + j + m2] = ComplexSub(p, q);
                     }
                 }
             }
 
-            if (_Inverse && _Normalize)
+            if (_FftInverse && _FftNormalize)
             {
-                Normalize();
+                float invN = 1.0f / _FftLength;
+                for (int i = 0; i < _FftLength; ++i)
+                {
+                    _FftSamples[i] = ComplexScale(_FftSamples[i], invN);
+                }
             }
         }
 
@@ -214,22 +209,35 @@ namespace Rayforge.Utility.Maths.FFT
         /// The array of complex numbers to normalize.
         /// </summary>
         [NativeDisableContainerSafetyRestriction]
-        public NativeArray<Complex> _Samples;
+        public NativeArray<Complex> _FftSamples;
 
         /// <summary>
         /// Number of elements in array, internally used for HLSL compatibility.
         /// </summary>
-        private int _Length;
+        private int _FftLength;
 
         /// <summary>
-        /// Executes the normalization on the <see cref="_Samples"/> array.
+        /// Executes the normalization on the <see cref="_FftSamples"/> array.
         /// Each element is divided by the length of the array.
         /// </summary>
         public void Execute()
         {
-            _Length = _Samples.Length;
-            Normalize();
+            _FftLength = _FftSamples.Length;
+            NormalizeFFT();
         }
+
+        // --- HLSL-Bridge ---
+        // (Functions in this region make hlsl-style code compatible with C# functionality)
+        #region HLSL-Bridge
+
+        /// <summary>
+        /// Scales a complex number by a scalar (matches HLSL implementation).
+        /// </summary>
+        /// <returns>Scaled complex number.</returns>
+        private static Complex ComplexScale(Complex lhs, float rhs)
+            => lhs * rhs;
+
+        #endregion
 
         // --- HLSL-Compatible FFT Normalize ---
         // (Functions in this region mirror their HLSL equivalents)
@@ -240,12 +248,13 @@ namespace Rayforge.Utility.Maths.FFT
         /// Useful after an unnormalized inverse FFT (IFFT).
         /// </summary>
         [BurstCompile]
-        private void Normalize()
+        void NormalizeFFT()
         {
-            float invN = 1.0f / _Length;
-            for (int i = 0; i < _Length; ++i)
+            float invN = 1.0f / _FftLength;
+
+            for (int i = 0; i < _FftLength; ++i)
             {
-                _Samples[i] *= invN;
+                _FftSamples[i] = ComplexScale(_FftSamples[i], invN);
             }
         }
 
@@ -255,9 +264,10 @@ namespace Rayforge.Utility.Maths.FFT
     /// <summary>
     /// Job that performs element-wise complex multiplication between two
     /// frequency-domain signals (i.e., frequency-domain convolution).
+    /// Convolution in the frequency domain is commutative, which holds for n-dimensional separable transforms as well.
     /// </summary>
     /// <remarks>
-    /// This job assumes that both <see cref="_Samples"/> and <see cref="_Filter"/>:
+    /// This job assumes that both <see cref="_FftSamples"/> and <see cref="_FftFilter"/>:
     /// <list type="bullet">
     /// <item><description>are the same length</description></item>
     /// <item><description>represent forward FFT output</description></item>
@@ -277,19 +287,19 @@ namespace Rayforge.Utility.Maths.FFT
         /// This buffer will hold the convolution result.
         /// </summary>
         [NativeDisableContainerSafetyRestriction]
-        public NativeArray<Complex> _Samples;
+        public NativeArray<Complex> _FftSamples;
 
         /// <summary>
         /// The frequency-domain filter kernel.
-        /// Must have the same length as <see cref="_Samples"/>.
+        /// Must have the same length as <see cref="_FftSamples"/>.
         /// </summary>
         [ReadOnly]
-        public NativeArray<Complex> _Filter;
+        public NativeArray<Complex> _FftFilter;
 
         /// <summary>
         /// Total number of frequency bins (length of both arrays).
         /// </summary>
-        private int _Length;
+        private int _FftLength;
 
         /// <summary>
         /// Executes the frequency-domain convolution job.
@@ -297,7 +307,7 @@ namespace Rayforge.Utility.Maths.FFT
         /// </summary>
         public void Execute()
         {
-            _Length = _Samples.Length;
+            _FftLength = _FftSamples.Length;
 
             Convolute();
         }
@@ -326,11 +336,11 @@ namespace Rayforge.Utility.Maths.FFT
         /// S[k] = S[k] * F[k]
         /// </summary>
         [BurstCompile]
-        private void Convolute()
+        void Convolute()
         {
-            for (int i = 0; i < _Length; ++i)
+            for (int i = 0; i < _FftLength; ++i)
             {
-                _Samples[i] = ComplexMul(_Samples[i], _Filter[i]);
+                _FftSamples[i] = ComplexMul(_FftSamples[i], _FftFilter[i]);
             }
         }
 
@@ -376,9 +386,9 @@ namespace Rayforge.Utility.Maths.FFT
 
             FFTJob job = new FFTJob
             {
-                _Samples = samples,
-                _Inverse = inverse,
-                _Normalize = normalize
+                _FftSamples = samples,
+                _FftInverse = inverse,
+                _FftNormalize = normalize
             };
             return UnityJobDispatcher.Schedule(job);
         }
@@ -476,6 +486,7 @@ namespace Rayforge.Utility.Maths.FFT
         /// Performs a full 2D FFT (or IFFT) on a 1D NativeArray representing
         /// a 2D grid stored in row-major order.
         /// Processing is done column-by-column first, then row-by-row.
+        /// The 2D transform is separable, so it can be applied as successive 1D FFTs along each axis.
         /// </summary>
         /// <param name="samples">1D array containing Complex samples in row-major layout.</param>
         /// <param name="width">Width of the 2D data.</param>
@@ -592,8 +603,8 @@ namespace Rayforge.Utility.Maths.FFT
 
             FrequencyConvolutionJob job = new FrequencyConvolutionJob
             {
-                _Samples = samples,
-                _Filter = filter
+                _FftSamples = samples,
+                _FftFilter = filter
             };
             return UnityJobDispatcher.Schedule(job);
         }
