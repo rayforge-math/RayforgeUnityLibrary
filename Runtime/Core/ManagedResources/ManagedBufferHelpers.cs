@@ -31,5 +31,17 @@ namespace Rayforge.ManagedResources.NativeMemory.Helpers
         {
             material.SetConstantBuffer(nameId, buffer.Buffer, offset, buffer.Buffer.stride);
         }
+
+        /// <summary>
+        /// Binds a <see cref="ManagedComputeBuffer"/> as a constant buffer directly to a <see cref="ComputeShader"/>.
+        /// </summary>
+        /// <param name="shader">The target shader to update.</param>
+        /// <param name="nameId">The shader property ID of the constant buffer to set.</param>
+        /// <param name="buffer">The managed compute buffer containing the constant data.</param>
+        /// <param name="offset">The starting offset within the buffer in bytes. Defaults to <c>0</c>.</param>
+        public static void SetCBuffer(this ComputeShader shader, int nameId, ManagedComputeBuffer buffer, int offset = 0)
+        {
+            shader.SetConstantBuffer(nameId, buffer.Buffer, offset, buffer.Buffer.stride);
+        }
     }
 }

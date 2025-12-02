@@ -4,7 +4,7 @@ using Rayforge.ManagedResources.NativeMemory;
 
 using static Rayforge.Utility.RuntimeCheck.Asserts;
 
-namespace Rayforge.Utility.Filter
+namespace Rayforge.Utility.Maths.Filter
 {
     public static class GaussHelpers
     {

@@ -1,8 +1,9 @@
-using Codice.CM.Common;
 using Rayforge.ManagedResources.NativeMemory;
 using Rayforge.ShaderExtensions.Blitter;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using Rayforge.ManagedResources.NativeMemory.Helpers;
+using Rayforge.ShaderExtensions;
 
 namespace Rayforge.Utility.Blitter
 {
@@ -43,7 +44,7 @@ namespace Rayforge.Utility.Blitter
     /// Layout is sequential to match GPU cbuffer layout.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public struct ChannelBlitterParams
+    public struct ChannelBlitterParams : IComputeData<ChannelBlitterParams>
     {
         /// <summary>Target red channel is mapped from this source channel.</summary>
         public Channel R;
@@ -65,6 +66,11 @@ namespace Rayforge.Utility.Blitter
         /// Defines the portion of the source texture to map onto the target.
         /// </summary>
         public Vector2 size;
+
+        /// <summary>
+        /// Returns data as raw compute data struct.
+        /// </summary>
+        public ChannelBlitterParams RawData => this;
     }
 
     /// <summary>
@@ -73,21 +79,39 @@ namespace Rayforge.Utility.Blitter
     /// </summary>
     public static class ChannelBlitter
     {
+        /// <summary>
+        /// Name of the compute shader inside the Resources folder.
+        /// Used for channel-wise blitting via compute shader.
+        /// Loaded through <c>Shader.Find()</c> or <c>Resources.Load()</c>.
+        /// </summary>
         private const string k_ComputeBlitShaderName = "ComputeChannelBlitter";
+        /// <summary>
+        /// Name of the raster (non-compute) shader inside the Resources folder.
+        /// Used for standard GPU rasterization-based channel blitting.
+        /// Loaded through <c>Shader.Find()</c> or <c>Resources.Load()</c>.
+        /// </summary>
         private const string k_RasterBlitShaderName = "RasterChannelBlitter";
 
         /// <summary>Shader property ID for the red channel mapping.</summary>
-        public static readonly int k_ChannelRId = Shader.PropertyToID("_R");
+        public static int ChannelRId => k_ChannelRId;
+        private static readonly int k_ChannelRId = Shader.PropertyToID("_R");
         /// <summary>Shader property ID for the green channel mapping.</summary>
-        public static readonly int k_ChannelGId = Shader.PropertyToID("_G");
+        public static int ChannelGId => k_ChannelGId;
+        private static readonly int k_ChannelGId = Shader.PropertyToID("_G");
         /// <summary>Shader property ID for the blue channel mapping.</summary>
-        public static readonly int k_ChannelBId = Shader.PropertyToID("_B");
+        public static int ChannelBId => k_ChannelBId;
+        private static readonly int k_ChannelBId = Shader.PropertyToID("_B");
         /// <summary>Shader property ID for the alpha channel mapping.</summary>
-        public static readonly int k_ChannelAId = Shader.PropertyToID("_A");
+        public static int ChannelAId => k_ChannelAId;
+        private static readonly int k_ChannelAId = Shader.PropertyToID("_A");
 
         /// <summary>Shader property ID for the blit parameter vector.</summary>
-        public static readonly int k_BlitParamsId = Shader.PropertyToID("_BlitParams");
         public static int BlitParamsId => k_BlitParamsId;
+        private static readonly int k_BlitParamsId = Shader.PropertyToID("_BlitParams");
+
+        /// <summary>Shader property ID for the entire parameter cbuffer block <see cref="ChannelBlitterParams"/>.</summary>
+        public static int ChannelBlitterParamsId => k_ChannelBlitterParamsId;
+        private static readonly int k_ChannelBlitterParamsId = Shader.PropertyToID("_ChannelBlitterParams");
 
         /// <summary>Compute shader used for compute pipeline blits.</summary>
         private static readonly ComputeShader k_ComputeBlitShader;
@@ -106,7 +130,7 @@ namespace Rayforge.Utility.Blitter
         static ChannelBlitter()
         {
             k_ComputeBlitShader = Resources.Load<ComputeShader>(k_ComputeBlitShaderName);
-            var shader = Shader.Find("Rayforge/" + k_RasterBlitShaderName);
+            var shader = Shader.Find(ResourcePaths.ShaderNamespace + k_RasterBlitShaderName);
             k_RasterBlitMaterial = new Material(shader);
             k_PropertyBlock = new MaterialPropertyBlock();
         }
@@ -143,6 +167,19 @@ namespace Rayforge.Utility.Blitter
             Graphics.SetRenderTarget(dest);
             Graphics.DrawProcedural(k_RasterBlitMaterial, new Bounds(Vector2.zero, Vector2.one), MeshTopology.Triangles, 3, 1, null, mpb);
             Graphics.SetRenderTarget(null);
+        }
+
+        /// <summary>
+        /// Rasterization blit using ChannelBlitterParams cbuffer.
+        /// </summary>
+        /// <param name="source">Source texture.</param>
+        /// <param name="dest">Destination render target.</param>
+        /// <param name="param">Cbuffer expected to contain <see cref="ChannelBlitterParams"/>.</param>
+        /// <param name="offset"><see cref="ChannelBlitterParams"/> struct offset within cbuffer.</param>
+        public static void RasterBlit(Texture source, RenderTexture dest, ManagedComputeBuffer param, int offset = 0)
+        {
+            k_PropertyBlock.SetCBuffer(k_ChannelBlitterParamsId, param, offset);
+            RasterBlit(source, dest, k_PropertyBlock);
         }
 
         /// <summary>

@@ -1,7 +1,9 @@
 {
   "name": "RayforgeUnityLibrary.Core.Runtime",
   "references": [
-    "Unity.RenderPipelines.Core.Runtime"
+    "Unity.RenderPipelines.Core.Runtime",
+    "Unity.Mathematics",
+    "Unity.Burst"
   ],
   "allowUnsafeCode": true,
   "autoReferenced": true
