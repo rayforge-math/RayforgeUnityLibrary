@@ -39,7 +39,7 @@ namespace Rayforge.Utility.RuntimeCheck
                 Debug.LogError($"{error}\n{file}:{line} ({member})");
 #else
             if (!assertFunc(value))
-                throw new Exception($"{error}\n{file}:{line} ({member})");
+                throw new System.Exception($"{error}\n{file}:{line} ({member})");
 #endif
         }
 

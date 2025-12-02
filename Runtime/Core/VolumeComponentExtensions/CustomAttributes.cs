@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Rayforge.VolumeComponentExtensions.Editor
+namespace Rayforge.VolumeComponentExtensions
 {
     public enum DrawMode
     {

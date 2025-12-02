@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 
-using Rayforge.VolumeComponentExtensions.Editor;
 using System;
 
 namespace Rayforge.VolumeComponentExtensions.Example

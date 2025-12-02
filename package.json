@@ -1,6 +1,6 @@
 {
   "name": "eu.rayforge.unitylibrary",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "displayName": "Rayforge Unity Library",
   "description": "Collection of my Unity structurs, wrappers and helpers.",
   "unity": "6000.0",
