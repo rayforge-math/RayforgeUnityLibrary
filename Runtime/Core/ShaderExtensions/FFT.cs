@@ -4,6 +4,12 @@ using UnityEngine;
 
 namespace Rayforge.ShaderExtensions.FFT
 {
+    /// <summary>
+    /// Contains global parameters for FFT operations used in the HLSL shader include.
+    /// These parameters control the FFT length, normalization, and parallel execution.
+    /// Use these to update shader variables and cbuffers for your shader based FFT 
+    /// implementation using the include.
+    /// </summary>
     public static class FFTParameters
     {
         /// <summary>

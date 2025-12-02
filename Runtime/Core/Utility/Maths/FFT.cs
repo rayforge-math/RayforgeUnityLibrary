@@ -3,7 +3,6 @@ using Rayforge.Utility.Threading;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -80,7 +79,7 @@ namespace Rayforge.Utility.Maths.FFT
         #region HLSL-Bridge
 
         /// <summary>
-        /// Computes the twiddle factor e^{i·angle} for the FFT, using euler's identity (see <see href="https://en.wikipedia.org/wiki/Euler%27s_identity" />)
+        /// Computes the twiddle factor e^{i·angle} for the FFT, using Euler's identity (see <see href="https://en.wikipedia.org/wiki/Euler%27s_identity" />)
         /// </summary>
         /// <param name="angle">Angle in radians.</param>
         /// <returns>Unit-magnitude complex number.</returns>
@@ -159,17 +158,14 @@ namespace Rayforge.Utility.Maths.FFT
         }
 
         /// <summary>
-        /// Performs an in-place iterative Fast Fourier Transform (FFT) or inverse FFT (IFFT) on a <see cref="NativeArray{Complex}"/>.
-        /// Implements the Cooley-Tukey radix-2 algorithm with bit-reversal ordering.
+        /// Reorders the elements in the buffer segment using bit-reversal ordering.
+        /// e.g. 0, 1, 2, 3, 4, 5, 6, 7 -> 0, 4, 1, 5, 2, 6, 3, 7
         /// </summary>
-        [BurstCompile]
-        void FFT(int baseOffset)
+        /// <param name="baseOffset">Offset into the buffer for the segment.</param>
+        /// <param name="N">Number of elements in the segment.</param>
+        /// <param name="bits">Number of bits used for indexing (log2(N)).</param>
+        void BitReversal(int baseOffset, int N, int bits)
         {
-            int N = GetLength();
-            int bits = lg2(N);
-
-            // Performs in-place bit reversal on the array to prepare for FFT, 
-            // e.g. 0, 1, 2, 3, 4, 5, 6, 7 -> 0, 4, 1, 5, 2, 6, 3, 7
             for (int i = 0; i < N; ++i)
             {
                 int j = BitReverse(i, bits);
@@ -180,38 +176,96 @@ namespace Rayforge.Utility.Maths.FFT
                     SetSample(baseOffset, j, tmp);
                 }
             }
+        }
 
-            // Performs actual FFT
+        /// <summary>
+        /// Performs a DFT on a sub-segment of the FFT.
+        /// </summary>
+        /// <param name="baseOffset">Offset of the FFT segment within the buffer.</param>
+        /// <param name="k">Start index of the current block within the segment.</param>
+        /// <param name="m2">Half-length of the current sub-FFT (number of butterfly pairs).</param>
+        /// <param name="theta">Twiddle angle factor for the current stage.</param>
+        void DFT(int baseOffset, int k, int m2, float theta)
+        {
+            for (int j = 0; j < m2; ++j)
+            {
+                float ang = theta * j;
+                Complex w = TwiddleFactor(ang);
+
+                Complex p = GetSample(baseOffset, k + j);
+                Complex q = ComplexMul(w, GetSample(baseOffset, k + j + m2));
+
+                SetSample(baseOffset, k + j, ComplexAdd(p, q));
+                SetSample(baseOffset, k + j + m2, ComplexSub(p, q));
+            }
+        }
+
+
+        /// <summary>
+        /// Performs a single FFT stage (butterfly computations) for a given sub-FFT length.
+        /// </summary>
+        /// <param name="baseOffset">Offset into the buffer for the segment.</param>
+        /// <param name="N">Total length of the FFT segment.</param>
+        /// <param name="m">Length of the current sub-FFT (m).</param>
+        /// <param name="theta">Twiddle angle factor for this stage.</param>
+        void FFTStage(int baseOffset, int N, int m, float theta)
+        {
+            int m2 = m >> 1;                                            // half-length
+
+            for (int k = 0; k < N; k += m)
+            {
+                DFT(baseOffset, k, m2, theta);
+            }
+        }
+
+        /// <summary>
+        /// Performs the iterative Cooley-Tukey radix-2 FFT computation on the buffer segment.
+        /// </summary>
+        /// <param name="baseOffset">Offset into the buffer for the segment.</param>
+        /// <param name="N">Number of elements in the segment.</param>
+        /// <param name="bits">Number of bits used for indexing (log2(N)).</param>
+        void Radix2FFT(int baseOffset, int N, int bits)
+        {
             for (int s = 1; s <= bits; ++s)
             {
                 int m = 1 << s;                                             // current sub-FFT length
-                int m2 = m >> 1;                                            // half-length
                 float theta = (_FftInverse ? 1.0f : -1.0f) * 2.0f * PI / m; // twiddle angle
 
-                for (int k = 0; k < N; k += m)                              // iterate over blocks
-                {
-                    for (int j = 0; j < m2; ++j)                            // iterate over block elements
-                    {
-                        float ang = theta * j;
-                        Complex w = TwiddleFactor(ang);
-
-                        Complex p = GetSample(baseOffset, k + j);
-                        Complex q = ComplexMul(w, GetSample(baseOffset, k + j + m2));
-
-                        SetSample(baseOffset, k + j, ComplexAdd(p, q));
-                        SetSample(baseOffset, k + j + m2, ComplexSub(p, q));
-                    }
-                }
+                FFTStage(baseOffset, N, m, theta);
             }
+        }
 
-            if (_FftInverse && _FftNormalize)
+        /// <summary>
+        /// Normalizes the buffer segment if performing an inverse FFT.
+        /// </summary>
+        /// <param name="baseOffset">Offset into the buffer for the segment.</param>
+        /// <param name="N">Number of elements in the segment.</param>
+        void NormalizeIfInverse(int baseOffset, int N)
+        {
+            if (!_FftInverse || !_FftNormalize) return;
+
+            float invN = 1.0f / N;
+            for (int i = 0; i < N; ++i)
             {
-                float invN = 1.0f / GetLength();
-                for (int i = 0; i < GetLength(); ++i)
-                {
-                    SetSample(baseOffset, i, ComplexScale(GetSample(baseOffset, i), invN));
-                }
+                SetSample(baseOffset, i, ComplexScale(GetSample(baseOffset, i), invN));
             }
+        }
+
+        /// <summary>
+        /// Performs an in-place iterative Fast Fourier Transform (FFT) or inverse FFT (IFFT)
+        /// on a segment of a <see cref="NativeArray{Complex}"/> identified by <paramref name="baseOffset"/>.
+        /// Implements the Cooley-Tukey radix-2 algorithm.
+        /// </summary>
+        /// <param name="baseOffset">Offset into the buffer for the segment to transform.</param>
+        [BurstCompile]
+        void FFT(int baseOffset)
+        {
+            int N = GetLength();
+            int bits = lg2(N);
+
+            BitReversal(baseOffset, N, bits);
+            Radix2FFT(baseOffset, N, bits);
+            NormalizeIfInverse(baseOffset, N);
         }
 
         #endregion // --- HLSL-Compatible FFT ---
@@ -442,7 +496,7 @@ namespace Rayforge.Utility.Maths.FFT
         /// <param name="inverse">Whether to perform an inverse FFT.</param>
         /// <param name="normalize">Whether to normalize the result.</param>
         /// <returns>A JobHandle representing the scheduled job.</returns>
-        /// <exception cref="ArgumentException">Thrown if the length of samples is not a power of two.</exception>
+        /// <exception cref="ArgumentException">Thrown if the length of samples is not a power of two or the input is not valid.</exception>
         private static JobHandle ScheduleFFT_internal(NativeArray<Complex> samples, bool inverse, bool normalize)
         {
             if (!samples.IsCreated || samples.Length == 0)
@@ -715,19 +769,5 @@ namespace Rayforge.Utility.Maths.FFT
         /// </remarks>
         public static void CompleteConvolution(NativeArray<Complex> samples, NativeArray<Complex> filter)
             => CompleteConvolution_internal(samples, filter);
-    }
-
-    public static class FFTShaderDispatcher
-    {
-        /// <summary>
-        /// Name of the compute shader inside the Resources folder.
-        /// Used for performing FFTs over image data.
-        /// Loaded through <c>Shader.Find()</c> or <c>Resources.Load()</c>.
-        /// </summary>
-        private const string k_ComputeFftShaderName = "ComputeFft";
-
-        
-
-
     }
 }

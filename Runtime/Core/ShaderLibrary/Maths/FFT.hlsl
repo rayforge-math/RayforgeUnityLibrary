@@ -7,6 +7,13 @@
 // 1. Inputs
 // ============================================================================
 
+/// @brief FFT configuration parameters.
+///
+/// @details
+/// The first three fields (`_FftLength`, `_FftInverse`, `_FftNormalize`)
+/// are used directly by the FFT functions.
+/// `_FftParallelRowCount` is not part of the FFT math — it's intended for
+/// external use when dispatching multiple FFT rows in parallel.
 CBUFFER_START(_FftParams)
 int _FftLength;
 bool _FftInverse;
@@ -25,11 +32,13 @@ int GetLength()
 // ============================================================================
 
 /// @brief Retrieves a complex sample at the given index.
+/// @param baseOffset Offset of segment within data structure.
 /// @param index Zero-based array index.
 /// @return The complex sample stored at the specified index.
 Complex GetSample(int baseOffset, int index);
 
 /// @brief Writes a complex sample into the underlying buffer.
+/// @param baseOffset Offset of segment within data structure.
 /// @param index Zero-based array index.
 /// @param sample Complex value to store.
 void SetSample(int baseOffset, int index, Complex sample);
@@ -94,17 +103,14 @@ int BitReverse(int x, int log2n)
         return n;
     }
 
-/// @brief Performs an in-place iterative FFT or inverse FFT
-/// @details Cooley-Tukey radix-2 algorithm, bit-reversed ordering
-/// @note Mirrors the C# FFT implementation exactly
-/// @param baseOffset: baseOffset of the unterlying array.
-void FFT(int baseOffset)
+/// @brief Reorders the elements in the buffer segment using bit-reversal ordering.
+/// @details Bit-reversal is a prerequisite for Cooley-Tukey radix-2 FFT. 
+/// Separating this step allows modularity: different stages of FFT can reuse this logic.
+/// @param baseOffset Offset into the buffer for the segment.
+/// @param N Number of elements in the segment.
+/// @param bits Number of bits used for indexing (log2(N)).
+void BitReversal(int baseOffset, int N, int bits)
 {
-    int N = GetLength();
-    int bits = lg2(N);
-
-    // Performs in-place bit reversal on the array to prepare for FFT, 
-    // e.g. 0, 1, 2, 3, 4, 5, 6, 7 -> 0, 4, 1, 5, 2, 6, 3, 7
     for (int i = 0; i < N; ++i)
     {
         int j = BitReverse(i, bits);
@@ -115,38 +121,97 @@ void FFT(int baseOffset)
             SetSample(baseOffset, j, tmp);
         }
     }
+}
 
-    // Performs actual FFT
+/// @brief Performs a single DFT on a sub-segment (butterfly computation).
+/// @details Modularizing the inner loop allows parallel execution per thread
+/// and makes it easier to replace or optimize the core computation.
+/// @param baseOffset Offset into the buffer for the segment.
+/// @param k Start index of the current block within the segment.
+/// @param m2 Half-length of the current sub-FFT (number of butterfly pairs).
+/// @param theta Twiddle angle factor for the current stage.
+void DFT(int baseOffset, int k, int m2, float theta)
+{
+    for (int j = 0; j < m2; ++j)
+    {
+        float ang = theta * j;
+        Complex w = TwiddleFactor(ang);
+
+        Complex p = GetSample(baseOffset, k + j);
+        Complex q = ComplexMul(w, GetSample(baseOffset, k + j + m2));
+
+        SetSample(baseOffset, k + j, ComplexAdd(p, q));
+        SetSample(baseOffset, k + j + m2, ComplexSub(p, q));
+    }
+}
+
+/// @brief Performs one FFT stage (all butterfly computations for sub-FFT length m).
+/// @details Modular stage function separates stage iteration from inner DFT logic.
+/// This is helpful for GPU mapping and flexible pipeline assembly.
+/// @param baseOffset Offset into the buffer for the segment.
+/// @param N Total length of the FFT segment.
+/// @param m Length of the current sub-FFT (m).
+/// @param theta Twiddle angle factor for this stage.
+void FFTStage(int baseOffset, int N, int m, float theta)
+{
+    int m2 = m >> 1;                    // half-length of the block
+
+    for (int k = 0; k < N; k += m)      // iterate over each block
+    {
+        DFT(baseOffset, k, m2, theta);
+    }
+}
+
+/// @brief Executes all FFT stages (radix-2) for a buffer segment.
+/// @details Modularizing stage iteration allows combining stages differently
+/// (e.g., splitting into GPU dispatches or parallel rows) and makes it easier
+/// to adapt for 2D FFTs or multi-segment processing.
+/// @param baseOffset Offset into the buffer for the segment.
+/// @param N Number of elements in the segment.
+/// @param bits Number of bits used for indexing (log2(N)).
+void Radix2FFT(int baseOffset, int N, int bits)
+{
     for (int s = 1; s <= bits; ++s)
     {
-        int m = 1 << s;                                             // current sub-FFT length
-        int m2 = m >> 1;                                            // half-length
-        float theta = (_FftInverse ? 1.0f : -1.0f) * 2.0f * PI / m; // twiddle angle
+        int m = 1 << s;
+        float theta = (_FftInverse ? 1.0f : -1.0f) * 2.0f * PI / m;
 
-        for (int k = 0; k < N; k += m)                              // iterate over blocks
-        {
-            for (int j = 0; j < m2; ++j)                            // iterate over block elements
-            {
-                float ang = theta * j;
-                Complex w = TwiddleFactor(ang);
-
-                Complex p = GetSample(baseOffset, k + j);
-                Complex q = ComplexMul(w, GetSample(baseOffset, k + j + m2));
-
-                SetSample(baseOffset, k + j, ComplexAdd(p, q));
-                SetSample(baseOffset, k + j + m2, ComplexSub(p, q));
-            }
-        }
+        FFTStage(baseOffset, N, m, theta);
     }
+}
 
-    if (_FftInverse && _FftNormalize)
+/// @brief Normalizes the buffer segment if performing an inverse FFT.
+/// @details Separate normalization keeps the main FFT loop clean and modular.
+/// @param baseOffset Offset into the buffer for the segment.
+/// @param N Number of elements in the segment.
+void NormalizeIfInverse(int baseOffset, int N)
+{
+    if (!_FftInverse || !_FftNormalize)
+        return;
+
+    float invN = 1.0f / N;
+    for (int i = 0; i < N; ++i)
     {
-        float invN = 1.0f / GetLength();
-        for (int i = 0; i < GetLength(); ++i)
-        {
-            SetSample(baseOffset, i, ComplexScale(GetSample(baseOffset, i), invN));
-        }
+        SetSample(baseOffset, i, ComplexScale(GetSample(baseOffset, i), invN));
     }
+}
+
+/// @brief Performs an in-place iterative Cooley-Tukey radix-2 FFT or IFFT.
+/// @details Demonstrates modular FFT design:
+/// - BitReversal prepares the data,
+/// - Radix2FFT iterates over stages,
+/// - NormalizeIfInverse applies optional normalization.
+/// This modular approach allows flexible use for 1D or 2D FFTs,
+/// multi-segment buffers, GPU parallelization with sync, or testing individual modules.
+/// @param baseOffset Offset into the buffer for the segment to transform.
+void FFT(int baseOffset)
+{
+    int N = GetLength();
+    int bits = lg2(N);
+
+    BitReversal(baseOffset, N, bits);
+    Radix2FFT(baseOffset, N, bits);
+    NormalizeIfInverse(baseOffset, N);
 }
 
 // end --- C#-Compatible FFT ---
