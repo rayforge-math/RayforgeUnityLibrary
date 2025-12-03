@@ -169,7 +169,15 @@ namespace Rayforge.VolumeComponentExtensions
 
         public ArrayWrapper(T[] array)
         {
-            this.array = array ?? Array.Empty<T>();
+            if (array != null && array.Length > 0)
+            {
+                this.array = new T[array.Length];
+                Array.Copy(array, this.array, array.Length);
+            }
+            else
+            {
+                this.array = Array.Empty<T>();
+            }
         }
 
         public ArrayWrapper(int length)
@@ -205,7 +213,7 @@ namespace Rayforge.VolumeComponentExtensions
         }
 
         public static ArrayWrapper<T> Empty()
-            => new ArrayWrapper<T>(Array.Empty<T>());
+            => new ArrayWrapper<T>(0);
 
         public void CopyFrom(ArrayWrapper<T> other)
         {
