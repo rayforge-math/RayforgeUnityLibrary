@@ -1,10 +1,10 @@
-using UnityEngine;
+using Rayforge.Common;
 
 namespace Rayforge.ShaderExtensions
 {
     public static class ResourcePaths
     {
-        private static readonly string k_ShaderNamespace = "Rayforge/";
+        private static readonly string k_ShaderNamespace = Globals.CompanyName + "/";
         public static string ShaderNamespace => k_ShaderNamespace;
 
         private static readonly string k_TextureResourceFolder = "Textures/";
