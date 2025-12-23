@@ -111,6 +111,15 @@ namespace Rayforge.Utility.BitField
         public void MarkDirty(uint mask) => m_Bits.Set(mask);
 
         /// <summary>
+        /// Marks all flags as dirty.
+        /// </summary>
+        /// <remarks>
+        /// This is typically used when a full reset or reinitialization is required
+        /// and all dependent state must be recomputed.
+        /// </remarks>
+        public void MarkAllDirty() => m_Bits.SetAll();
+
+        /// <summary>
         /// Clears the specified dirty flags.
         /// </summary>
         /// <param name="mask">Bit mask identifying the flags to clear.</param>
