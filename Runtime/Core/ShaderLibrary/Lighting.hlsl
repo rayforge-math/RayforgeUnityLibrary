@@ -41,44 +41,51 @@ float HenyeyGreensteinPhaseApprox(float cosTheta, float g)
 }
 
 /// @brief Computes the exact Henyey-Greenstein scattering for a ray in a volumetric medium.
-/// 
+///
 /// The scattering fraction is computed using the Henyey-Greenstein phase function.
-/// The cosine of the angle θ between the ray direction and light direction is calculated as:
-/// 
+/// The cosine of the scattering angle θ is defined by the dot product:
+///
 ///     cos(θ) = (a ⋅ b) / (|a| * |b|)
-/// 
+///
 /// where:
-/// - a = rayDir (direction of the current ray)
-/// - b = -lightDir (direction from the ray toward the light source)
-/// 
-/// @note Both vectors must be normalized, so |a| = |b| = 1, which simplifies the formula:
-///       cos(θ) = dot(a, b)
-/// This ensures that the scattering obeys physical laws for anisotropic media.
-/// 
-/// @param rayDir Normalized direction of the current ray (from camera).
-/// @param lightDir Normalized direction to the light source.
+/// - a = rayDir   (direction of the current ray)
+/// - b = lightDir (direction from the current sample point toward the light source)
+///
+/// @note Both vectors must be normalized.
+///       With |a| = |b| = 1, the equation simplifies to:
+///
+///           cos(θ) = dot(rayDir, lightDir)
+///
+/// @param rayDir Normalized ray direction (from the sample along the view ray).
+/// @param lightDir Normalized direction from the sample toward the light source.
 /// @param g Anisotropy factor (-1 = backward, 0 = isotropic, 1 = forward).
 /// @return Fraction of light scattered along rayDir according to the Henyey-Greenstein phase function.
 float HenyeyGreensteinScattering(float3 rayDir, float3 lightDir, float g)
 {
-    float rayDot = dot(rayDir, -lightDir);
-    return HenyeyGreensteinPhase(rayDot, g);
+    float cosTheta = dot(rayDir, lightDir);
+    return HenyeyGreensteinPhase(cosTheta, g);
 }
 
 /// @brief Computes an approximate Henyey-Greenstein scattering for performance-sensitive shaders.
-/// 
-/// Uses the same physical principle as the exact function:
-/// 
-///     cos(θ) = (a ⋅ b) / (|a| * |b|) 
-/// 
-/// with normalized vectors a = rayDir, b = -lightDir, simplifying to dot(a, b).
-/// 
-/// @param rayDir Normalized direction of the current ray.
-/// @param lightDir Normalized direction to the light source.
+///
+/// Uses the same physical principle as the exact formulation:
+///
+///     cos(θ) = (a ⋅ b) / (|a| * |b|)
+///
+/// With normalized vectors:
+/// - a = rayDir
+/// - b = lightDir
+///
+/// this simplifies to:
+///
+///     cos(θ) = dot(rayDir, lightDir)
+///
+/// @param rayDir Normalized ray direction.
+/// @param lightDir Normalized direction toward the light source.
 /// @param g Anisotropy factor (-1..1).
 /// @return Approximate fraction of light scattered along rayDir.
 float HenyeyGreensteinScatteringApprox(float3 rayDir, float3 lightDir, float g)
 {
-    float rayDot = dot(rayDir, -lightDir);
-    return HenyeyGreensteinPhaseApprox(rayDot, g);
+    float cosTheta = dot(rayDir, lightDir);
+    return HenyeyGreensteinPhaseApprox(cosTheta, g);
 }
