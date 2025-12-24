@@ -8,56 +8,26 @@ using static Rayforge.Utility.RuntimeCheck.Asserts;
 namespace Rayforge.ShaderExtensions.ResourceLoader
 {
     /// <summary>
-    /// Immutable metadata describing a globally shared shader texture.
-    /// Couples shader binding information with resource loading data.
-    /// </summary>
-    public sealed class SharedTextureMeta : IEquatable<SharedTextureMeta>
-    {
-        /// <summary>Global shader property name (e.g. "_Rayforge_BlueNoise").</summary>
-        public string ShaderPropertyName { get; }
-
-        /// <summary>Shader property ID derived from <see cref="ShaderPropertyName"/>.</summary>
-        public int ShaderPropertyId { get; }
-
-        /// <summary>Resource path relative to the Resources folder.</summary>
-        public string ResourceName { get; }
-
-        public SharedTextureMeta(string shaderPropertyName, string resourceName)
-        {
-            ShaderPropertyName = shaderPropertyName;
-            ShaderPropertyId = Shader.PropertyToID(shaderPropertyName);
-            ResourceName = resourceName;
-        }
-
-        /// <summary>
-        /// Two metas are considered equal if they refer to the same shader property ID.
-        /// </summary>
-        public bool Equals(SharedTextureMeta other)
-        {
-            if (ReferenceEquals(null, other))
-                return false;
-
-            if (ReferenceEquals(this, other))
-                return true;
-
-            return ShaderPropertyId == other.ShaderPropertyId;
-        }
-
-        public override bool Equals(object obj)
-            => Equals(obj as SharedTextureMeta);
-
-        /// <summary>
-        /// Hash code based solely on the shader property ID.
-        /// </summary>
-        public override int GetHashCode()
-            => ShaderPropertyId;
-    }
-
-    /// <summary>
     /// Provides access to shared global resources used across Rayforge shaders and in projects.
     /// Handles loading, validating, and globally registering textures that must be available
     /// to all rendering passes. All resources are loaded once and safely reused.
     /// </summary>
+    /// <remarks>
+    /// DESIGN NOTE:
+    /// Shared textures are bound via global shader properties and are intentionally
+    /// treated as cooperative, process-global resources.
+    ///
+    /// Multiple systems or assemblies may attempt to load and register the same
+    /// SharedTextureMeta. This is explicitly supported:
+    ///
+    /// - The first system that binds a texture to a given shader property ID wins.
+    /// - All subsequent systems detect and reuse the already bound global texture.
+    /// - No ownership, locking, or forced overwriting is performed.
+    /// - This ensures idempotent, order-independent initialization across assemblies.
+    ///
+    /// This behavior is by design and must not be "fixed" by introducing singletons
+    /// or forced reloads.
+    /// </remarks>
     public static class SharedTextureResources
     {
         /// <summary>
@@ -158,6 +128,23 @@ namespace Rayforge.ShaderExtensions.ResourceLoader
             => LoadAndRegisterTexture<Texture2D>(k_NoiseShapeMeta);
 
         /// <summary>
+        /// Loads and registers all shared texture resources used by Rayforge.
+        /// 
+        /// Intended to be called once during pipeline or renderer initialization,
+        /// but safe to call multiple times.
+        /// </summary>
+        public static void LoadAll()
+        {
+            LoadBlueNoise();
+
+            LoadNoise3DDetail();
+            LoadNoise3DShape();
+
+            LoadNoiseDetail();
+            LoadNoiseShape();
+        }
+
+        /// <summary>
         /// Loads and registers a shared texture resource described by the given metadata.
         /// Safe to call multiple times.
         /// </summary>
@@ -199,8 +186,7 @@ namespace Rayforge.ShaderExtensions.ResourceLoader
             }
 
             // Load from Resources
-            var loaded = Resources.Load<T>(
-                ResourcePaths.TextureResourceFolder + meta.ResourceName);
+            var loaded = Resources.Load<T>(ResourcePaths.TextureResourceFolder + meta.ResourceName);
 
             Validate(
                 loaded,
