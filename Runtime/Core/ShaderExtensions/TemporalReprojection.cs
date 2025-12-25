@@ -1,5 +1,7 @@
 using UnityEngine;
 
+using Rayforge.Utility.FrameSync;
+
 namespace Rayforge.ShaderExtensions.TemporalReprojection
 {
     /// <summary>
@@ -55,59 +57,54 @@ namespace Rayforge.ShaderExtensions.TemporalReprojection
 
         /// <summary>
         /// Cached inverse of the current frame's View-Projection matrix.
-        /// Used by shaders to reconstruct world-space positions from NDC/clip-space coordinates.
+        /// Used by shaders to reconstruct world-space positions.
         /// </summary>
         private static Matrix4x4 s_InvViewProjMatrix = Matrix4x4.identity;
 
         /// <summary>
-        /// Internal frame counter ensuring that updates occur only once per frame.
+        /// Per-frame execution guard.
+        /// Ensures matrix updates and uploads occur only once per frame.
         /// </summary>
-        private static int s_FrameCount = -1;
+        private static FrameOnce s_FrameOnce;
 
         /// <summary>
-        /// Shader property ID for setting the previous View-Projection matrix globally.
+        /// Shader property ID for the previous View-Projection matrix.
         /// </summary>
-        private static readonly int k_PrevViewProjectionMatrixId = Shader.PropertyToID("_Rayforge_Matrix_Prev_VP");
+        private static readonly int k_PrevViewProjectionMatrixId =
+            Shader.PropertyToID("_Rayforge_Matrix_Prev_VP");
 
         /// <summary>
-        /// Shader property ID for setting the inverse View-Projection matrix globally.
+        /// Shader property ID for the inverse View-Projection matrix.
         /// </summary>
-        private static readonly int k_InvViewProjectionMatrixId = Shader.PropertyToID("_Rayforge_Matrix_Inv_VP");
+        private static readonly int k_InvViewProjectionMatrixId =
+            Shader.PropertyToID("_Rayforge_Matrix_Inv_VP");
 
         /// <summary>
-        /// Updates both the previous View-Projection (VP) matrix and the current inverse VP matrix once per frame.
+        /// Updates and uploads temporal camera matrices once per frame.
         ///
-        /// Sets the cached previous VP matrix into a global shader variable for reprojection usage,
-        /// calculates and uploads the inverse of the current VP matrix for world-space reconstruction,
-        /// and refreshes the cached previous VP matrix with the current frame's matrix.
-        ///
-        /// Call this at the start of your rendering frame or before dispatching any
-        /// reprojection-reliant shader passes.
+        /// Safe to call multiple times per frame and from multiple systems.
         /// </summary>
         public static void UpdateViewProjectionMatrices()
         {
-            int currentFrame = Time.frameCount;
-
-            if (s_FrameCount == currentFrame)
+            if (!s_FrameOnce.TryBegin())
                 return;
-            s_FrameCount = currentFrame;
 
             Matrix4x4 currentViewProj = Matrix4x4.identity;
 
-            var mainCamera = Camera.main;
-            if (mainCamera != null)
+            var camera = Camera.main;
+            if (camera != null)
             {
-                currentViewProj = mainCamera.projectionMatrix * mainCamera.worldToCameraMatrix;
+                currentViewProj = camera.projectionMatrix * camera.worldToCameraMatrix;
             }
 
-            // Compute inverse of current VP matrix for reconstructing world positions in shaders
+            // Compute inverse VP for world-space reconstruction
             s_InvViewProjMatrix = Matrix4x4.Inverse(currentViewProj);
 
-            // Upload both matrices as global shader variables
+            // Upload global shader parameters
             Shader.SetGlobalMatrix(k_InvViewProjectionMatrixId, s_InvViewProjMatrix);
             Shader.SetGlobalMatrix(k_PrevViewProjectionMatrixId, s_PrevViewProjMatrix);
 
-            // Update cached previous VP for next frame
+            // Cache current VP for next frame
             s_PrevViewProjMatrix = currentViewProj;
         }
     }

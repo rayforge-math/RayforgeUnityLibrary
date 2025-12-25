@@ -20,9 +20,11 @@ namespace Rayforge.ShaderExtensions.ResourceLoader
     /// Multiple systems or assemblies may attempt to load and register the same
     /// SharedTextureMeta. This is explicitly supported:
     ///
+    /// - The global shader property is treated as the single source of truth.
     /// - The first system that binds a texture to a given shader property ID wins.
     /// - All subsequent systems detect and reuse the already bound global texture.
     /// - No ownership, locking, or forced overwriting is performed.
+    /// - Type mismatches are validated and reported at load time.
     /// - This ensures idempotent, order-independent initialization across assemblies.
     ///
     /// This behavior is by design and must not be "fixed" by introducing singletons
