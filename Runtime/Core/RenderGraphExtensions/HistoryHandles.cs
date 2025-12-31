@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
+using static Rayforge.Utility.RuntimeCheck.Asserts;
+
 namespace Rayforge.RenderGraphExtensions.Rendering
 {
     /// <summary>
@@ -101,20 +103,6 @@ namespace Rayforge.RenderGraphExtensions.Rendering
 
             if (swap) m_Buffer.Swap();
             return alloc;
-        }
-
-        /// <summary>
-        /// Swaps the current and previous handle, so that the current becomes the history for the next frame.
-        /// </summary>
-        public void Swap() => m_Buffer.Swap();
-
-        /// <summary>
-        /// Ensures the delegate is valid.
-        /// </summary>
-        /// <param name="func">Delegate to validate.</param>
-        private static void ValidateDelegate(TextureReAllocFunction func)
-        {
-            if (func == null) throw new System.ArgumentNullException(nameof(func));
         }
     }
 }

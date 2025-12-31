@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.RenderGraphModule;
-using UnityEngine.UIElements;
+
 using static Rayforge.Utility.RuntimeCheck.Asserts;
 
 namespace Rayforge.RenderGraphExtensions.Rendering
@@ -30,7 +30,7 @@ namespace Rayforge.RenderGraphExtensions.Rendering
         private RenderTextureDescriptor[] m_Descriptors;
 
         /// <summary>Read-only access to the mip level descriptors.</summary>
-        public IReadOnlyList<RenderTextureDescriptor> Descriptors => m_Descriptors;
+        public ReadOnlySpan<RenderTextureDescriptor> Descriptors => m_Descriptors;
 
         /// <summary>Access a specific mip level descriptor by index.</summary>
         /// <param name="index">The mip level index.</param>
