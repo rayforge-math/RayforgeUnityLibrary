@@ -1,16 +1,21 @@
 namespace Rayforge.ManagedResources.Abstractions
 {
     /// <summary>
-    /// Represents a CPU-side container that exposes backing single element array data for GPU upload.
-    /// Used for data sets such as constant buffers, etc.
+    /// Represents a CPU-side container that exposes backing single-element data
+    /// for GPU upload.
+    ///
+    /// Typically used for constant buffer style data uploads
+    /// (see <see cref="UnityEngine.ComputeBuffer"/> with
+    /// <see cref="UnityEngine.ComputeBufferType.Constant"/>).
     /// </summary>
-    /// <typeparam name="Ttype">The unmanaged element type stored in the array.</typeparam>
+    /// <typeparam name="Ttype">The unmanaged element type.</typeparam>
     public interface IComputeData<Ttype>
         where Ttype : unmanaged
     {
         /// <summary>
-        /// Returns the raw array backing the data. This array is directly uploaded to GPU buffers.
+        /// Returns the raw data element that is uploaded to the GPU.
+        /// Intended primarily for single-element constant buffer bindings.
         /// </summary>
-        public Ttype RawData { get; }
+        Ttype RawData { get; }
     }
 }
