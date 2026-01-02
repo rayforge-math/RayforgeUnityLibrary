@@ -1,4 +1,3 @@
-using Rayforge.ManagedResources.Abstractions;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
@@ -53,7 +52,7 @@ namespace Rayforge.ShaderExtensions.Maths.Transforms
         /// via a constant buffer.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
-        struct FftParams : IComputeData<FftParams>
+        struct FftParams
         {
             /// <summary>
             /// FFT length (number of samples).
@@ -79,11 +78,6 @@ namespace Rayforge.ShaderExtensions.Maths.Transforms
             /// multiple 2D FFTs in parallel, allowing them to share the same constant buffer.
             /// </summary>
             public int _FftParallelRowCount;
-
-            /// <summary>
-            /// Returns this struct as raw compute-shader-compatible data.
-            /// </summary>
-            public FftParams RawData => this;
         }
 
         /// <summary>

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-using Rayforge.Utility.FrameSync;
+using Rayforge.Utility.Synchronization;
 
 namespace Rayforge.ShaderExtensions.TemporalReprojection
 {

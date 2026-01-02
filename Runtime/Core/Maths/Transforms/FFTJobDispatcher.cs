@@ -1,6 +1,6 @@
 using Rayforge.ManagedResources.NativeMemory;
 using Rayforge.Maths.Tranforms;
-using Rayforge.Utility.Threading;
+using Rayforge.Threading.Jobs;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
