@@ -1,4 +1,4 @@
-using Rayforge.ManagedResources.Abstraction;
+using UnityEngine;
 using Rayforge.ManagedResources.NativeMemory;
 
 namespace Rayforge.ManagedResources.Pooling

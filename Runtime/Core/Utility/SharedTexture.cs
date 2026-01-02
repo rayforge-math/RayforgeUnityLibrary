@@ -7,7 +7,7 @@ namespace Rayforge.Utility.Rendering
     /// Immutable metadata describing a globally shared shader texture.
     /// Couples shader binding information with resource loading data.
     /// </summary>
-    public sealed class SharedTextureMeta : IEquatable<SharedTextureMeta>
+    public readonly struct SharedTextureMeta : IEquatable<SharedTextureMeta>
     {
         /// <summary>Global shader property name (e.g. "_Rayforge_BlueNoise").</summary>
         public string ShaderPropertyName { get; }
@@ -38,9 +38,6 @@ namespace Rayforge.Utility.Rendering
 
             return ShaderPropertyId == other.ShaderPropertyId;
         }
-
-        public override bool Equals(object obj)
-            => Equals(obj as SharedTextureMeta);
 
         /// <summary>
         /// Hash code based solely on the shader property ID.

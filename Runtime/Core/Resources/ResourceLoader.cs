@@ -3,7 +3,7 @@ using UnityEngine;
 
 using Rayforge.Utility.Rendering;
 
-using static Rayforge.Utility.RuntimeCheck.Asserts;
+using Rayforge.Diagnostics;
 
 using static UnityEngine.Resources;
 
@@ -165,9 +165,8 @@ namespace Rayforge.Resources
             // Already loaded and cached locally
             if (k_RegisteredResources.TryGetValue(meta, out var cached))
             {
-                Validate(
-                    cached is T,
-                    (_) => _,
+                Assertions.IsTypeOf<T>(
+                    cached,
                     $"Shared texture '{meta.ShaderPropertyName}' was already registered " +
                     $"but has incompatible type {cached.GetType().Name} (expected {typeof(T).Name}).");
 
@@ -179,9 +178,8 @@ namespace Rayforge.Resources
 
             if (existing != null)
             {
-                Validate(
-                    existing is T,
-                    (_) => _,
+                Assertions.IsTypeOf<T>(
+                    existing,
                     $"Global texture bound to '{meta.ShaderPropertyName}' is of type " +
                     $"{existing.GetType().Name}, expected {typeof(T).Name}.");
 
@@ -192,9 +190,8 @@ namespace Rayforge.Resources
             // Load from Resources
             var loaded = Load<T>(ResourcePaths.TextureResourceFolder + meta.ResourceName);
 
-            Validate(
+            Assertions.NotNull(
                 loaded,
-                tex => tex != null,
                 $"Shared texture '{meta.ResourceName}' could not be loaded.");
 
             // Register globally and cache locally

@@ -1,8 +1,6 @@
-using UnityEngine;
 using System.Collections.Generic;
-using Rayforge.ManagedResources.NativeMemory;
-
-using static Rayforge.Utility.RuntimeCheck.Asserts;
+using Rayforge.ManagedResources.Abstractions;
+using Rayforge.Diagnostics;
 
 namespace Rayforge.Utility.Filter
 {
@@ -91,7 +89,7 @@ namespace Rayforge.Utility.Filter
             {
                 if (m_Radius != value)
                 {
-                    ValidateRadius(value);
+                    Assertions.AtLeastZero(value, "radius must be greater than or equal to 0");
                     m_Radius = value;
                     m_Changed = true;
                 }
@@ -108,7 +106,7 @@ namespace Rayforge.Utility.Filter
         /// </summary>
         public FilterKernel(int radius)
         {
-            ValidateRadius(radius);
+            Assertions.AtLeastZero(radius, "radius must be greater than or equal to 0");
             m_Radius = radius;
             m_Changed = false;
             m_Kernel = new float[ToBufferSize(radius)];
@@ -146,14 +144,5 @@ namespace Rayforge.Utility.Filter
                     m_Kernel[i] /= sum;
             }
         }
-
-        /// <summary>
-        /// Validates that the kernel radius is non-negative.
-        /// </summary>
-        private static void ValidateRadius(int radius)
-        {
-            Validate(radius, val => val >= 0, "radius must be greater than or equal to 0");
-        }
     }
-
 }

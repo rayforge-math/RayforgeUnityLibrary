@@ -3,7 +3,10 @@ using Rayforge.ShaderExtensions.Blitter;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Rayforge.ManagedResources.NativeMemory.Helpers;
-using Rayforge.ShaderExtensions;
+using Rayforge.ManagedResources.Abstractions;
+using Rayforge.Resources;
+
+using static UnityEngine.Resources;
 
 namespace Rayforge.Utility.Blitter
 {
@@ -129,7 +132,7 @@ namespace Rayforge.Utility.Blitter
         /// </summary>
         static ChannelBlitter()
         {
-            k_ComputeBlitShader = Resources.Load<ComputeShader>(k_ComputeBlitShaderName);
+            k_ComputeBlitShader = Load<ComputeShader>(k_ComputeBlitShaderName);
             var shader = Shader.Find(ResourcePaths.ShaderNamespace + k_RasterBlitShaderName);
             k_RasterBlitMaterial = new Material(shader);
             k_PropertyBlock = new MaterialPropertyBlock();

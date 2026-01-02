@@ -1,4 +1,3 @@
-using Rayforge.ManagedResources.Abstraction;
 using System;
 
 namespace Rayforge.ManagedResources.Pooling

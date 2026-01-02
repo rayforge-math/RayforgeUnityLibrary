@@ -1,4 +1,3 @@
-using Rayforge.ManagedResources.Abstraction;
 using Rayforge.ManagedResources.NativeMemory;
 
 namespace Rayforge.ManagedResources.Pooling
@@ -6,7 +5,6 @@ namespace Rayforge.ManagedResources.Pooling
     /// <summary>
     /// Global static access to a pool of managed system buffers (<see cref="NativeArray{T}"/>).
     /// Provides simple Rent() for default use,
-    /// including a batched variant for sequential buffers to reduce frequent reallocations.
     /// </summary>
     /// <typeparam name="T">The struct type stored in the NativeArray.</typeparam>
     public sealed class GlobalManagedSystemBufferPool<T> : GlobalManagedPoolBase<SystemBufferDescriptor, ManagedSystemBuffer<T>>
