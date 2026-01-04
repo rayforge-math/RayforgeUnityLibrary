@@ -23,7 +23,6 @@
 #define CLAMP_MINMAX     1
 #define CLAMP_VARIANCE   2
 #define CLAMP_CLIPBOX    3
-#define DAMP_STDDEV      4
 
 // ============================================================================
 // 3. Utility Functions
@@ -165,10 +164,6 @@ float3 ApplyColorClamping(float3 inputColor, float4 neighborhood[9], int mode, f
 
         case CLAMP_CLIPBOX:
             inputColor = ClipBoxClamp(inputColor, neighborhood, scale);
-            break;
-
-        case DAMP_STDDEV:
-            inputColor = StdDevDampen(inputColor, neighborhood, scale, 1.0);
             break;
     }
 
