@@ -17,9 +17,6 @@ namespace Rayforge.ShaderExtensions.Filter
 
         /// <summary>ClipBox Clamp: luma-oriented clamp, UE-style.</summary>
         ClipBox = 3,
-
-        /// <summary>Standard Deviation Dampen: soft pull towards local mean based on deviation.</summary>
-        StdDevDampen = 4
     }
 
     /// <summary>
@@ -36,8 +33,5 @@ namespace Rayforge.ShaderExtensions.Filter
 
         /// <summary>ClipBox Clamp: luma-oriented clamp, UE-style.</summary>
         ClipBox = ColorClampMode.ClipBox,
-
-        /// <summary>Standard Deviation Dampen: soft pull towards local mean based on deviation.</summary>
-        StdDevDampen = ColorClampMode.StdDevDampen
     }
 }

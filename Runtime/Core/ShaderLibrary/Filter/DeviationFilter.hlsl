@@ -23,7 +23,6 @@
 #define CLAMP_MINMAX     1
 #define CLAMP_VARIANCE   2
 #define CLAMP_CLIPBOX    3
-#define DAMP_STDDEV      4
 
 // ============================================================================
 // 3. Utility Functions
@@ -112,27 +111,6 @@ float3 MinMaxClamp(float3 inputColor, float4 neighborhood[9], float scale)
     return clamp(inputColor, scaledMin, scaledMax);
 }
 
-/// @brief Smoothly damps deviations from the local mean based on standard deviation.
-/// Works for both temporal (history) and purely spatial (current-frame) inputs.
-/// Large deviations are pulled closer to the mean without hard clamping.
-/// @param inputColor The color to be damped (history or current-frame).
-/// @param neighborhood A fixed array of 9 float3 samples representing the local 3x3 neighborhood.
-/// @param strength How strongly to pull the color towards the local mean (0 = off, 1 = full damping).
-/// @param threshold Deviation at which damping starts to take effect (in units of sigma).
-/// @return The damped color.
-float3 StdDevDampen(float3 inputColor, float4 neighborhood[9], float strength, float threshold)
-{
-    float3 mean, stdDev;
-    ComputeMeanAndStdDev9(neighborhood, mean, stdDev);
-
-    float3 delta = inputColor - mean;
-    float deviation = length(delta) / (length(stdDev) + 1e-6);
-
-    float t = saturate((deviation - threshold) / max(threshold, 1e-6));
-
-    return lerp(inputColor, mean, t * strength);
-}
-
 /// @brief Applies a selected color clamping or deviation-damping mode to an input color
 ///        based on the local 3x3 neighborhood.
 /// @details Can be used for temporal history clamping or purely spatial outlier suppression.
@@ -141,7 +119,6 @@ float3 StdDevDampen(float3 inputColor, float4 neighborhood[9], float strength, f
 ///          - 1 = Min/Max Clamp (scaled around min/max midpoint)
 ///          - 2 = Variance Clamp (mean � stdDev * scale)
 ///          - 3 = ClipBox Clamp (luma-oriented, UE-style)
-///          - 4 = StdDev Dampen (soft pull towards mean, threshold-based)
 /// @param inputColor The input color to clamp/damp (history or current-frame).
 /// @param neighborhood A fixed array of 9 float3 samples representing the local 3x3 neighborhood.
 /// @param mode Clamping / damping mode to apply (see above).
@@ -166,11 +143,53 @@ float3 ApplyColorClamping(float3 inputColor, float4 neighborhood[9], int mode, f
         case CLAMP_CLIPBOX:
             inputColor = ClipBoxClamp(inputColor, neighborhood, scale);
             break;
-
-        case DAMP_STDDEV:
-            inputColor = StdDevDampen(inputColor, neighborhood, scale, 1.0);
-            break;
     }
 
     return inputColor;
+}
+
+/// @brief Smoothly damps deviations from the local mean based on standard deviation.
+/// Works for both temporal (history) and purely spatial (current-frame) inputs.
+/// Large deviations are pulled closer to the mean without hard clamping.
+/// @param inputColor The color to be damped (history or current-frame).
+/// @param neighborhood A fixed array of 9 float3 samples representing the local 3x3 neighborhood.
+/// @param strength How strongly to pull the color towards the local mean (0 = off, 1 = full damping).
+/// @param threshold Deviation at which damping starts to take effect (in units of sigma).
+/// @return The damped color.
+float3 StdDevSmoothen(float3 inputColor, float4 neighborhood[9], float strength, float threshold)
+{
+    float3 mean, stdDev;
+    ComputeMeanAndStdDev9(neighborhood, mean, stdDev);
+
+    float delta = Luminance(inputColor) - Luminance(mean);
+    float deviation = delta / (Luminance(stdDev) + 1e-6);
+
+    float t = (deviation - threshold) / max(threshold, 1e-6);
+
+    return lerp(inputColor, mean, saturate(t * strength));
+}
+
+/// @brief Smoothly dampens bright outlier pixels in a 3x3 neighborhood based on local luminance variance.
+/// @details The damping factor is stronger for pixels that both deviate significantly from the local mean 
+///          and are in regions of high luminance variation. This preserves normal highlights while 
+///          suppressing small, extreme spikes (fireflies).
+/// @param neighborhood A fixed array of 9 float4 samples representing the local 3x3 neighborhood. 
+///                     Only the RGB channels are used; alpha is left unchanged.
+/// @param strength Controls the overall damping intensity (0 = no damping, 1 = full damping).
+/// @return The damped color of the central pixel (neighborhood[4].rgb).
+float3 StdDevDampen(float4 neighborhood[9], float strength)
+{
+    float3 mean, stdDev;
+    ComputeMeanAndStdDev9(neighborhood, mean, stdDev);
+
+    float3 centre = neighborhood[4].rgb;
+
+    float centreLuma = Luminance(centre);
+    float meanLuma = Luminance(mean);
+    float stdDevLuma = Luminance(stdDev);
+
+    float deltaLuma = abs(centreLuma - meanLuma);
+    float dampen = saturate(strength * (deltaLuma / (stdDevLuma + 1e-6)));
+
+    return centre * (1.0 - dampen);
 }
