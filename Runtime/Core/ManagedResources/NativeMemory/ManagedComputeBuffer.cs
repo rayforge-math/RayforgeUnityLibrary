@@ -9,104 +9,104 @@ using UnityEngine;
 namespace Rayforge.ManagedResources.NativeMemory
 {
     /// <summary>
-    /// Base class for managed buffers, handling lifecycle and providing access
-    /// to both the descriptor and the underlying internal resource.
+    /// Managed wrapper around Unity's <see cref="ComputeBuffer"/> that handles allocation, data upload, and cleanup.
+    /// Inherits from <see cref="ManagedBuffer{TDesc,TBuffer}"/> for generic GPU resource management.
     /// </summary>
-    /// <typeparam name="Tdesc">Descriptor type describing the buffer properties.</typeparam>
-    /// <typeparam name="Tinternal">The underlying internal resource type (e.g., ComputeBuffer, NativeArray&lt;T&gt;).</typeparam>
-    public abstract class ManagedBuffer<Tdesc, Tinternal> : IPooledBuffer<Tdesc>, IBufferInternal<Tinternal>, IEquatable<ManagedBuffer<Tdesc, Tinternal>>
-        where Tdesc : unmanaged, IEquatable<Tdesc>
+    public sealed class ManagedComputeBuffer : ManagedBuffer<ComputeBufferDescriptor, ComputeBuffer>
     {
         /// <summary>
-        /// The actual resource being managed (GPU/System buffer).
+        /// Allocates a new compute buffer based on the given descriptor.
         /// </summary>
-        protected Tinternal m_Buffer;
+        public ManagedComputeBuffer(ComputeBufferDescriptor desc)
+            : base(new ComputeBuffer(desc.count, desc.stride, desc.type), desc)
+        { }
 
         /// <summary>
-        /// Descriptor describing the resource properties.
+        /// Creates a compute buffer.
+        /// Automatically determines stride based on <typeparamref name="T"/>.
         /// </summary>
-        protected Tdesc m_Descriptor;
-
-        /// <summary>
-        /// Access to the internal resource.
-        /// </summary>
-        public Tinternal Buffer => m_Buffer;
-
-        /// <summary>
-        /// Access to the descriptor from outside.
-        /// </summary>
-        public Tdesc Descriptor => m_Descriptor;
-
-        /// <summary>
-        /// Tracks whether Dispose has been called to avoid double release.
-        /// </summary>
-        private bool m_Disposed = false;
-
-        /// <summary>
-        /// Initializes the managed buffer with a resource and descriptor.
-        /// </summary>
-        /// <param name="buffer">The internal resource to manage.</param>
-        /// <param name="descriptor">Descriptor describing the resource properties.</param>
-        public ManagedBuffer(Tinternal buffer, Tdesc descriptor)
+        /// <typeparam name="T">The element type stored in the compute buffer.</typeparam>
+        /// <param name="count">Number of elements in the buffer.</param>
+        /// <param name="type">Optional compute buffer type. Default is structured.</param>
+        /// <returns>A leased buffer representing the rented <see cref="ManagedComputeBuffer"/>.</returns>
+        public static ManagedComputeBuffer Create<T>(int count, ComputeBufferType type = ComputeBufferType.Structured)
+            where T : unmanaged
         {
-            m_Buffer = buffer;
-            m_Descriptor = descriptor;
+            int stride = Marshal.SizeOf<T>();
+            var desc = new ComputeBufferDescriptor { count = count, stride = stride, type = type };
+            return new ManagedComputeBuffer(desc);
         }
 
         /// <summary>
-        /// Finalizer ensures the resource is released if Dispose was not called.
+        /// Uploads raw array data to the GPU buffer.
         /// </summary>
-        ~ManagedBuffer() => Dispose(false);
+        public void SetData(Array data)
+            => m_Buffer.SetData(data);
 
         /// <summary>
-        /// Dispose pattern implementation. Calls Dispose(true) and suppresses finalization.
+        /// Uploads a strongly-typed list to the GPU buffer.
         /// </summary>
-        public void Dispose()
+        public void SetData<T>(List<T> data) where T : struct
+            => m_Buffer.SetData(data);
+
+        /// <summary>
+        /// Uploads a native array (e.g., NativeArray) to the GPU buffer.
+        /// </summary>
+        public void SetData<T>(NativeArray<T> data) where T : struct
+            => m_Buffer.SetData(data);
+
+        /// <summary>
+        /// Reads back data from the GPU buffer into a CPU array.
+        /// </summary>
+        public void GetData(Array data)
+            => m_Buffer.GetData(data);
+
+        /// <summary>
+        /// Sets the internal counter value for Append/Consume buffers.
+        /// </summary>
+        public void SetCounterValue(uint counterValue)
+            => m_Buffer.SetCounterValue(counterValue);
+
+        /// <summary>
+        /// Uploads data from a <see cref="IComputeData{T}"/> container to the buffer.
+        /// Useful for e.g. constant buffers.
+        /// </summary>
+        public void SetData<T>(IComputeData<T> data)
+            where T : unmanaged
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            if (data == null) return;
+            SetData(new T[] { data.RawData });
         }
 
         /// <summary>
-        /// Core dispose logic. Calls <see cref="Release"/>.
+        /// Uploads data from a <see cref="IComputeDataArray{T}"/> container to the buffer.
+        /// Useful for uniform-style data structures.
         /// </summary>
-        /// <param name="disposing">True if called from Dispose(), false if from finalizer.</param>
-        protected virtual void Dispose(bool disposing)
+        public void SetData<T>(IComputeDataArray<T> data)
+            where T : unmanaged
         {
-            if (!m_Disposed)
+            if (data == null) return;
+            SetData(data.RawData);
+        }
+
+        /// <summary>
+        /// Releases the GPU buffer.
+        /// After calling this, the buffer is no longer valid and internal references are cleared.
+        /// </summary>
+        public override void Release()
+        {
+            if (m_Buffer != null)
             {
-                Release();
-                m_Disposed = true;
+                m_Buffer.Release();
+                m_Buffer = null;
             }
         }
 
         /// <summary>
-        /// Default hash code implementation based on the internal buffer.
+        /// Compares buffer instances by reference.
+        /// For pooled or managed buffers, reference equality is usually sufficient.
         /// </summary>
-        public override int GetHashCode() => m_Buffer?.GetHashCode() ?? 0;
-
-        /// <summary>
-        /// Checks equality with another internal buffer. Must be implemented by derived classes.
-        /// </summary>
-        public abstract bool Equals(ManagedBuffer<Tdesc, Tinternal> other);
-
-        /// <summary>
-        /// Overrides object.Equals to use the type-safe Equals implementation.
-        /// Ensures proper behavior in collections like HashSet or Dictionary.
-        /// </summary>
-        /// <param name="obj">Object to compare with.</param>
-        /// <returns>True if equal, false otherwise.</returns>
-        public override bool Equals(object obj)
-        {
-            if (obj is ManagedBuffer<Tdesc, Tinternal> other)
-                return Equals(other);
-            return false;
-        }
-
-        /// <summary>
-        /// Releases the internal resource (e.g., Dispose NativeArray, Release GPU buffer).
-        /// Must be implemented by derived classes.
-        /// </summary>
-        public abstract void Release();
+        public override bool Equals(ManagedBuffer<ComputeBufferDescriptor, ComputeBuffer> other)
+            => ReferenceEquals(this, other);
     }
 }
