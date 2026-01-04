@@ -12,11 +12,11 @@ namespace Rayforge.ShaderExtensions.Filter
         /// <summary>Min/Max Clamp: clamps color to scaled min/max range of local neighborhood.</summary>
         MinMax = 1,
 
-        /// <summary>Variance Clamp: clamps color to mean � stdDev * scale.</summary>
+        /// <summary>Variance Clamp: clamps color to mean ± stdDev * scale.</summary>
         Variance = 2,
 
         /// <summary>ClipBox Clamp: luma-oriented clamp, UE-style.</summary>
-        ClipBox = 3,
+        ClipBox = 3
     }
 
     /// <summary>
@@ -32,6 +32,6 @@ namespace Rayforge.ShaderExtensions.Filter
         Variance = ColorClampMode.Variance,
 
         /// <summary>ClipBox Clamp: luma-oriented clamp, UE-style.</summary>
-        ClipBox = ColorClampMode.ClipBox,
+        ClipBox = ColorClampMode.ClipBox
     }
 }
