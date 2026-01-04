@@ -4,12 +4,11 @@
 // 1. Includes
 // ============================================================================
 
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-
-#include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/TemporalReprojection/Defines.hlsl"
 #include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/TemporalReprojection/Params.hlsl"
-
 #include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Maths/Statistics.hlsl"
+#include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Filter/DeviationFilter.hlsl"
+
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
 // ============================================================================
 // 2. Utility Functions
@@ -61,78 +60,6 @@ float4 SampleHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), fl
     float2 uv = ndcPrev * 0.5 + 0.5;
 
     return SampleHistory(historyTexture, historySampler, uv);
-}
-
-/// @brief Performs variance-based clip-box clamping on the history color using the mean and standard deviation of a 3x3 neighborhood from the current frame.
-/// This constrains the history color to a statistically plausible range, reducing flicker and preventing extreme outliers before temporal accumulation.
-/// @param historyColor The input color from the history buffer.
-/// @param currentNeighborhood A fixed array of 9 float3 samples representing the local 3x3 neighborhood around the current pixel from the current frame.
-/// @param scale Controls the width of the variance clip box. Typical values: 1.0–3.0.
-/// @return The history color clamped to [mean - stdDev * scale, mean + stdDev * scale].
-float3 VarianceClamp(float3 historyColor, float3 currentNeighborhood[9], float scale)
-{
-    float3 mean, stdDev;
-    ComputeMeanAndStdDev9(currentNeighborhood, mean, stdDev);
-
-    float3 minC = mean - stdDev * scale;
-    float3 maxC = mean + stdDev * scale;
-
-    return clamp(historyColor, minC, maxC);
-}
-
-/// @brief Performs luma-oriented clip-box clamping on the history color using the 3x3 neighborhood from the current frame. The clip box is aligned along the principal luma direction.
-/// This is roughly the approach Unreal Engine uses for temporal AA: "https://de45xmedrsdbp.cloudfront.net/Resources/files/TemporalAA_small-59732822.pdf#page=34"
-/// @param historyColor The input color of the history.
-/// @param currentNeighborhood A fixed array of 9 float3 samples representing the local 3x3 neighborhood around the current pixel from the current frame.
-/// @param clipBoxScale Controls the width of the clip box. Typical values: 1.0–3.0.
-/// @return The clamped color of the current pixel.
-float3 ClipBoxClamp(float3 historyColor, float3 currentNeighborhood[9], float clipBoxScale)
-{
-    float3 mean, stdDev;
-    ComputeMeanAndStdDev9(currentNeighborhood, mean, stdDev);
-
-    float meanLuma = dot(mean, float3(0.2126, 0.7152, 0.0722));
-
-    // Compute the direction of largest difference in luminance (in color space) -> normalized gradient
-    float3 lumaDir = (float3) 0;
-    [unroll]
-    for (int j = 0; j < 9; ++j)
-    {
-        float3 delta = currentNeighborhood[j] - mean;
-        float lumaDelta = dot(currentNeighborhood[j], float3(0.2126, 0.7152, 0.0722)) - meanLuma;
-        lumaDir += delta * lumaDelta;   // scale delta (direction) based on luminance delta
-    }
-    lumaDir = normalize(lumaDir + 1e-6);
-
-    // project vector from history to mean onto axis along luminance gradient -> get amount of history along largest difference in lumiance
-    float3 deltaHistory = historyColor - mean;
-    float proj = dot(deltaHistory, lumaDir);
-    
-    // limit by standard deviation, scale lumaDir (normalized vector) by projected history difference
-    float limit = length(stdDev) * clipBoxScale;
-    float3 clampedDelta = clamp(proj, -limit, limit) * lumaDir;
-
-    // return mean + the projected and scaled history offset
-    return mean + clampedDelta;
-}
-
-/// @brief Clamps the current frame color to the min/max range defined by a 3x3 neighborhood of the current frame. This prevents extreme differences before temporal accumulation.
-/// @param historyColor The input color of the history.
-/// @param currentNeighborhood The 3x3 local neighborhood of the current pixel taken from the current frame.
-/// @return The current color clamped to the min/max bounding box of the local neighborhood.
-float3 MinMaxClamp(float3 historyColor, float3 currentNeighborhood[9])
-{
-    float3 minColor = float3(1e9, 1e9, 1e9);
-    float3 maxColor = float3(-1e9, -1e9, -1e9);
-
-    [unroll]
-    for (int i = 0; i < 9; ++i)
-    {
-        minColor = min(minColor, currentNeighborhood[i]);
-        maxColor = max(maxColor, currentNeighborhood[i]);
-    }
-
-    return clamp(historyColor, minColor, maxColor);
 }
 
 /// @brief Determines whether a previous frame sample should be rejected based on depth difference. Useful to avoid blending history across surfaces at different depths, reducing ghosting.
@@ -261,34 +188,6 @@ void SetupVelocityDisocclusion(float2 motionVector, float threshold, float scale
     historyWeight *= (1.0 - disocclusion);
 }
 
-/// @brief Applies the selected temporal color clamping mode to a history color based on the current 3x3 neighborhood.
-/// @param historyColor The reprojected history color to potentially clamp.
-/// @param currentNeighborhood The 3x3 neighborhood of current frame colors.
-/// @param clampMode Clamping mode (0 = none, 1 = min/max, 2 = variance, 3 = clip-box).
-/// @param scale Scale factor for bounding box clamping, if required.
-/// @return The history color after applying the selected clamping mode.
-float3 ApplyColorClamping(float3 historyColor, float3 currentNeighborhood[9], int clampMode, float scale)
-{
-    switch (clampMode)
-    {
-        default:
-        case 0: // None
-            break;
-        case 1: // Min/Max Clamp
-            historyColor = MinMaxClamp(historyColor, currentNeighborhood);
-            break;
-        case 2: // Variance Clamp
-            historyColor = VarianceClamp(historyColor, currentNeighborhood, scale);
-            break;
-        case 3: // ClipBox Clamp
-            historyColor = ClipBoxClamp(historyColor, currentNeighborhood, scale);
-            break;
-    }
-
-    return historyColor;
-}
-
-
 /// @brief Reprojects and blends the history color for the current pixel using motion vectors
 /// and optional rejection heuristics. This variant uses only the current pixel color,
 /// without neighborhood-based color clamping.
@@ -334,7 +233,7 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
 /// @param params Reprojection settings controlling depth rejection, velocity disocclusion,
 /// history weighting, and the color clamping mode (None, MinMax, ClipBox).
 /// @return The blended color result after reprojection, clamping, and temporal filtering.
-float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, float3 currentNeighborhood[9], ReprojectionParams params)
+float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, float4 currentNeighborhood[9], ReprojectionParams params)
 {
     float4 result = (float4) 0;
 
@@ -342,7 +241,7 @@ float4 BlendHistoryMotionVectors(TEXTURE2D_PARAM(historyTexture, historySampler)
     float4 history;
     SetupMotionVectorPipeline(historyTexture, historySampler, currentUV, motionVector, history);
 
-    float3 currentColor = currentNeighborhood[4];
+    float3 currentColor = currentNeighborhood[4].rgb;
     float currentDepth = SampleLinear01Depth(currentUV);
 
     if (params.depthRejection && CheckAndSetupDepthRejection(currentUV, currentColor, currentDepth, history, params.depthThreshold, result))
@@ -413,7 +312,7 @@ float4 BlendHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), flo
 /// @return The final TAA-filtered color for the pixel, combining the reprojected
 /// history with the current frame's color after optional clamping.  
 /// If history is rejected, returns the current color.
-float4 BlendHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, float3 currentNeighborhood[9], ReprojectionParams params)
+float4 BlendHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), float2 currentUV, float4 currentNeighborhood[9], ReprojectionParams params)
 {
     float4 result = (float4) 0;
 
@@ -422,7 +321,7 @@ float4 BlendHistoryWorldPos(TEXTURE2D_PARAM(historyTexture, historySampler), flo
     float4 history;
     SetupWorldPosPipeline(historyTexture, historySampler, currentUV, currentDepth, history);
 
-    float3 currentColor = currentNeighborhood[4];
+    float3 currentColor = currentNeighborhood[4].rgb;
 
     if (params.depthRejection && CheckAndSetupDepthRejection(currentUV, currentColor, currentDepth, history, params.depthThreshold, result))
     {

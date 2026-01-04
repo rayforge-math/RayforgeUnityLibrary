@@ -87,7 +87,7 @@ namespace Rayforge.Utility.Filtering
 
             float sum = 0f;
 
-            for (int i = 0; i <= m_Radius; ++i)
+            for (int i = 0; i < m_Kernel.Length; ++i)
             {
                 float value = filter.Invoke(i);
                 m_Kernel[i] = value;

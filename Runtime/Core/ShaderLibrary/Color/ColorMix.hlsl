@@ -4,6 +4,8 @@
 // 1. Includes
 // ============================================================================
 
+#include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Common.hlsl"
+
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
 // ============================================================================

@@ -6,22 +6,20 @@
 // Description: blue noise functionality
 // ============================================================================
 
+// ============================================================================
+// 1. Includes
+// ============================================================================
+
+#include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Noise/Params.hlsl"
+
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-
-// ============================================================================
-// 1. Inputs
-// ============================================================================
-
-TEXTURE2D(_Rayforge_BlueNoise);
-SAMPLER(sampler_Rayforge_BlueNoise);
-float4 _Rayforge_BlueNoise_TexelSize;
 
 // ============================================================================
 // 2. Utility Functions
 // ============================================================================
 
 /// @brief Samples a blue-noise texture in screen space.
-/// @param screenUV UV coordinate in screen space (0–1)
+/// @param screenUV UV coordinate in screen space (0ï¿½1)
 /// @param screenSize Screen resolution in pixels
 /// @return The red channel value of the sampled blue-noise texture
 float SampleBlueNoise(float2 screenUV, float2 screenSize)

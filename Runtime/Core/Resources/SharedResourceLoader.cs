@@ -32,7 +32,7 @@ namespace Rayforge.Resources
     /// This behavior is by design and must not be "fixed" by introducing singletons
     /// or forced reloads.
     /// </remarks>
-    public static class SharedTextureResources
+    public static class SharedResourceLoader
     {
         /// <summary>
         /// Registry of all loaded shared textures, keyed by shader property metadata.
