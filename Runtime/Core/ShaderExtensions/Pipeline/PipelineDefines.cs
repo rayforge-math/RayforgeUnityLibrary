@@ -1,5 +1,6 @@
 using UnityEngine;
-using UnityEngine.Rendering;
+
+using Rayforge.Common;
 
 namespace Rayforge.ShaderExtensions.Pipeline
 {
@@ -31,32 +32,6 @@ namespace Rayforge.ShaderExtensions.Pipeline
         private static readonly string k_UrpKeyword = "RAYFORGE_PIPELINE_URP";
 
         /// <summary>
-        /// True if the currently active render pipeline is HDRP.
-        /// </summary>
-        public static bool IsHDRP
-        {
-            get
-            {
-                DetectPipeline();
-                return s_isHDRP;
-            }
-        }
-        private static bool s_isHDRP = false;
-
-        /// <summary>
-        /// True if the currently active render pipeline is URP.
-        /// </summary>
-        public static bool IsURP
-        {
-            get
-            {
-                DetectPipeline();
-                return s_isURP;
-            }
-        }
-        private static bool s_isURP = false;
-
-        /// <summary>
         /// Tracks whether pipeline detection has already been performed.
         /// </summary>
         private static bool s_PipelineChecked = false;
@@ -70,31 +45,15 @@ namespace Rayforge.ShaderExtensions.Pipeline
         {
             if (!s_PipelineChecked || force)
             {
-                var rp = GraphicsSettings.currentRenderPipeline;
-
-                bool isURP = false;
-                bool isHDRP = false;
-
-                if (rp != null)
-                {
-                    string name = rp.GetType().Name;
-
-                    if (name.Contains("HDRenderPipeline"))
-                        isHDRP = true;
-                    else if (name.Contains("UniversalRenderPipeline"))
-                        isURP = true;
-                }
-
-                s_isHDRP = isHDRP;
-                s_isURP = isURP;
+                PipelineDetector.Detect(force);
 
                 // Apply shader keywords
-                if (s_isHDRP)
+                if (PipelineDetector.IsHDRP)
                 {
                     Shader.EnableKeyword(k_HdrpKeyword);
                     Shader.DisableKeyword(k_UrpKeyword);
                 }
-                else if (s_isURP)
+                else if (PipelineDetector.IsURP)
                 {
                     Shader.EnableKeyword(k_UrpKeyword);
                     Shader.DisableKeyword(k_HdrpKeyword);

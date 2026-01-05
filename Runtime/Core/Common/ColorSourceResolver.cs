@@ -1,8 +1,6 @@
 using UnityEngine;
 
-using Rayforge.Common;
-
-namespace Rayforge.Rendering.Colors
+namespace Rayforge.Common.Colors
 {
     /// <summary>
     /// Resolves colors from ColorSource enum using Unity API.
