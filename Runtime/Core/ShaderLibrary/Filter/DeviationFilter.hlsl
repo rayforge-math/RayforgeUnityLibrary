@@ -182,23 +182,24 @@ float3 StdDevSmoothen(float3 inputColor, float4 neighborhood[9], float strength,
 float3 StdDevDampen(float4 neighborhood[9], float strength, bool proportional)
 {
     float3 mean, stdDev;
-    ComputeMeanAndStdDev9(neighborhood, mean, stdDev);
+    ComputeMeanAndStdDev8(neighborhood, mean, stdDev);
 
     float3 centre = neighborhood[4].rgb;
-    float stdDevLuma = Luminance(stdDev);
     
+    float meanLuma = Luminance(mean);
+    float centreLuma = Luminance(centre);
+    float stdDevLuma = Luminance(stdDev);
+
+    float deltaLuma = max(centreLuma - meanLuma, 0.0);
+
     float dampen;
     if (proportional)
     {
-        float centreLuma = Luminance(centre);
-        float meanLuma = Luminance(mean);
-        float deltaLuma = abs(centreLuma - meanLuma);
-        
-        dampen = saturate(strength * (stdDevLuma / (deltaLuma + 1e-6)));
+        dampen = saturate(strength * (deltaLuma * stdDevLuma));
     }
     else
     {
-        dampen = saturate(strength * stdDevLuma);
+        dampen = saturate(strength * (step(0.0, deltaLuma) * stdDevLuma));
     }
 
     return centre * (1.0 - dampen);
