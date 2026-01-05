@@ -170,26 +170,36 @@ float3 StdDevSmoothen(float3 inputColor, float4 neighborhood[9], float strength,
 }
 
 /// @brief Smoothly dampens bright outlier pixels in a 3x3 neighborhood based on local luminance variance.
-/// @details The damping factor is stronger for pixels that both deviate significantly from the local mean 
-///          and are in regions of high luminance variation. This preserves normal highlights while 
-///          suppressing small, extreme spikes (fireflies).
-/// @param neighborhood A fixed array of 9 float4 samples representing the local 3x3 neighborhood. 
+/// @details The damping strength increases with local luminance variation and optionally with how far
+///          the central pixel deviates from the local mean. This preserves coherent highlights while
+///          suppressing small, high-intensity spikes (fireflies).
+/// @param neighborhood A fixed array of 9 float4 samples representing the local 3x3 neighborhood.
 ///                     Only the RGB channels are used; alpha is left unchanged.
-/// @param strength Controls the overall damping intensity (0 = no damping, 1 = full damping).
+/// @param strength Controls the overall damping intensity (0 = no damping).
+/// @param proportional If true, damping is scaled by how strongly the center pixel deviates from the
+///                     local mean. If false, damping depends only on neighborhood variance.
 /// @return The damped color of the central pixel (neighborhood[4].rgb).
-float3 StdDevDampen(float4 neighborhood[9], float strength)
+float3 StdDevDampen(float4 neighborhood[9], float strength, bool proportional)
 {
     float3 mean, stdDev;
     ComputeMeanAndStdDev9(neighborhood, mean, stdDev);
 
     float3 centre = neighborhood[4].rgb;
-
-    float centreLuma = Luminance(centre);
-    float meanLuma = Luminance(mean);
     float stdDevLuma = Luminance(stdDev);
-
-    float deltaLuma = abs(centreLuma - meanLuma);
-    float dampen = saturate(strength * (deltaLuma / (stdDevLuma + 1e-6)));
+    
+    float dampen;
+    if (proportional)
+    {
+        float centreLuma = Luminance(centre);
+        float meanLuma = Luminance(mean);
+        float deltaLuma = abs(centreLuma - meanLuma);
+        
+        dampen = saturate(strength * (stdDevLuma / (deltaLuma + 1e-6)));
+    }
+    else
+    {
+        dampen = saturate(strength * stdDevLuma);
+    }
 
     return centre * (1.0 - dampen);
 }
