@@ -3,9 +3,9 @@
 #include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Blitter/Params.hlsl"
 #include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Blitter/ComputeParams.hlsl"
 
-uint4 SampleBlitTexture(uint2 baseOffset, uint2 windowSize)
+uint4 SampleBlitTexture(uint2 baseOffset, uint2 windowOffset)
 {
-    uint2 coords = baseOffset.x + windowSize;
+    uint2 coords = baseOffset + windowOffset;
     uint4 sample = _BlitTexture[coords];
         
     uint4 dest = (uint4) 0;

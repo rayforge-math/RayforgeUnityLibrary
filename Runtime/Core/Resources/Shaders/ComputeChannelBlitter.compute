@@ -12,7 +12,7 @@ void ChannelBlitter (uint3 id : SV_DispatchThreadID)
 {
     if (id.x < (uint) _BlitParams.z && id.y < (uint) _BlitParams.w)
     {
-        _BlitDestination[id.xy] = SampleBlitTexture(uint2(_BlitParams.xy), uint2(_BlitParams.zw));
+        _BlitDestination[id.xy] = SampleBlitTexture(uint2(_BlitParams.xy), id.xy);
     }
 }
 
