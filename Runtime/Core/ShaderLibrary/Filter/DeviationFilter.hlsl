@@ -182,7 +182,7 @@ float3 StdDevSmoothen(float3 inputColor, float4 neighborhood[9], float strength,
 float3 StdDevDampen(float4 neighborhood[9], float strength, bool proportional)
 {
     float3 mean, stdDev;
-    ComputeMeanAndStdDev8(neighborhood, mean, stdDev);
+    ComputeMeanAndStdDev9(neighborhood, mean, stdDev);
 
     float3 centre = neighborhood[4].rgb;
     
