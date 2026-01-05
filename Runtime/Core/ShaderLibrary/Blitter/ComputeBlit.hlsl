@@ -20,3 +20,8 @@ uint4 SampleBlitTexture(uint2 baseOffset, uint2 windowSize)
     
     return dest;
 }
+
+uint4 SampleBlitTexture()
+{
+    return SampleBlitTexture(uint2(_BlitParams.xy), uint2(_BlitParams.zw));
+}
