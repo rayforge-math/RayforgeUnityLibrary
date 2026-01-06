@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using Rayforge.Shared.Rendering;
+using Rayforge.Rendering.Shared;
 using Rayforge.Diagnostics;
 using Rayforge.Common;
 
