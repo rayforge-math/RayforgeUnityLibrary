@@ -1,7 +1,6 @@
 using Rayforge.Diagnostics;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-
 using Rayforge.Common;
 
 namespace Rayforge.Utility.RendererFeatures.DepthPyramid
@@ -25,25 +24,23 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         }
 
         [SerializeField, HideInInspector]
-        private Material m_Material;
+        private ComputeShader m_Shader;
         private DepthPyramidPass m_RenderPass;
 
         public override void Create()
         {
-            if (m_Material == null)
+            if (m_Shader == null)
             {
-                var shader = Shader.Find(k_FullShaderName);
-                Assertions.NotNull(shader, "Shader " + k_FullShaderName + " is null");
-
-                m_Material = new Material(shader);
+                m_Shader = UnityEngine.Resources.Load<ComputeShader>(k_FullShaderName);
+                Assertions.NotNull(m_Shader, "Shader " + k_FullShaderName + " is null");
             }
 
-            if (m_Material != null)
+            if (m_Shader != null)
             {
                 if (m_RenderPass != null)
                     m_RenderPass.Dispose();
 
-                m_RenderPass = new DepthPyramidPass(m_Material);
+                m_RenderPass = new DepthPyramidPass(m_Shader);
                 m_RenderPass.renderPassEvent = m_InjectionPoint;
             }
         }
@@ -64,21 +61,6 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
             base.Dispose(disposing);
 
             m_RenderPass.Dispose();
-
-            if (disposing)
-            {
-                if (m_Material != null)
-                {
-                    if (Application.isPlaying)
-                    {
-                        Destroy(m_Material);
-                    }
-                    else
-                    {
-                        DestroyImmediate(m_Material);
-                    }
-                }
-            }
         }
     }
 }
