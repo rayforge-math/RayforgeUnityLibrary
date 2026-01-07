@@ -1,6 +1,7 @@
 using Rayforge.Diagnostics;
 using Rayforge.ManagedResources.Abstractions;
 using Rayforge.ManagedResources.NativeMemory;
+using Rayforge.Rendering.Helpers;
 using Rayforge.Utility.RenderGraphs.Collections;
 using System;
 using System.ComponentModel;
@@ -38,6 +39,8 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         private readonly RTHandleMipChain k_DepthPyramidHandles;
         private RenderTextureDescriptor m_DepthPyramidDescriptor;
 
+        private const string k_DepthTextureMipName = "";
+
         public DepthPyramidPass(ComputeShader shader)
         {
             Assertions.NotNull(shader);
@@ -49,7 +52,7 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
             k_DownsampleHighZKernelId = k_DownsampleHighZShader.FindKernel(k_DownsampleHighZKernelName);
 
-            k_DepthPyramidHandles = new RTHandleMipChain<RenderGraph>((
+            k_DepthPyramidHandles = new RTHandleMipChain((
                 ref RTHandle handle,
                 RenderTextureDescriptor desc,
                 int mip) =>
@@ -57,18 +60,23 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 var created = RenderingUtils.ReAllocateHandleIfNeeded(ref handle, desc);
                 Assertions.IsTrue(created);
             });
+
+            m_DepthPyramidDescriptor = DefaultDescriptors.DepthBufferFullScreen();
         }
 
         public void Dispose()
         {
-
+            
         }
 
         private void CheckAndUpdateTextures(Vector2Int resolution)
         {
             if(m_LastResolution != resolution)
             {
-                k_DepthPyramidHandles.Create()
+                m_DepthPyramidDescriptor.width = resolution.x;
+                m_DepthPyramidDescriptor.height = resolution.y;
+
+                k_DepthPyramidHandles.Create(m_DepthPyramidDescriptor);
 
                 m_LastResolution = resolution;
             }
@@ -80,8 +88,6 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
             var resolution = new Vector2Int { x = camera.pixelWidth, y = camera.pixelHeight };
 
             CheckAndUpdateTextures(resolution);
-
-
         }
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
@@ -97,7 +103,7 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 return;
             }
 
-
+            //using (var passData = renderGraph.AddComputePass()
         }
     }
 }

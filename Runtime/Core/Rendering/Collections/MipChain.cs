@@ -110,6 +110,30 @@ namespace Rayforge.Rendering.Collections
         }
 
         /// <summary>
+        /// Creates all mip levels based on a single <see cref="RenderTextureDescriptor"/> as the base descriptor.
+        /// Handles are stored at indices starting from 0 in the handle array.
+        /// The handle array is resized to exactly match the number of mip levels being created. 
+        /// If it was previously larger or smaller, it will be resized to <paramref name="mipCount"/>.
+        /// </summary>
+        /// <param name="descriptor">Base descriptor for mip creation; will be resized for each mip level.</param>
+        /// <param name="mipCount">Total number of mip levels to create.</param>
+        /// <param name="data">Optional user data passed to the creation function.</param>
+        public void Create(RenderTextureDescriptor descriptor, int mipCount = 1, Tdata data = default)
+        {
+            Vector2Int baseRes = new Vector2Int(descriptor.width, descriptor.height);
+
+            Resize(mipCount);
+            for (int i = 0; i < mipCount; i++)
+            {
+                var mipRes = MipChainHelpers.DefaultMipResolution(i, baseRes);
+                descriptor.width = mipRes.x;
+                descriptor.height = mipRes.y;
+
+                Create(i, descriptor, data);
+            }
+        }
+
+        /// <summary>
         /// Internal method that invokes the creation delegate for a single mip level.
         /// </summary>
         /// <param name="index">Index of the mip level to create.</param>

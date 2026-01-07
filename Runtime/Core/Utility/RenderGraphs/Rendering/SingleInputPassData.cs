@@ -7,7 +7,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// <summary>
     /// Pass data container for passes that consume exactly one texture input.
     /// </summary>
-    public class SingleInputPassData : RenderPassData
+    public class SingleInputPassData<Tdata> : RenderPassDataBase<Tdata>
+        where Tdata : struct
     {
         private RenderPassTexture m_Input;
 

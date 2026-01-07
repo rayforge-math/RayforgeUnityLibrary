@@ -8,7 +8,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// <summary>
     /// Base class for RenderGraph pass input/output configuration and material binding.
     /// </summary>
-    public abstract class RenderPassData : IDisposable
+    public abstract class RenderPassDataBase<Tdata> : IDisposable
+        where Tdata : struct
     {
         private TextureHandle m_Destination;
         /// <summary>Texture that this pass writes into.</summary>
@@ -18,28 +19,12 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
             set => m_Destination = value;
         }
 
-        private Material m_Material;
-        /// <summary>Material used when drawing the pass.</summary>
-        public Material Material
+        private Tdata m_AdditionalData;
+        /// <summary>Custom additional data passed to the <see cref="BaseRenderFunc{PassData,ContextType}">.</summary>
+        public Tdata AdditionalData
         {
-            get => m_Material;
-            set => m_Material = value;
-        }
-
-        private MaterialPropertyBlock m_PropertyBlock;
-        /// <summary>Material property overrides applied when drawing. Optional.</summary>
-        public MaterialPropertyBlock PropertyBlock
-        {
-            get => m_PropertyBlock;
-            set => m_PropertyBlock = value;
-        }
-
-        private int m_PassId;
-        /// <summary>Material pass index to execute.</summary>
-        public int PassId
-        {
-            get => m_PassId;
-            set => m_PassId = value;
+            get => m_AdditionalData;
+            set => m_AdditionalData = value;
         }
 
         /// <summary>
@@ -50,12 +35,10 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         /// <summary>
         /// Copies pass configuration values from another pass.
         /// </summary>
-        public virtual void Copy(RenderPassData other)
+        public virtual void CopyFrom(RenderPassDataBase<Tdata> other)
         {
             m_Destination = other.m_Destination;
-            m_Material = other.m_Material;
-            m_PropertyBlock = other.m_PropertyBlock;
-            m_PassId = other.m_PassId;
+            m_AdditionalData = other.m_AdditionalData;
         }
 
         /// <summary>

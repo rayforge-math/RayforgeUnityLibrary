@@ -1,3 +1,4 @@
+using Rayforge.ShaderExtensions.Blitter;
 using System;
 using System.Collections.Generic;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -7,7 +8,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// <summary>
     /// Base class for passes supporting multiple texture inputs.
     /// </summary>
-    public abstract class MultiInputPassData : RenderPassData
+    public abstract class MultiInputPassData<Tdata> : RenderPassDataBase<Tdata>
+        where Tdata : struct
     {
         /// <summary>Maximum number of supported input textures.</summary>
         public abstract int Capacity { get; }
@@ -43,7 +45,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     }
 
     /// <summary>Two-input pass variant.</summary>
-    public class MultiInputPassData2 : MultiInputPassData
+    public class MultiInputPassData2<Tdata> : MultiInputPassData<Tdata>
+        where Tdata : struct
     {
         private const int k_Capacity = 2;
         public override int Capacity => k_Capacity;
@@ -73,7 +76,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     }
 
     /// <summary>Three-input pass variant.</summary>
-    public class MultiInputPassData3 : MultiInputPassData
+    public class MultiInputPassData3<Tdata> : MultiInputPassData<Tdata>
+        where Tdata : struct
     {
         private const int k_Capacity = 3;
         public override int Capacity => k_Capacity;
@@ -106,7 +110,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     }
 
     /// <summary>Four-input pass variant.</summary>
-    public class MultiInputPassData4 : MultiInputPassData
+    public class MultiInputPassData4<Tdata> : MultiInputPassData<Tdata>
+        where Tdata : struct
     {
         private const int k_Capacity = 4;
         public override int Capacity => k_Capacity;
@@ -142,7 +147,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     }
 
     /// <summary>Five-input pass variant.</summary>
-    public class MultiInputPassData5 : MultiInputPassData
+    public class MultiInputPassData5<Tdata> : MultiInputPassData<Tdata>
+        where Tdata : struct
     {
         private const int k_Capacity = 5;
         public override int Capacity => k_Capacity;
@@ -181,7 +187,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     }
 
     /// <summary>Six-input pass variant.</summary>
-    public class MultiInputPassData6 : MultiInputPassData
+    public class MultiInputPassData6<Tdata> : MultiInputPassData<Tdata>
+        where Tdata : struct
     {
         private const int k_Capacity = 6;
         public override int Capacity => k_Capacity;
