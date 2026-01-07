@@ -6,8 +6,28 @@ using UnityEngine.Rendering.RenderGraphModule;
 namespace Rayforge.Utility.RenderGraphs.Rendering
 {
     /// <summary>
-    /// Provides helper functions for adding procedural full-screen blit passes
-    /// to the RenderGraph API.
+    /// Provides helper functions for recording RenderGraph passes in a way that follows
+    /// Unity's intended RenderGraph usage patterns.
+    ///
+    /// <para>
+    /// This implementation closely follows the design principles described in Unity's
+    /// official RenderGraph documentation:
+    /// https://docs.unity3d.com/6000.3/Documentation/Manual/urp/render-graph-write-render-pass.html
+    /// </para>
+    ///
+    /// <para>
+    /// In particular, it intentionally avoids heap allocations during render graph execution.
+    /// Unity explicitly designed the RenderGraph API so that all per-pass state is stored in
+    /// a <c>passData</c> object, which is then passed as a parameter to the render function.
+    /// This avoids capturing external variables in lambdas, which would otherwise cause
+    /// hidden heap allocations and GC pressure.
+    /// </para>
+    ///
+    /// <para>
+    /// As recommended by Unity, all data required by the render function is copied into
+    /// the pass data struct ahead of time, and the render function operates exclusively
+    /// on its parameters (<c>passData</c> and <c>context</c>).
+    /// </para>
     /// </summary>
     public static class RenderPassRecorder
     {
