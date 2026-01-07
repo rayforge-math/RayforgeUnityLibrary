@@ -2,7 +2,9 @@ using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEngine;
 
-namespace Rayforge.VolumeComponentUtils.Parameters
+using Rayforge.Utility.VolumeComponents.Parameters;
+
+namespace Rayforge.Utility.VolumeComponents.Editor
 {
     [VolumeParameterDrawer(typeof(ObservableClampedIntParameter))]
     public class ObservableClampedIntParameterDrawer : VolumeParameterDrawer

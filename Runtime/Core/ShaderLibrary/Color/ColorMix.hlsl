@@ -6,8 +6,6 @@
 
 #include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Common.hlsl"
 
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
-
 // ============================================================================
 // 2. Utility Functions
 // ============================================================================

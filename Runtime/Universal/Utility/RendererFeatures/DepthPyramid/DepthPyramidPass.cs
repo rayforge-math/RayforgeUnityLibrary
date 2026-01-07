@@ -35,7 +35,8 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
         private Vector2Int m_LastResolution = new Vector2Int(-1, -1);
 
-        private readonly RTHandleMipChain<RenderGraph> m_DepthPyramidHandles;
+        private readonly RTHandleMipChain k_DepthPyramidHandles;
+        private RenderTextureDescriptor m_DepthPyramidDescriptor;
 
         public DepthPyramidPass(ComputeShader shader)
         {
@@ -48,11 +49,10 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
             k_DownsampleHighZKernelId = k_DownsampleHighZShader.FindKernel(k_DownsampleHighZKernelName);
 
-            m_DepthPyramidHandles = new RTHandleMipChain<RenderGraph>((
+            k_DepthPyramidHandles = new RTHandleMipChain<RenderGraph>((
                 ref RTHandle handle,
                 RenderTextureDescriptor desc,
-                int mip,
-                RenderGraph renderGraph) =>
+                int mip) =>
             {
                 var created = RenderingUtils.ReAllocateHandleIfNeeded(ref handle, desc);
                 Assertions.IsTrue(created);
@@ -68,7 +68,7 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         {
             if(m_LastResolution != resolution)
             {
-
+                k_DepthPyramidHandles.Create()
 
                 m_LastResolution = resolution;
             }

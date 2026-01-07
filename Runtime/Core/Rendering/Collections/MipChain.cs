@@ -18,11 +18,11 @@ namespace Rayforge.Rendering.Collections
         /// <summary>
         /// Delegate for creating a handle for a mip level.
         /// </summary>
+        /// <param name="handle">Reference to the current handle stored internally.</param>
         /// <param name="descriptor">Descriptor describing the texture to create.</param>
         /// <param name="mipLevel">Index of the mip level being created.</param>
         /// <param name="data">Optional user data.</param>
-        /// <returns>True if creation was successful; otherwise false.</returns>
-        public delegate Thandle CreateFunction(RenderTextureDescriptor descriptor, int mipLevel, Tdata data = default);
+        public delegate void CreateFunction(ref Thandle handle, RenderTextureDescriptor descriptor, int mipLevel, Tdata data = default);
 
         /// <summary>
         /// Delegate for generating mip maps between two handles.
@@ -116,7 +116,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="descriptor">Descriptor to use for this mip level.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
         protected void Create(int index, RenderTextureDescriptor descriptor, Tdata data = default)
-            => m_Handles[index] = m_CreateFunc.Invoke(descriptor, index, data);
+            => m_CreateFunc.Invoke(ref m_Handles[index], descriptor, index, data);
 
         /// <summary>
         /// Resizes the internal array to <paramref name="newLength"/>.

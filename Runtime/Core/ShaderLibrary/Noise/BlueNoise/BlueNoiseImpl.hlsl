@@ -10,12 +10,10 @@
 // 1. Includes
 // ============================================================================
 
-#include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Noise/Params.hlsl"
-
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
 // ============================================================================
-// 2. Utility Functions
+// 1. Utility Functions
 // ============================================================================
 
 /// @brief Samples a blue-noise texture in screen space.

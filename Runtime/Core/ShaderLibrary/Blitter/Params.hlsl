@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Texture.hlsl"
-#include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Blitter/Defines.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
 /// @brief Parameters controlling which channels to blit and the source region.
 /// @param _R Index of source channel to copy to red output (or None).

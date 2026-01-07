@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/Common.hlsl"
-#include "Packages/eu.rayforge.unitylibrary/Runtime/Core/ShaderLibrary/TemporalReprojection/Defines.hlsl"
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
