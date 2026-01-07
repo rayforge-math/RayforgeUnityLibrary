@@ -4,6 +4,7 @@ using Rayforge.ManagedResources.NativeMemory;
 using Rayforge.Rendering.Helpers;
 using Rayforge.ShaderExtensions.Blitter;
 using Rayforge.Utility.RenderGraphs.Collections;
+using Rayforge.Utility.RenderGraphs.Helpers;
 using Rayforge.Utility.RenderGraphs.Rendering;
 using System;
 using System.ComponentModel;
@@ -45,7 +46,7 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
         private const string k_DepthTextureMipName = "";
 
-        private readonly SingleInputPassData<ComputePassMeta> k_PassData = new();
+        private readonly ComputePassData k_PassData = new();
 
         public DepthPyramidPass(ComputeShader shader)
         {
@@ -72,7 +73,7 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
         public void Dispose()
         {
-            
+
         }
 
         private void CheckAndUpdateTextures(Vector2Int resolution)
@@ -102,25 +103,28 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
             UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
 
             TextureHandle srcDepthBuffer = resourceData.activeDepthTexture;
+            TextureHandle srcCamColor = resourceData.activeColorTexture;
 
             // The following line ensures that the render pass doesn't blit from the back buffer and the color texture attachment is valid
-            if (resourceData.isActiveTargetBackBuffer || !srcDepthBuffer.IsValid())
+            if (resourceData.isActiveTargetBackBuffer || !srcDepthBuffer.IsValid() || !srcCamColor.IsValid())
             {
                 return;
             }
 
             UdpateSettings(cameraData);
 
+            var destHandle = k_DepthPyramidHandles[0].ToRenderGraphHandle(renderGraph);
+            if(!destHandle.IsValid())
+            {
+                return;
+            }
+
             // initial blit
-            k_PassData.SetInput(k_SourceId, srcDepthBuffer);
-            k_PassData.Set
+            k_PassData.Source.SetInput(k_SourceId, srcDepthBuffer);
+            k_PassData.Destination = new TexturePassMeta { propertyId = k_DestId, handle = destHandle };
             RenderPassRecorder.AddComputePass(renderGraph, k_DownsampleHighZKernelName, k_PassData);
 
-            BlitMaterialParameters param = new BlitMaterialParameters()
-            {
-                source = 
-            }
-            renderGraph.AddBlitPass()
+            renderGraph.AddBlitPass(destHandle, srcCamColor, Vector2.one, Vector2.zero);
         }
     }
 }
