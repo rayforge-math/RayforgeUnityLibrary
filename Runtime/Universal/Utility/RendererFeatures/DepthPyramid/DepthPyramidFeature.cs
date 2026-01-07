@@ -11,7 +11,7 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
     public class DepthPyramidFeature : ScriptableRendererFeature
     {
         private const string k_ShaderName = "DepthPyramid";
-        private const string k_FullShaderName = Globals.CompanyName + "/" + k_ShaderName;
+        private static readonly string k_FullShaderName = ResourcePaths.ShaderResourceFolder + k_ShaderName;
 
         /// <summary>
         /// The type of input the render pass requires from the camera.

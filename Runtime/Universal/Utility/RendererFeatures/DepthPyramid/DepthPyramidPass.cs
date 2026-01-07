@@ -1,13 +1,11 @@
 using Rayforge.Diagnostics;
 using Rayforge.ManagedResources.Abstractions;
-using Rayforge.ManagedResources.NativeMemory;
 using Rayforge.Rendering.Helpers;
-using Rayforge.ShaderExtensions.Blitter;
 using Rayforge.Utility.RenderGraphs.Collections;
 using Rayforge.Utility.RenderGraphs.Helpers;
 using Rayforge.Utility.RenderGraphs.Rendering;
+using Rayforge.Rendering.Passes;
 using System;
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -15,13 +13,18 @@ using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 using static UnityEngine.Rendering.RenderGraphModule.Util.RenderGraphUtils;
+using System.Linq;
 
 namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 {
     public class DepthPyramidPass : ScriptableRenderPass, IDisposable
     {
+        private class DepthPyramidPassData : ComputePassData<DepthPyramidPassData>
+        {
+
+        }
+
         private const string k_DownsampleHighZKernelName = "DownsampleHighZ";
-        private readonly int k_DownsampleHighZKernelId;
 
         private static readonly int k_SourceId = Shader.PropertyToID("_Source");
         private static readonly int k_DestId = Shader.PropertyToID("_Dest");
@@ -37,8 +40,6 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         }
         private static readonly int k_DownsampleHighZParamsId = Shader.PropertyToID("_DownsampleHighZParams");
 
-        private readonly ComputeShader k_DownsampleHighZShader;
-
         private Vector2Int m_LastResolution = new Vector2Int(-1, -1);
 
         private readonly RTHandleMipChain k_DepthPyramidHandles;
@@ -46,18 +47,17 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
         private const string k_DepthTextureMipName = "";
 
-        private readonly ComputePassData k_PassData = new();
+        private readonly DepthPyramidPassData k_PassData = new();
 
         public DepthPyramidPass(ComputeShader shader)
         {
             Assertions.NotNull(shader);
-            k_DownsampleHighZShader = shader;
 
-            var hasKernel = k_DownsampleHighZShader.HasKernel(k_DownsampleHighZKernelName);
+            var hasKernel = shader.HasKernel(k_DownsampleHighZKernelName);
             Assertions.IsTrue(hasKernel);
             if (!hasKernel) return;
 
-            k_DownsampleHighZKernelId = k_DownsampleHighZShader.FindKernel(k_DownsampleHighZKernelName);
+            var kernelId = shader.FindKernel(k_DownsampleHighZKernelName);
 
             k_DepthPyramidHandles = new RTHandleMipChain((
                 ref RTHandle handle,
@@ -69,6 +69,9 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
             });
 
             m_DepthPyramidDescriptor = DefaultDescriptors.DepthBufferFullScreen();
+
+            k_PassData.PassMeta = new(shader, kernelId);
+
         }
 
         public void Dispose()
@@ -83,7 +86,10 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 m_DepthPyramidDescriptor.width = resolution.x;
                 m_DepthPyramidDescriptor.height = resolution.y;
 
-                k_DepthPyramidHandles.Create(m_DepthPyramidDescriptor);
+                m_DepthPyramidDescriptor.colorFormat = RenderTextureFormat.RFloat;
+                m_DepthPyramidDescriptor.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+
+                k_DepthPyramidHandles.Create(m_DepthPyramidDescriptor, 2);
 
                 m_LastResolution = resolution;
             }
@@ -119,11 +125,18 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 return;
             }
 
+            renderGraph.AddBlitPass(srcDepthBuffer, destHandle, Vector2.one, Vector2.zero);
+            /*
             // initial blit
-            k_PassData.Source.SetInput(k_SourceId, srcDepthBuffer);
-            k_PassData.Destination = new TexturePassMeta { propertyId = k_DestId, handle = destHandle };
-            RenderPassRecorder.AddComputePass(renderGraph, k_DownsampleHighZKernelName, k_PassData);
+            var dispatchMeta = new ComputeDispatchMeta(k_KernelMeta, Mathf.CeilToInt(m_LastResolution.x / 8.0f), Mathf.CeilToInt(m_LastResolution.y / 8.0f), 1);
 
+
+            k_PassData.AdditionalData = new ComputePassMeta(dispatchMeta);
+            k_PassData.SetInput(k_SourceId, srcDepthBuffer);
+            k_PassData.Destination = new TextureMeta { propertyId = k_DestId, handle = destHandle };
+
+            RenderPassRecorder.AddComputePass(renderGraph, k_DownsampleHighZKernelName, k_PassData);
+            */
             renderGraph.AddBlitPass(destHandle, srcCamColor, Vector2.one, Vector2.zero);
         }
     }

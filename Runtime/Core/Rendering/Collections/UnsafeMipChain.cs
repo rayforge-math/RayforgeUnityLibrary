@@ -105,6 +105,18 @@ namespace Rayforge.Rendering.Collections
         /// Handles are stored at indices starting from <paramref name="startMip"/> in the handle array.
         /// The handle array is only enlarged if necessary; it will never be shrunk in this overload. 
         /// </summary>
+        /// <param name="descriptor">Base descriptor for mip creation; will be resized for each mip level.</param>
+        /// <param name="startMip">Index of the first mip level to create.</param>
+        /// <param name="count">Number of mip levels to create starting from <paramref name="startMip"/>.</param>
+        /// <param name="data">Optional user data passed to the creation function.</param>
+        public void CreateUnsafe(RenderTextureDescriptor descriptor, int startMip, int count, Tdata data = default)
+            => CreateUnsafe(descriptor.width, descriptor.height, descriptor, startMip, count, startMip, false, data);
+
+        /// <summary>
+        /// Creates a range of mip levels starting from <paramref name="startMip"/>.
+        /// Handles are stored at indices starting from <paramref name="startMip"/> in the handle array.
+        /// The handle array is only enlarged if necessary; it will never be shrunk in this overload. 
+        /// </summary>
         /// <param name="width">Width of the base mip level.</param>
         /// <param name="height">Height of the base mip level.</param>
         /// <param name="descriptor">Base descriptor for mip creation; will be resized for each mip level.</param>

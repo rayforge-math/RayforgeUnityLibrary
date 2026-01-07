@@ -42,7 +42,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         /// <param name="renderGraph">RenderGraph instance to which the pass is added.</param>
         /// <param name="passName">Name used for debugging and RenderGraph visualization.</param>
         public static void AddUnsafeRenderPass<TpassData>(RenderGraph renderGraph, string passName, TpassData passData)
-            where TpassData : UnsafeRenderPassData, new()
+            where TpassData : UnsafeRasterPassData<TpassData>, new()
         {
             using (var builder = renderGraph.AddUnsafePass(passName, out TpassData data))
             {
@@ -56,16 +56,17 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
 
                 builder.SetRenderFunc((TpassData data, UnsafeGraphContext ctx) =>
                 {
-                    var dispatchMeta = data.AdditionalData.DispatchMeta;
+                    var passMeta = data.PassMeta;
+                    var rasterMeta = passMeta.Meta;
 
-                    MaterialPropertyBlock propertyBlock = dispatchMeta.PropertyBlock;
+                    MaterialPropertyBlock propertyBlock = rasterMeta.PropertyBlock;
                     if (propertyBlock == null)
                     {
                         s_PropertyBlock.Clear();
                         propertyBlock = s_PropertyBlock;
                     }
 
-                    data.AdditionalData.UpdateCallback?.Invoke(ctx.cmd, propertyBlock);
+                    passMeta.UpdateCallback?.Invoke(ctx.cmd, propertyBlock, data);
 
                     CommandBuffer unsafeCmd = CommandBufferHelpers.GetNativeCommandBuffer(ctx.cmd);
                     unsafeCmd.SetRenderTarget(data.Destination, 0, CubemapFace.Unknown, 0);
@@ -76,7 +77,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                     }
                     propertyBlock.SetVector(BlitParameters.BlitScaleBiasId, Vector2.one);
 
-                    unsafeCmd.DrawProcedural(Matrix4x4.identity, dispatchMeta.Material, dispatchMeta.PassId, MeshTopology.Triangles, 3, 1, propertyBlock);
+                    unsafeCmd.DrawProcedural(Matrix4x4.identity, rasterMeta.Material, rasterMeta.PassId, MeshTopology.Triangles, 3, 1, propertyBlock);
                 });
             }
         }
@@ -90,7 +91,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         /// <param name="renderGraph">RenderGraph instance to add the pass to.</param>
         /// <param name="passName">Display name for debugging and RenderGraph visualization.</param>
         public static void AddRasterRenderPass<TpassData>(RenderGraph renderGraph, string passName, TpassData passData)
-            where TpassData : SafeRenderPassData, new()
+            where TpassData : RasterPassData<TpassData>, new()
         {
             using (var builder = renderGraph.AddRasterRenderPass(passName, out TpassData data))
             {
@@ -104,16 +105,17 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
 
                 builder.SetRenderFunc((TpassData data, RasterGraphContext ctx) =>
                 {
-                    var dispatchMeta = data.AdditionalData.DispatchMeta;
+                    var passMeta = data.PassMeta;
+                    var rasterMeta = passMeta.Meta;
 
-                    MaterialPropertyBlock propertyBlock = dispatchMeta.PropertyBlock;
+                    MaterialPropertyBlock propertyBlock = rasterMeta.PropertyBlock;
                     if (propertyBlock == null)
                     {
                         s_PropertyBlock.Clear();
                         propertyBlock = s_PropertyBlock;
                     }
 
-                    data.AdditionalData.UpdateCallback?.Invoke(ctx.cmd, propertyBlock);
+                    data.PassMeta.UpdateCallback?.Invoke(ctx.cmd, propertyBlock, data);
 
                     foreach (var input in data.PassInput)
                     {
@@ -121,7 +123,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                     }
                     propertyBlock.SetVector(BlitParameters.BlitScaleBiasId, Vector2.one);
 
-                    ctx.cmd.DrawProcedural(Matrix4x4.identity, dispatchMeta.Material, dispatchMeta.PassId, MeshTopology.Triangles, 3, 1, propertyBlock);
+                    ctx.cmd.DrawProcedural(Matrix4x4.identity, rasterMeta.Material, rasterMeta.PassId, MeshTopology.Triangles, 3, 1, propertyBlock);
                 });
             }
         }
@@ -134,7 +136,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         /// <param name="renderGraph">RenderGraph instance to add the pass to.</param>
         /// <param name="passName">Display name for debugging in the RenderGraph view.</param>
         public static void AddComputePass<TpassData>(RenderGraph renderGraph, string passName, TpassData passData)
-            where TpassData : ComputePassData, new()
+            where TpassData : ComputePassData<TpassData>, new()
         {
             using(var builder = renderGraph.AddComputePass(passName, out TpassData data))
             {
@@ -148,24 +150,24 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
 
                 builder.SetRenderFunc((TpassData data, ComputeGraphContext ctx) =>
                 {
-                    data.AdditionalData.UpdateCallback?.Invoke(ctx.cmd);
+                    var passMeta = data.PassMeta;
+                    var computeMeta = passMeta.Meta;
 
-                    var shaderMeta = data.AdditionalData.DispatchMeta;
+                    passMeta.UpdateCallback?.Invoke(ctx.cmd, data);
 
                     foreach (var input in data.PassInput)
                     {
-                        ctx.cmd.SetComputeTextureParam(shaderMeta.Shader, shaderMeta.KernelIndex, input.propertyId, input.handle);
+                        ctx.cmd.SetComputeTextureParam(computeMeta.Shader, computeMeta.KernelIndex, input.propertyId, input.handle);
                     }
                     var dest = data.Destination;
-                    ctx.cmd.SetComputeTextureParam(shaderMeta.Shader, shaderMeta.KernelIndex, dest.propertyId, dest.handle);
+                    ctx.cmd.SetComputeTextureParam(computeMeta.Shader, computeMeta.KernelIndex, dest.propertyId, dest.handle);
 
-                    var dispatchMeta = data.AdditionalData.DispatchMeta;
                     ctx.cmd.DispatchCompute(
-                        dispatchMeta.Shader,
-                        dispatchMeta.KernelIndex,
-                        dispatchMeta.ThreadGroupsX,
-                        dispatchMeta.ThreadGroupsY,
-                        dispatchMeta.ThreadGroupsZ
+                        computeMeta.Shader,
+                        computeMeta.KernelIndex,
+                        computeMeta.ThreadGroupsX,
+                        computeMeta.ThreadGroupsY,
+                        computeMeta.ThreadGroupsZ
                     );
                 });
             }

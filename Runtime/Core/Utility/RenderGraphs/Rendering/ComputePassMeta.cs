@@ -6,70 +6,61 @@ using UnityEngine.Rendering;
 namespace Rayforge.Utility.RenderGraphs.Rendering
 {
     /// <summary>
-    /// Metadata for a compute pass dispatch, including the kernel meta and an optional pre-dispatch callback.
-    /// Encapsulates shader, kernel index, thread group counts, and optional parameter setup via callback.
+    /// Metadata for a compute pass execution.
+    /// Wraps <see cref="ComputeMeta"/> and an optional pre-dispatch callback.
     /// </summary>
-    public readonly struct ComputePassMeta
+    public readonly struct ComputePassMeta<Tdata>
     {
         /// <summary>
-        /// The compute kernel metadata, including shader, kernel index, and thread group counts.
+        /// Core compute metadata (shader, kernel, thread groups).
         /// </summary>
-        public readonly ComputeDispatchMeta DispatchMeta;
+        public readonly ComputeMeta Meta;
 
         /// <summary>
         /// Optional callback invoked before dispatch.
-        /// Receives the <see cref="ComputeCommandBuffer"/> for setting shader parameters, resources, or constants.
+        /// Use this to bind resources, constants, etc.
         /// </summary>
-        public readonly Action<ComputeCommandBuffer> UpdateCallback;
+        public readonly Action<ComputeCommandBuffer, Tdata> UpdateCallback;
 
         /// <summary>
-        /// Constructs a new <see cref="ComputePassMeta"/> from a pre-existing <see cref="ComputeDispatchMeta"/>.
+        /// Constructs a new <see cref="ComputePassMeta"/> from an existing <see cref="ComputeMeta"/>.
         /// </summary>
-        /// <param name="dispatchMeta">The dispatch metadata containing shader, kernel index, and thread groups.</param>
-        /// <param name="updateCallback">Optional callback executed with the <see cref="ComputeCommandBuffer"/> before dispatch.</param>
-        public ComputePassMeta(ComputeDispatchMeta dispatchMeta, Action<ComputeCommandBuffer> updateCallback = null)
+        public ComputePassMeta(
+            ComputeMeta meta,
+            Action<ComputeCommandBuffer, Tdata> updateCallback = null)
         {
-            DispatchMeta = dispatchMeta;
+            Meta = meta;
             UpdateCallback = updateCallback;
         }
 
         /// <summary>
-        /// Constructs a new <see cref="ComputePassMeta"/> from a compute shader, kernel name, and thread group counts.
-        /// Resolves the kernel index from the provided name.
+        /// Constructs a new <see cref="ComputePassMeta"/> from a shader, kernel name and thread group counts.
         /// </summary>
-        /// <param name="shader">The compute shader asset to dispatch.</param>
-        /// <param name="kernelName">The name of the kernel to resolve.</param>
-        /// <param name="threadGroupsX">Number of thread groups in X dimension.</param>
-        /// <param name="threadGroupsY">Number of thread groups in Y dimension.</param>
-        /// <param name="threadGroupsZ">Number of thread groups in Z dimension.</param>
-        /// <param name="updateCallback">Optional callback executed before dispatch.</param>
         public ComputePassMeta(
             ComputeShader shader,
             string kernelName,
-            int threadGroupsX,
-            int threadGroupsY,
-            int threadGroupsZ,
-            Action<ComputeCommandBuffer> updateCallback = null)
-            : this(new ComputeDispatchMeta(shader, kernelName, threadGroupsX, threadGroupsY, threadGroupsZ), updateCallback)
+            int threadGroupsX = 1,
+            int threadGroupsY = 1,
+            int threadGroupsZ = 1,
+            Action<ComputeCommandBuffer, Tdata> updateCallback = null)
+            : this(
+                new ComputeMeta(shader, kernelName, threadGroupsX, threadGroupsY, threadGroupsZ),
+                updateCallback)
         { }
 
         /// <summary>
-        /// Constructs a new <see cref="ComputePassMeta"/> from a compute shader, kernel index, and thread group counts.
+        /// Constructs a new <see cref="ComputePassMeta"/> from a shader, kernel index and thread group counts.
         /// </summary>
-        /// <param name="shader">The compute shader asset to dispatch.</param>
-        /// <param name="kernelIndex">The kernel index to use.</param>
-        /// <param name="threadGroupsX">Number of thread groups in X dimension.</param>
-        /// <param name="threadGroupsY">Number of thread groups in Y dimension.</param>
-        /// <param name="threadGroupsZ">Number of thread groups in Z dimension.</param>
-        /// <param name="updateCallback">Optional callback executed before dispatch.</param>
         public ComputePassMeta(
             ComputeShader shader,
             int kernelIndex,
-            int threadGroupsX,
-            int threadGroupsY,
-            int threadGroupsZ,
-            Action<ComputeCommandBuffer> updateCallback = null)
-            : this(new ComputeDispatchMeta(shader, kernelIndex, threadGroupsX, threadGroupsY, threadGroupsZ), updateCallback)
+            int threadGroupsX = 1,
+            int threadGroupsY = 1,
+            int threadGroupsZ = 1,
+            Action<ComputeCommandBuffer, Tdata> updateCallback = null)
+            : this(
+                new ComputeMeta(shader, kernelIndex, threadGroupsX, threadGroupsY, threadGroupsZ),
+                updateCallback)
         { }
     }
 }

@@ -29,15 +29,10 @@ RWTexture2D<float> _Dest;
  *       Do NOT change the member order or add smaller types
  *       without considering alignment and padding.
  */
-struct DownsampleParams
-{
-    uint2 sourceRes;
-    uint2 destRes;
-};
-
 cbuffer _DownsampleHighZParams
 {
-    DownsampleParams params;
+    uint2 _SourceRes;
+    uint2 _DestRes;
 };
 
 /**
@@ -52,15 +47,15 @@ cbuffer _DownsampleHighZParams
 [numthreads(8, 8, 1)]
 void DownsampleHighZ(uint3 id : SV_DispatchThreadID)
 {
-    if (params.destRes.x <= id.x || params.destRes.y <= id.y)
+    if (_DestRes.x <= id.x || _DestRes.y <= id.y)
         return;
 
     uint2 base = id.xy * 2;
 
     uint2 c00 = base;
-    uint2 c10 = min(base + uint2(1, 0), params.sourceRes - 1);
-    uint2 c01 = min(base + uint2(0, 1), params.sourceRes - 1);
-    uint2 c11 = min(base + uint2(1, 1), params.sourceRes - 1);
+    uint2 c10 = min(base + uint2(1, 0), _SourceRes - 1);
+    uint2 c01 = min(base + uint2(0, 1), _SourceRes - 1);
+    uint2 c11 = min(base + uint2(1, 1), _SourceRes - 1);
 
     float4 samples;
     samples.x = _Source[c00].r;
