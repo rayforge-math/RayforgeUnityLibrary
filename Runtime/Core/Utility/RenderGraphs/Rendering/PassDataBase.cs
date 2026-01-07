@@ -1,6 +1,6 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.Rendering.RenderGraphModule;
 
 namespace Rayforge.Utility.RenderGraphs.Rendering
@@ -8,12 +8,21 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// <summary>
     /// Base class for RenderGraph pass input/output configuration and material binding.
     /// </summary>
-    public abstract class RenderPassDataBase<Tdata> : IDisposable
+    public partial class PassDataBase<Tdata, Tdest> : IDisposable
         where Tdata : struct
+        where Tdest : struct
     {
-        private TextureHandle m_Destination;
+        private PassInput m_Source;
+        /// <summary>Texture inputs used in the pass.</summary>
+        public PassInput Source
+        {
+            get => m_Source;
+            set => m_Source = value;
+        }
+
+        private Tdest m_Destination;
         /// <summary>Texture that this pass writes into.</summary>
-        public TextureHandle Destination
+        public Tdest Destination
         {
             get => m_Destination;
             set => m_Destination = value;
@@ -35,15 +44,22 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         /// <summary>
         /// Copies pass configuration values from another pass.
         /// </summary>
-        public virtual void CopyFrom(RenderPassDataBase<Tdata> other)
+        public void CopyFrom(PassDataBase<Tdata, Tdest> other)
         {
             m_Destination = other.m_Destination;
             m_AdditionalData = other.m_AdditionalData;
         }
 
         /// <summary>
-        /// Enumerates all valid texture inputs used by this pass.
+        /// Enumerates all valid (non-null) input textures.
         /// </summary>
-        public abstract IEnumerable<RenderPassTexture> PassInput { get; }
+        public IEnumerable<TexturePassMeta> PassInput
+        {
+            get
+            {
+                foreach (var input in m_Source.Input)
+                    yield return input;
+            }
+        }
     }
 }

@@ -16,7 +16,7 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         /// <summary>
         /// The type of input the render pass requires from the camera.
         /// </summary>
-        private const ScriptableRenderPassInput k_PassInput = ScriptableRenderPassInput.Depth;
+        private const ScriptableRenderPassInput k_PassInput = ScriptableRenderPassInput.Depth | ScriptableRenderPassInput.Color;
 
         [SerializeField, InspectorName("Injection Point")]
         private RenderPassEvent m_InjectionPoint = RenderPassEvent.AfterRenderingPrePasses;

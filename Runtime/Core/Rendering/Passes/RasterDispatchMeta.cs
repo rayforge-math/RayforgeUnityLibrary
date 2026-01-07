@@ -1,4 +1,3 @@
-using Rayforge.Diagnostics;
 using UnityEngine;
 
 namespace Rayforge.Rendering.Passes

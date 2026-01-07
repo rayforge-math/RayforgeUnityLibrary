@@ -35,14 +35,14 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
 
         /// <summary>
         /// Adds a custom RenderGraph pass executed using <see cref="UnsafeCommandBuffer"/>.
-        /// This is useful for low-level full-screen operations, manual blits or passes that require
-        /// direct command buffer access.
+        /// Useful for low-level full-screen operations, manual blits, or passes that
+        /// require direct access to a native command buffer.
         /// </summary>
-        /// <typeparam name="TpassData">Pass data type used to configure inputs, outputs and material state.</typeparam>
-        /// <param name="renderGraph">RenderGraph instance the pass is added to.</param>
+        /// <typeparam name="TpassData">Pass data type containing input/output textures and dispatch metadata.</typeparam>
+        /// <param name="renderGraph">RenderGraph instance to which the pass is added.</param>
         /// <param name="passName">Name used for debugging and RenderGraph visualization.</param>
         public static void AddUnsafeRenderPass<TpassData>(RenderGraph renderGraph, string passName, TpassData passData)
-            where TpassData : RenderPassDataBase<UnsafeRasterPassMeta>, new()
+            where TpassData : UnsafeRenderPassData, new()
         {
             using (var builder = renderGraph.AddUnsafePass(passName, out TpassData data))
             {
@@ -82,14 +82,15 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         }
 
         /// <summary>
-        /// Adds a standard raster RenderGraph pass. Render target attachments are handled automatically.
-        /// Recommended for most full-screen rendering operations unless low-level native buffer control is required.
+        /// Adds a standard raster RenderGraph pass.
+        /// Handles render target attachments automatically.
+        /// Recommended for most full-screen rendering unless low-level native buffer control is needed.
         /// </summary>
-        /// <typeparam name="TpassData">Pass data type used to configure material and input/output state.</typeparam>
+        /// <typeparam name="TpassData">Pass data type containing material and input/output state.</typeparam>
         /// <param name="renderGraph">RenderGraph instance to add the pass to.</param>
-        /// <param name="passName">Display name used in the RenderGraph debug view.</param>
+        /// <param name="passName">Display name for debugging and RenderGraph visualization.</param>
         public static void AddRasterRenderPass<TpassData>(RenderGraph renderGraph, string passName, TpassData passData)
-            where TpassData : RenderPassDataBase<RasterPassMeta>, new()
+            where TpassData : SafeRenderPassData, new()
         {
             using (var builder = renderGraph.AddRasterRenderPass(passName, out TpassData data))
             {
@@ -127,14 +128,13 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
 
         /// <summary>
         /// Adds a compute RenderGraph pass.
-        /// Automatically sets up input textures, output texture, and dispatches the compute shader using
-        /// the specified <see cref="ComputePassMeta"/>.
+        /// Automatically binds input textures, output texture, and dispatches the compute shader.
         /// </summary>
-        /// <typeparam name="TpassData">Type of pass data used to configure inputs, outputs, and material state.</typeparam>
+        /// <typeparam name="TpassData">Pass data type containing compute kernel metadata and textures.</typeparam>
         /// <param name="renderGraph">RenderGraph instance to add the pass to.</param>
-        /// <param name="passName">Display name used in RenderGraph debug view.</param>
+        /// <param name="passName">Display name for debugging in the RenderGraph view.</param>
         public static void AddComputePass<TpassData>(RenderGraph renderGraph, string passName, TpassData passData)
-            where TpassData : RenderPassDataBase<ComputePassMeta>, new()
+            where TpassData : ComputePassData, new()
         {
             using(var builder = renderGraph.AddComputePass(passName, out TpassData data))
             {
@@ -144,14 +144,29 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                 {
                     builder.UseTexture(input.handle, AccessFlags.Read);
                 }
-                builder.UseTexture(data.Destination, AccessFlags.Write);
+                builder.UseTexture(data.Destination.handle, AccessFlags.Write);
 
                 builder.SetRenderFunc((TpassData data, ComputeGraphContext ctx) =>
                 {
                     data.AdditionalData.UpdateCallback?.Invoke(ctx.cmd);
 
+                    var shaderMeta = data.AdditionalData.DispatchMeta;
+
+                    foreach (var input in data.PassInput)
+                    {
+                        ctx.cmd.SetComputeTextureParam(shaderMeta.Shader, shaderMeta.KernelIndex, input.propertyId, input.handle);
+                    }
+                    var dest = data.Destination;
+                    ctx.cmd.SetComputeTextureParam(shaderMeta.Shader, shaderMeta.KernelIndex, dest.propertyId, dest.handle);
+
                     var dispatchMeta = data.AdditionalData.DispatchMeta;
-                    ctx.cmd.DispatchCompute(dispatchMeta.Shader, dispatchMeta.KernelIndex, dispatchMeta.ThreadGroupsX, dispatchMeta.ThreadGroupsY, dispatchMeta.ThreadGroupsZ);
+                    ctx.cmd.DispatchCompute(
+                        dispatchMeta.Shader,
+                        dispatchMeta.KernelIndex,
+                        dispatchMeta.ThreadGroupsX,
+                        dispatchMeta.ThreadGroupsY,
+                        dispatchMeta.ThreadGroupsZ
+                    );
                 });
             }
         }

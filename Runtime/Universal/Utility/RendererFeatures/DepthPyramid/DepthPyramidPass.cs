@@ -2,14 +2,18 @@ using Rayforge.Diagnostics;
 using Rayforge.ManagedResources.Abstractions;
 using Rayforge.ManagedResources.NativeMemory;
 using Rayforge.Rendering.Helpers;
+using Rayforge.ShaderExtensions.Blitter;
 using Rayforge.Utility.RenderGraphs.Collections;
+using Rayforge.Utility.RenderGraphs.Rendering;
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
+using static UnityEngine.Rendering.RenderGraphModule.Util.RenderGraphUtils;
 
 namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 {
@@ -40,6 +44,8 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         private RenderTextureDescriptor m_DepthPyramidDescriptor;
 
         private const string k_DepthTextureMipName = "";
+
+        private readonly SingleInputPassData<ComputePassMeta> k_PassData = new();
 
         public DepthPyramidPass(ComputeShader shader)
         {
@@ -103,7 +109,18 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 return;
             }
 
-            //using (var passData = renderGraph.AddComputePass()
+            UdpateSettings(cameraData);
+
+            // initial blit
+            k_PassData.SetInput(k_SourceId, srcDepthBuffer);
+            k_PassData.Set
+            RenderPassRecorder.AddComputePass(renderGraph, k_DownsampleHighZKernelName, k_PassData);
+
+            BlitMaterialParameters param = new BlitMaterialParameters()
+            {
+                source = 
+            }
+            renderGraph.AddBlitPass()
         }
     }
 }
