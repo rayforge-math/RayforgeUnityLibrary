@@ -8,36 +8,85 @@ namespace Rayforge.Rendering.Passes
     /// Metadata describing a complete compute dispatch:
     /// shader, kernel, and thread group counts.
     /// Ensures that all values are valid for a dispatch.
+    /// Assertions are used in editor/dev builds for developer feedback.
     /// </summary>
     public struct ComputeMeta
     {
-        /// <summary>The compute shader asset.</summary>
-        public ComputeShader Shader;
+        private ComputeShader shader;
+        private int kernelIndex;
+        private int threadGroupsX;
+        private int threadGroupsY;
+        private int threadGroupsZ;
 
-        /// <summary>The kernel index within the shader.</summary>
-        public int KernelIndex;
+        /// <summary>
+        /// The compute shader asset. Cannot be null.
+        /// </summary>
+        public ComputeShader Shader
+        {
+            get => shader;
+            set
+            {
+                Assertions.NotNull(value, "Shader cannot be null.");
+                shader = value;
+            }
+        }
 
-        /// <summary>Thread groups in X dimension.</summary>
-        public int ThreadGroupsX;
+        /// <summary>
+        /// The kernel index within the shader. Must be >= 0.
+        /// </summary>
+        public int KernelIndex
+        {
+            get => kernelIndex;
+            set
+            {
+                Assertions.AtLeastZero(value, "KernelIndex must be >= 0.");
+                kernelIndex = value;
+            }
+        }
 
-        /// <summary>Thread groups in Y dimension.</summary>
-        public int ThreadGroupsY;
+        /// <summary>
+        /// Thread groups in X dimension. Must be > 0.
+        /// </summary>
+        public int ThreadGroupsX
+        {
+            get => threadGroupsX;
+            set
+            {
+                Assertions.AtLeastOne(value, "ThreadGroupsX must be > 0.");
+                threadGroupsX = value;
+            }
+        }
 
-        /// <summary>Thread groups in Z dimension.</summary>
-        public int ThreadGroupsZ;
+        /// <summary>
+        /// Thread groups in Y dimension. Must be > 0.
+        /// </summary>
+        public int ThreadGroupsY
+        {
+            get => threadGroupsY;
+            set
+            {
+                Assertions.AtLeastOne(value, "ThreadGroupsY must be > 0.");
+                threadGroupsY = value;
+            }
+        }
+
+        /// <summary>
+        /// Thread groups in Z dimension. Must be > 0.
+        /// </summary>
+        public int ThreadGroupsZ
+        {
+            get => threadGroupsZ;
+            set
+            {
+                Assertions.AtLeastOne(value, "ThreadGroupsZ must be > 0.");
+                threadGroupsZ = value;
+            }
+        }
 
         /// <summary>
         /// Construct from shader + kernel name.
-        /// Exceptions are thrown for invalid arguments.
-        /// Assertions are used in editor/dev builds for extra developer feedback.
+        /// Assertions ensure developer mistakes are caught.
         /// </summary>
-        /// <param name="shader">Compute shader to dispatch.</param>
-        /// <param name="kernelName">Name of the kernel to dispatch.</param>
-        /// <param name="threadGroupsX">Number of thread groups in X dimension (>0).</param>
-        /// <param name="threadGroupsY">Number of thread groups in Y dimension (>0).</param>
-        /// <param name="threadGroupsZ">Number of thread groups in Z dimension (>0).</param>
-        /// <exception cref="ArgumentNullException">Thrown if shader is null.</exception>
-        /// <exception cref="ArgumentException">Thrown if kernel not found or thread groups invalid.</exception>
         public ComputeMeta(
             ComputeShader shader,
             string kernelName,
@@ -45,19 +94,18 @@ namespace Rayforge.Rendering.Passes
             int threadGroupsY,
             int threadGroupsZ = 1)
         {
-            if (shader == null) 
-                throw new ArgumentNullException(nameof(shader));
-            if (string.IsNullOrEmpty(kernelName)) 
-                throw new ArgumentException("Kernel name cannot be null or empty.", nameof(kernelName));
-
-            int index = shader.FindKernel(kernelName);
-            if (index < 0) 
-                throw new ArgumentException($"Kernel '{kernelName}' not found in shader '{shader.name}'.", nameof(kernelName));
-
-            if (threadGroupsX <= 0 || threadGroupsY <= 0 || threadGroupsZ <= 0)
-                throw new ArgumentException("Thread group counts must be > 0.");
+            this.shader = null;
+            this.kernelIndex = 0;
+            this.threadGroupsX = 0;
+            this.threadGroupsY = 0;
+            this.threadGroupsZ = 0;
 
             Shader = shader;
+
+            Assertions.IsTrue(!string.IsNullOrEmpty(kernelName), "Kernel name cannot be null or empty.");
+            int index = shader != null ? shader.FindKernel(kernelName) : -1;
+            Assertions.IsTrue(index >= 0, $"Kernel '{kernelName}' not found in shader '{shader?.name ?? "<null>"}'.");
+
             KernelIndex = index;
             ThreadGroupsX = threadGroupsX;
             ThreadGroupsY = threadGroupsY;
@@ -66,16 +114,8 @@ namespace Rayforge.Rendering.Passes
 
         /// <summary>
         /// Construct from shader + kernel index.
-        /// Throws exceptions for invalid arguments.
+        /// Assertions ensure developer mistakes are caught.
         /// </summary>
-        /// <param name="shader">Compute shader to dispatch.</param>
-        /// <param name="kernelIndex">Kernel index (>=0).</param>
-        /// <param name="threadGroupsX">Number of thread groups in X dimension (>0).</param>
-        /// <param name="threadGroupsY">Number of thread groups in Y dimension (>0).</param>
-        /// <param name="threadGroupsZ">Number of thread groups in Z dimension (>0).</param>
-        /// <exception cref="ArgumentNullException">Thrown if shader is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if kernelIndex < 0.</exception>
-        /// <exception cref="ArgumentException">Thrown if thread groups invalid.</exception>
         public ComputeMeta(
             ComputeShader shader,
             int kernelIndex,
@@ -83,12 +123,11 @@ namespace Rayforge.Rendering.Passes
             int threadGroupsY,
             int threadGroupsZ = 1)
         {
-            if (shader == null) 
-                throw new ArgumentNullException(nameof(shader));
-            if (kernelIndex < 0) 
-                throw new ArgumentOutOfRangeException(nameof(kernelIndex), "Kernel index must be >= 0.");
-            if (threadGroupsX <= 0 || threadGroupsY <= 0 || threadGroupsZ <= 0)
-                throw new ArgumentException("Thread group counts must be > 0.");
+            this.shader = null;
+            this.kernelIndex = 0;
+            this.threadGroupsX = 0;
+            this.threadGroupsY = 0;
+            this.threadGroupsZ = 0;
 
             Shader = shader;
             KernelIndex = kernelIndex;
