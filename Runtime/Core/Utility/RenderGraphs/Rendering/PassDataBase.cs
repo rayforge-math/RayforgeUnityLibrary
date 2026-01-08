@@ -74,9 +74,13 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         }
 
         /// <summary>
-        /// Override this in derived pass data to copy additional fields.
-        /// Otherwise data is not present in render pass dispatch.
+        /// Override this in a derived pass data type to copy any additional fields.
+        /// If not overridden, these fields will not be present during render pass dispatch.
         /// </summary>
+        /// <remarks>
+        /// The precise derived type <see cref="TDerived"/> is known at compile time,
+        /// so the compiler can resolve this call directly without using a vtable.
+        /// </remarks>
         public abstract void CopyUserData(TDerived other);
 
         /// <summary>
