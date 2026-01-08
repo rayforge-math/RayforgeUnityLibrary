@@ -6,7 +6,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// Specialized pass data for compute passes.
     /// Provides convenience setters for input and destination textures using <see cref="TextureHandle"/>.
     /// </summary>
-    public abstract class ComputePassData<TDerived> : PassDataBase<TDerived, ComputePassMeta<TDerived>, TextureMeta>
+    public abstract partial class ComputePassData<TDerived> : PassDataBase<TDerived, ComputePassMeta<TDerived>, TextureMeta>
         where TDerived : PassDataBase<TDerived, ComputePassMeta<TDerived>, TextureMeta>
     {
         /// <summary>

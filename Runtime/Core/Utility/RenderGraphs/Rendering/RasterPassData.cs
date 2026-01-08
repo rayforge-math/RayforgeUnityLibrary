@@ -17,7 +17,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// Provides typed access to render target configuration and material-based rendering.
     /// </summary>
     /// <typeparam name="TDerived">The derived pass data type for type-safe callbacks.</typeparam>
-    public abstract class RasterPassData<TDerived> : RasterPassDataBase<TDerived, RasterPassMeta<TDerived>>
+    public abstract partial class RasterPassData<TDerived> : RasterPassDataBase<TDerived, RasterPassMeta<TDerived>>
         where TDerived : RasterPassDataBase<TDerived, RasterPassMeta<TDerived>>
     { }
 
@@ -26,7 +26,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// Uses <see cref="UnsafeRasterPassMeta{TDerived}"/> for low-level command buffer access.
     /// </summary>
     /// <typeparam name="TDerived">The derived pass data type for type-safe callbacks.</typeparam>
-    public abstract class UnsafeRasterPassData<TDerived> : RasterPassDataBase<TDerived, UnsafeRasterPassMeta<TDerived>>
+    public abstract partial class UnsafeRasterPassData<TDerived> : RasterPassDataBase<TDerived, UnsafeRasterPassMeta<TDerived>>
         where TDerived : RasterPassDataBase<TDerived, UnsafeRasterPassMeta<TDerived>>
     { }
 }

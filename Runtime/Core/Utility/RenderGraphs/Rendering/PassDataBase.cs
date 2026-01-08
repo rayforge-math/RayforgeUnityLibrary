@@ -11,7 +11,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// <typeparam name="TDerived">Type of the derived class (CRTP).</typeparam>
     /// <typeparam name="TMeta">Type of the pass metadata (e.g., compute or raster meta).</typeparam>
     /// <typeparam name="TDest">Type of the destination output texture.</typeparam>
-    public abstract partial class PassDataBase<TDerived, TMeta, TDest> : IDisposable
+    public abstract class PassDataBase<TDerived, TMeta, TDest> : IDisposable
         where TDerived : PassDataBase<TDerived, TMeta, TDest>
         where TMeta : struct
         where TDest : struct
