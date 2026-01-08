@@ -38,6 +38,10 @@ namespace Rayforge.Rendering.Collections
         /// <param name="baseResolution">Base resolution for mip 0.</param>
         /// <param name="mipCount">Number of mip levels.</param>
         /// <param name="mipFunc">Optional custom mip resolution function. Defaults to halving each dimension per mip.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown if <paramref name="baseResolution"/> has non-positive width or height,
+        /// or if <paramref name="mipCount"/> is not positive.
+        /// </exception>
         public MipChainLayout(Vector2Int baseResolution, int mipCount, MipCreateFunc mipFunc = null)
         {
             if (baseResolution.x <= 0 || baseResolution.y <= 0)
@@ -56,6 +60,9 @@ namespace Rayforge.Rendering.Collections
         /// </summary>
         /// <param name="mipLevel">Mip level index.</param>
         /// <returns>Resolution for this mip level.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <paramref name="mipLevel"/> is less than 0 or greater than or equal to <see cref="MipCount"/>.
+        /// </exception>
         public Vector2Int GetResolution(int mipLevel)
         {
             if (mipLevel < 0 || mipLevel >= m_MipCount)

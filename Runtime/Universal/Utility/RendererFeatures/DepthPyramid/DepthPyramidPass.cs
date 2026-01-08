@@ -164,7 +164,7 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 mipN1 = k_DepthPyramidHandles[i].ToRenderGraphHandle(renderGraph);
 
                 if (!mipN0.IsValid() || !mipN1.IsValid())
-                    continue;
+                    break;
 
                 k_PassData.SetInput(mipN0, k_SourceId);
                 k_PassData.SetDestination(mipN1);

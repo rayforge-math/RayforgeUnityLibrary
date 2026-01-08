@@ -83,15 +83,17 @@ namespace Rayforge.Rendering.Collections
         /// otherwise, the array is only enlarged.
         /// </param>
         /// <param name="data">Optional user data passed to the creation function.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="descriptorChain"/> is null.</exception>
         public void CreateUnsafe(DescriptorMipChain descriptorChain, int startMip, int count, int handleStartIndex, bool shrink = false, TData data = default)
         {
-            if (descriptorChain == null || descriptorChain.MipCount == 0)
+            if (descriptorChain == null)
                 throw new ArgumentException("DescriptorMipChain must not be null or empty.", nameof(descriptorChain));
 
             var descriptors = descriptorChain.Descriptors;
+            var descCount = descriptors == null ? 0 : descriptors.Count;
 
-            startMip = Mathf.Clamp(startMip, 0, descriptors.Count - 1);
-            count = Mathf.Clamp(count, 1, descriptors.Count - startMip);
+            startMip = Mathf.Clamp(startMip, 0, descCount - 1);
+            count = Mathf.Clamp(count, 1, descCount - startMip);
 
             if (m_Handles.Length < handleStartIndex + count || shrink)
                 Resize(handleStartIndex + count);
@@ -109,6 +111,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="startMip">Index of the first mip level to create.</param>
         /// <param name="count">Number of mip levels to create starting from <paramref name="startMip"/>.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
+        /// <exception cref="ArgumentException">Thrown if the descriptor width or height is not positive.</exception>
         public void CreateUnsafe(RenderTextureDescriptor descriptor, int startMip, int count, TData data = default)
             => CreateUnsafe(descriptor.width, descriptor.height, descriptor, startMip, count, startMip, false, data);
 
@@ -123,6 +126,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="startMip">Index of the first mip level to create.</param>
         /// <param name="count">Number of mip levels to create starting from <paramref name="startMip"/>.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
+        /// <exception cref="ArgumentException">Thrown if the descriptor width or height is not positive.</exception>
         public void CreateUnsafe(int width, int height, RenderTextureDescriptor descriptor, int startMip, int count, TData data = default)
             => CreateUnsafe(width, height, descriptor, startMip, count, startMip, false, data);
 
@@ -141,6 +145,7 @@ namespace Rayforge.Rendering.Collections
         /// otherwise, the array is only enlarged.
         /// </param>
         /// <param name="data">Optional user data passed to the creation function.</param>
+        /// <exception cref="ArgumentException">Thrown if the descriptor width or height is not positive.</exception>
         public void CreateUnsafe(int width, int height, RenderTextureDescriptor descriptor, int startMip, int count, bool shrink = false, TData data = default)
             => CreateUnsafe(width, height, descriptor, startMip, count, startMip, shrink, data);
 
@@ -161,13 +166,11 @@ namespace Rayforge.Rendering.Collections
         /// If true, allows the handle array to be resized down if it is larger than needed; otherwise only enlarges.
         /// </param>
         /// <param name="data">Optional user data passed to the creation function.</param>
+        /// <exception cref="ArgumentException">Thrown if the descriptor width or height is not positive.</exception>
         public void CreateUnsafe(int width, int height, RenderTextureDescriptor descriptor, int startMip, int count, int handleStartIndex, bool shrink = false, TData data = default)
         {
             if (width <= 0 || height <= 0)
                 throw new ArgumentException("Base width and height must be greater than zero.");
-
-            if (count <= 0)
-                throw new ArgumentException("Count must be greater than zero.");
 
             Vector2Int baseRes = new Vector2Int(width, height);
 
@@ -197,6 +200,7 @@ namespace Rayforge.Rendering.Collections
         /// </summary>
         /// <param name="index">Target index in the handle array.</param>
         /// <param name="handle">Handle to assign.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if index is not positive or 0.</exception>
         public void SetHandleUnsafe(int index, THandle handle)
         {
             if (index < 0)
@@ -221,28 +225,32 @@ namespace Rayforge.Rendering.Collections
         /// <param name="start">Start index in the source chain.</param>
         /// <param name="count">Number of handles to copy.</param>
         /// <param name="handleStartIndex">Start index in the handle array where the first handle will be stored.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="other"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="handleStartIndex"/> is negative.</exception>
         public void CopyFromUnsafe(MipChain<THandle, TData> other, int start, int count, int handleStartIndex)
             => CopyFromUnsafe(other.Handles, start, count, handleStartIndex);
 
         /// <summary>
-        /// Copies a range of handles from another mip chain.
+        /// Copies a range of handles from another collection of handles.
         /// <para>
         /// This method can bypass the usual safety guarantees of a mip chain
         /// (for example, contiguous layout or complete mip coverage) and is
         /// intended for advanced usage where such constraints are managed manually.
         /// </para>
         /// </summary>
-        /// <param name="other">Source mip chain.</param>
-        /// <param name="start">Start index in the source chain.</param>
+        /// <param name="other">Source collection of handles.</param>
+        /// <param name="start">Start index in the source collection.</param>
         /// <param name="count">Number of handles to copy.</param>
         /// <param name="handleStartIndex">Start index in the handle array where the first handle will be stored.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="other"/> is <c>null</c>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="handleStartIndex"/> is negative.</exception>
         public void CopyFromUnsafe(IReadOnlyList<THandle> other, int start, int count, int handleStartIndex)
         {
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
 
             if (handleStartIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(handleStartIndex));
+                throw new ArgumentOutOfRangeException(nameof(handleStartIndex), "Start index must be non-negative.");
 
             if (other.Count == 0 || count <= 0)
                 return;

@@ -58,7 +58,7 @@ namespace Rayforge.Utility.RenderGraphs.Collections
     /// Optional user data passed to the texture creation function, useful for passing context
     /// or resources needed during RenderGraph allocation.
     /// </typeparam>
-    public sealed class UnsafeRTHandleMipChain : UnsafeRTHandleMipChain<NoData>
+    public class UnsafeRTHandleMipChain : UnsafeRTHandleMipChain<NoData>
     {
         /// <summary>
         /// Delegate for creating a handle for a mip level.
@@ -76,11 +76,17 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         /// Initializes a mip chain with a texture creation function.
         /// </summary>
         /// <param name="createFunc">Function to create each mip level.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="createFunc"/> is <c>null</c>.
+        /// </exception>
         public UnsafeRTHandleMipChain(CreateFunctionNoData createFunc)
             : base((ref RTHandle handle, RenderTextureDescriptor descriptor, int mipLevel, NoData _) =>
             {
                 return createFunc.Invoke(ref handle, descriptor, mipLevel);
             })
-        { }
+        {
+            if (createFunc == null)
+                throw new ArgumentNullException(nameof(createFunc), "The texture creation function must not be null.");
+        }
     }
 }

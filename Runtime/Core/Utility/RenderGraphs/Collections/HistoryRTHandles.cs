@@ -1,8 +1,9 @@
+using Rayforge.Common;
+using Rayforge.Diagnostics;
 using Rayforge.Rendering.Collections;
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Rayforge.Diagnostics;
-using Rayforge.Common;
 
 namespace Rayforge.Utility.RenderGraphs.Collections
 {
@@ -39,10 +40,13 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         /// <param name="initial0">Initial first handle (current).</param>
         /// <param name="initial1">Initial second handle (history).</param>
         /// <param name="handleName">Optional base name for debugging/profiling.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="reAllocFunc"/> is <c>null</c>.</exception>
         public HistoryRTHandles(TextureReAllocFunction reAllocFunc, RTHandle initial0, RTHandle initial1, string handleName = null)
             : base(initial0, initial1)
         {
-            Assertions.NotNull(reAllocFunc);
+            if (reAllocFunc == null)
+                throw new ArgumentNullException(nameof(reAllocFunc));
+
             m_ReAllocFunc = reAllocFunc;
 
             m_HandleNames = new string[2];
@@ -58,6 +62,7 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         /// </summary>
         /// <param name="reAllocFunc">Delegate used to create or reallocate handles.</param>
         /// <param name="handleName">Optional base name for debugging/profiling.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="reAllocFunc"/> is <c>null</c>.</exception>
         public HistoryRTHandles(TextureReAllocFunction reAllocFunc, string handleName)
             : this(reAllocFunc, null, null, handleName)
         { }
@@ -71,8 +76,14 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         /// <param name="swap">If true, swaps the current and previous handle after allocation.</param>
         /// <param name="data">Optional user-defined context passed to the allocation function.</param>
         /// <returns><c>true</c> if at least one handle was allocated/reallocated, <c>false</c> otherwise.</returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown if <paramref name="descriptor"/> has non-positive width or height.
+        /// </exception>
         public bool ReAllocateHandlesIfNeeded(RenderTextureDescriptor descriptor, bool swap = false, TData data = default)
         {
+            if (descriptor.width <= 0 || descriptor.height <= 0)
+                throw new ArgumentException("RenderTextureDescriptor must have positive width and height.", nameof(descriptor));
+
             bool alloc = false;
 
             for (int i = 0; i < 2; ++i)

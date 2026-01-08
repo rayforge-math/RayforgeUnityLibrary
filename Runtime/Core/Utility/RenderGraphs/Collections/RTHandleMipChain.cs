@@ -49,7 +49,7 @@ namespace Rayforge.Utility.RenderGraphs.Collections
     /// - Allowing optional mip map generation between handles in a RenderGraph-friendly way.
     /// - Providing easy access to individual mip handles and read-only spans for pass binding.
     /// </summary>
-    public sealed class RTHandleMipChain : RTHandleMipChain<NoData>
+    public class RTHandleMipChain : RTHandleMipChain<NoData>
     {
         /// <summary>
         /// Delegate for creating a handle for a mip level.
@@ -67,11 +67,17 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         /// Initializes a mip chain with a texture creation function.
         /// </summary>
         /// <param name="createFunc">Function to create each mip level.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="createFunc"/> is <c>null</c>.
+        /// </exception>
         public RTHandleMipChain(CreateFunctionNoData createFunc)
             : base((ref RTHandle handle, RenderTextureDescriptor descriptor, int mipLevel, NoData _) =>
             {
                 return createFunc.Invoke(ref handle, descriptor, mipLevel);
             })
-        { }
+        {
+            if (createFunc == null)
+                throw new ArgumentNullException(nameof(createFunc), "The texture creation function must not be null.");
+        }
     }
 }
