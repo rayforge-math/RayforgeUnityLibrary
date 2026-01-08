@@ -1,7 +1,9 @@
+using Rayforge.Common;
 using Rayforge.Diagnostics;
+using System;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-using Rayforge.Common;
+using static UnityEngine.XR.XRDisplaySubsystem;
 
 namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 {
@@ -10,6 +12,8 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
     /// </summary>
     public class DepthPyramidFeature : ScriptableRendererFeature
     {
+        public const int MipCountMax = DepthPyramidPass.MipCountMax;
+
         private const string k_ShaderName = "DepthPyramid";
         private static readonly string k_FullShaderName = ResourcePaths.ShaderResourceFolder + k_ShaderName;
 
@@ -20,6 +24,23 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
         [SerializeField, InspectorName("Injection Point")]
         private RenderPassEvent m_InjectionPoint = RenderPassEvent.AfterRenderingPrePasses;
+
+        [Range(1, MipCountMax), SerializeField, InspectorName("Mip Count")]
+        public int m_MipCount = 8;
+
+#if UNITY_EDITOR
+        [Header("Debug")]
+        public bool showDepthPyramid = false;
+        [Range(0, MipCountMax - 1)]
+        public int mipLevel = 0;
+#endif
+
+        public void OnValidate()
+        {
+#if UNITY_EDITOR
+            mipLevel = Math.Clamp(mipLevel, 0, m_MipCount - 1);
+#endif
+        }
 
         /// <summary>
         /// The render pass injection point in the pipeline.  
@@ -85,6 +106,15 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
             if (renderingData.cameraData.cameraType == CameraType.Game)
             {
+                m_RenderPass.renderPassEvent = m_InjectionPoint;
+                m_RenderPass.UpdateMipCount(m_MipCount);
+
+#if UNITY_EDITOR
+                m_RenderPass.UpdateDebugSettings(showDepthPyramid, mipLevel);
+                if(showDepthPyramid) 
+                    m_RenderPass.renderPassEvent = RenderPassEvent.AfterRenderingSkybox;
+#endif
+
                 m_RenderPass.ConfigureInput(k_PassInput);
                 renderer.EnqueuePass(m_RenderPass);
             }

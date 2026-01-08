@@ -4,7 +4,6 @@ using Rayforge.Rendering.Helpers;
 using Rayforge.Utility.RenderGraphs.Collections;
 using Rayforge.Utility.RenderGraphs.Helpers;
 using Rayforge.Utility.RenderGraphs.Rendering;
-using Rayforge.Rendering.Passes;
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -13,12 +12,13 @@ using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 using static UnityEngine.Rendering.RenderGraphModule.Util.RenderGraphUtils;
-using System.Linq;
 
 namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 {
     public class DepthPyramidPass : ScriptableRenderPass, IDisposable
     {
+        public const int MipCountMax = 16;
+
         private class DepthPyramidPassData : ComputePassData<DepthPyramidPassData>
         {
 
@@ -41,6 +41,8 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         private static readonly int k_DownsampleHighZParamsId = Shader.PropertyToID("_DownsampleHighZParams");
 
         private Vector2Int m_LastResolution = new Vector2Int(-1, -1);
+        private int m_MipCount = 2;
+        public int MipCount => m_MipCount;
 
         private readonly RTHandleMipChain k_DepthPyramidHandles;
         private RenderTextureDescriptor m_DepthPyramidDescriptor;
@@ -64,8 +66,7 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 RenderTextureDescriptor desc,
                 int mip) =>
             {
-                var created = RenderingUtils.ReAllocateHandleIfNeeded(ref handle, desc);
-                Assertions.IsTrue(created);
+                return RenderingUtils.ReAllocateHandleIfNeeded(ref handle, desc);
             });
 
             m_DepthPyramidDescriptor = DefaultDescriptors.DepthBufferFullScreen();
@@ -79,6 +80,22 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
         }
 
+        public void UpdateMipCount(int mipCount)
+        {
+            m_MipCount = Math.Clamp(mipCount, 0, MipCountMax);
+        }
+
+#if UNITY_EDITOR
+        private bool debug = false;
+        private int debugMipLevel = 0;
+
+        public void UpdateDebugSettings(bool showPyramid, int mipLevel)
+        {
+            debug = showPyramid;
+            debugMipLevel = Mathf.Clamp(mipLevel, 0, MipCount - 1);
+        }
+#endif
+
         private void CheckAndUpdateTextures(Vector2Int resolution)
         {
             if(m_LastResolution != resolution)
@@ -89,9 +106,13 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 m_DepthPyramidDescriptor.colorFormat = RenderTextureFormat.RFloat;
                 m_DepthPyramidDescriptor.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
 
-                k_DepthPyramidHandles.Create(m_DepthPyramidDescriptor, 2);
+                k_DepthPyramidHandles.Create(m_DepthPyramidDescriptor, m_MipCount);
 
                 m_LastResolution = resolution;
+            }
+            else if (k_DepthPyramidHandles.MipCount != m_MipCount)
+            {
+                k_DepthPyramidHandles.Create(m_DepthPyramidDescriptor, m_MipCount);
             }
         }
 
@@ -137,7 +158,15 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
             RenderPassRecorder.AddComputePass(renderGraph, k_DownsampleHighZKernelName, k_PassData);
             */
-            renderGraph.AddBlitPass(destHandle, srcCamColor, Vector2.one, Vector2.zero);
+
+#if UNITY_EDITOR
+            if (debug)
+            {
+                var debugHandle = k_DepthPyramidHandles[debugMipLevel].ToRenderGraphHandle(renderGraph);
+                renderGraph.AddBlitPass(debugHandle, srcCamColor, Vector2.one, Vector2.zero);
+                return;
+            }
+#endif
         }
     }
 }

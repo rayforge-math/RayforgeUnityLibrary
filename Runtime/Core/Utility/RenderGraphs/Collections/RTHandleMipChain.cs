@@ -57,7 +57,11 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         /// <param name="handle">Reference to the current handle stored internally.</param>
         /// <param name="descriptor">Descriptor describing the texture to create.</param>
         /// <param name="mipLevel">Index of the mip level being created.</param>
-        public delegate void CreateFunctionNoData(ref RTHandle handle, RenderTextureDescriptor descriptor, int mipLevel);
+        /// <returns>
+        /// <c>true</c> if a new handle was created or allocated; 
+        /// <c>false</c> if the existing handle was reused (e.g., when using <c>ReAllocateHandleIfNeeded</c>).
+        /// </returns>
+        public delegate bool CreateFunctionNoData(ref RTHandle handle, RenderTextureDescriptor descriptor, int mipLevel);
 
         /// <summary>
         /// Initializes a mip chain with a texture creation function.
@@ -66,7 +70,7 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         public RTHandleMipChain(CreateFunctionNoData createFunc)
             : base((ref RTHandle handle, RenderTextureDescriptor descriptor, int mipLevel, NoData _) =>
             {
-                createFunc.Invoke(ref handle, descriptor, mipLevel);
+                return createFunc.Invoke(ref handle, descriptor, mipLevel);
             })
         { }
     }

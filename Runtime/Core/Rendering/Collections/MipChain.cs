@@ -22,7 +22,11 @@ namespace Rayforge.Rendering.Collections
         /// <param name="descriptor">Descriptor describing the texture to create.</param>
         /// <param name="mipLevel">Index of the mip level being created.</param>
         /// <param name="data">Optional user data.</param>
-        public delegate void CreateFunction(ref THandle handle, RenderTextureDescriptor descriptor, int mipLevel, TData data = default);
+        /// <returns>
+        /// <c>true</c> if a new handle was created or allocated; 
+        /// <c>false</c> if the existing handle was reused (e.g., when using <c>ReAllocateHandleIfNeeded</c>).
+        /// </returns>
+        public delegate bool CreateFunction(ref THandle handle, RenderTextureDescriptor descriptor, int mipLevel, TData data = default);
 
         /// <summary>
         /// Delegate for generating mip maps between two handles.
@@ -65,16 +69,20 @@ namespace Rayforge.Rendering.Collections
         /// </summary>
         /// <param name="descriptorChain">The descriptor chain providing descriptors for each mip level.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void Create(DescriptorMipChain descriptorChain, TData data = default)
+        /// <returns><c>true</c> if at least one new handle was created; <c>false</c> if all handles were reused.</returns>
+        public bool Create(DescriptorMipChain descriptorChain, TData data = default)
         {
             if (descriptorChain == null || descriptorChain.MipCount == 0)
                 throw new ArgumentException("DescriptorMipChain must not be null or empty.", nameof(descriptorChain));
 
             var descriptors = descriptorChain.Descriptors;
-
             Resize(descriptors.Count);
+
+            bool anyCreated = false;
             for (int i = 0; i < descriptors.Count; i++)
-                Create(i, descriptors[i], data);
+                anyCreated |= Create(i, descriptors[i], data);
+
+            return anyCreated;
         }
 
         /// <summary>
@@ -88,25 +96,27 @@ namespace Rayforge.Rendering.Collections
         /// <param name="descriptor">Base descriptor for mip creation; will be resized for each mip level.</param>
         /// <param name="mipCount">Total number of mip levels to create.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void Create(int width, int height, RenderTextureDescriptor descriptor, int mipCount = 1, TData data = default)
+        /// <returns><c>true</c> if at least one new handle was created; <c>false</c> if all handles were reused.</returns>
+        public bool Create(int width, int height, RenderTextureDescriptor descriptor, int mipCount = 1, TData data = default)
         {
             if (width <= 0 || height <= 0)
                 throw new ArgumentException("Base width and height must be greater than zero.");
-
             if (mipCount <= 0)
                 throw new ArgumentException("Count must be greater than zero.");
 
             Vector2Int baseRes = new Vector2Int(width, height);
-
             Resize(mipCount);
+
+            bool anyCreated = false;
             for (int i = 0; i < mipCount; i++)
             {
                 var mipRes = MipChainHelpers.DefaultMipResolution(i, baseRes);
                 descriptor.width = mipRes.x;
                 descriptor.height = mipRes.y;
-
-                Create(i, descriptor, data);
+                anyCreated |= Create(i, descriptor, data);
             }
+
+            return anyCreated;
         }
 
         /// <summary>
@@ -118,28 +128,32 @@ namespace Rayforge.Rendering.Collections
         /// <param name="descriptor">Base descriptor for mip creation; will be resized for each mip level.</param>
         /// <param name="mipCount">Total number of mip levels to create.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void Create(RenderTextureDescriptor descriptor, int mipCount = 1, TData data = default)
+        /// <returns><c>true</c> if at least one new handle was created; <c>false</c> if all handles were reused.</returns>
+        public bool Create(RenderTextureDescriptor descriptor, int mipCount = 1, TData data = default)
         {
             Vector2Int baseRes = new Vector2Int(descriptor.width, descriptor.height);
-
             Resize(mipCount);
+
+            bool anyCreated = false;
             for (int i = 0; i < mipCount; i++)
             {
                 var mipRes = MipChainHelpers.DefaultMipResolution(i, baseRes);
                 descriptor.width = mipRes.x;
                 descriptor.height = mipRes.y;
-
-                Create(i, descriptor, data);
+                anyCreated |= Create(i, descriptor, data);
             }
+
+            return anyCreated;
         }
 
         /// <summary>
         /// Internal method that invokes the creation delegate for a single mip level.
         /// </summary>
-        /// <param name="index">Index of the mip level to create.</param>
+        /// <param name="index">Zero-based index of the mip level to create.</param>
         /// <param name="descriptor">Descriptor to use for this mip level.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        protected void Create(int index, RenderTextureDescriptor descriptor, TData data = default)
+        /// <returns>The result returned by the creation delegate (typically <c>true</c> if a new handle was created, <c>false</c> if reused).</returns>
+        protected bool Create(int index, RenderTextureDescriptor descriptor, TData data = default)
             => m_CreateFunc.Invoke(ref m_Handles[index], descriptor, index, data);
 
         /// <summary>
