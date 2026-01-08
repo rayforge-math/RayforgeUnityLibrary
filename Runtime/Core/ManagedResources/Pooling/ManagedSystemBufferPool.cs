@@ -3,12 +3,12 @@ using Rayforge.ManagedResources.NativeMemory;
 namespace Rayforge.ManagedResources.Pooling
 {
     /// <summary>
-    /// Managed pool for system buffers (<see cref="NativeArray{T}"/>) with optional batching.
-    /// Provides default create/release functions for <see cref="ManagedSystemBuffer{T}"/>.
+    /// Managed pool for system buffers (<see cref="NativeArray{TType}"/>) with optional batching.
+    /// Provides default create/release functions for <see cref="ManagedSystemBuffer{TType}"/>.
     /// </summary>
-    /// <typeparam name="T">The struct type stored in the system buffer.</typeparam>
-    public sealed class ManagedSystemBufferPool<T> : BatchedLeasedBufferPool<SystemBufferDescriptor, ManagedSystemBuffer<T>>
-        where T : unmanaged
+    /// <typeparam name="TType">The struct type stored in the system buffer.</typeparam>
+    public sealed class ManagedSystemBufferPool<TType> : BatchedLeasedBufferPool<SystemBufferDescriptor, ManagedSystemBuffer<TType>>
+        where TType : unmanaged
     {
         /// <summary>
         /// Default constructor using standard factory methods for system buffers.
@@ -17,7 +17,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// <param name="batchSize">Batch size for rounding allocations (0 disables batching, default is 0).</param>
         public ManagedSystemBufferPool(int baseSize = 1, int batchSize = 0)
             : base(
-                createFunc: desc => new ManagedSystemBuffer<T>(desc),
+                createFunc: desc => new ManagedSystemBuffer<TType>(desc),
                 releaseFunc: buffer => buffer.Release(),
                 baseSize: baseSize,
                 batchSize: batchSize)

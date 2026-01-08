@@ -9,30 +9,30 @@ namespace Rayforge.ManagedResources.Abstractions
     /// Base class for managed buffers, handling lifecycle and providing access
     /// to both the descriptor and the underlying internal resource.
     /// </summary>
-    /// <typeparam name="Tdesc">Descriptor type describing the buffer properties.</typeparam>
-    /// <typeparam name="Tinternal">The underlying internal resource type (e.g., ComputeBuffer, NativeArray&lt;T&gt;).</typeparam>
-    public abstract class ManagedBuffer<Tdesc, Tinternal> : IPooledBuffer<Tdesc>, IBufferInternal<Tinternal>, IEquatable<ManagedBuffer<Tdesc, Tinternal>>
-        where Tdesc : unmanaged, IEquatable<Tdesc>
+    /// <typeparam name="TDesc">Descriptor type describing the buffer properties.</typeparam>
+    /// <typeparam name="TInternal">The underlying internal resource type (e.g., ComputeBuffer, NativeArray&lt;T&gt;).</typeparam>
+    public abstract class ManagedBuffer<TDesc, TInternal> : IPooledBuffer<TDesc>, IBufferInternal<TInternal>, IEquatable<ManagedBuffer<TDesc, TInternal>>
+        where TDesc : unmanaged, IEquatable<TDesc>
     {
         /// <summary>
         /// The actual resource being managed (GPU/System buffer).
         /// </summary>
-        protected Tinternal m_Buffer;
+        protected TInternal m_Buffer;
 
         /// <summary>
         /// Descriptor describing the resource properties.
         /// </summary>
-        protected Tdesc m_Descriptor;
+        protected TDesc m_Descriptor;
 
         /// <summary>
         /// Access to the internal resource.
         /// </summary>
-        public Tinternal Buffer => m_Buffer;
+        public TInternal Buffer => m_Buffer;
 
         /// <summary>
         /// Access to the descriptor from outside.
         /// </summary>
-        public Tdesc Descriptor => m_Descriptor;
+        public TDesc Descriptor => m_Descriptor;
 
         /// <summary>
         /// Tracks whether Dispose has been called to avoid double release.
@@ -44,7 +44,7 @@ namespace Rayforge.ManagedResources.Abstractions
         /// </summary>
         /// <param name="buffer">The internal resource to manage.</param>
         /// <param name="descriptor">Descriptor describing the resource properties.</param>
-        public ManagedBuffer(Tinternal buffer, Tdesc descriptor)
+        public ManagedBuffer(TInternal buffer, TDesc descriptor)
         {
             m_Buffer = buffer;
             m_Descriptor = descriptor;
@@ -85,7 +85,7 @@ namespace Rayforge.ManagedResources.Abstractions
         /// <summary>
         /// Checks equality with another internal buffer. Must be implemented by derived classes.
         /// </summary>
-        public abstract bool Equals(ManagedBuffer<Tdesc, Tinternal> other);
+        public abstract bool Equals(ManagedBuffer<TDesc, TInternal> other);
 
         /// <summary>
         /// Overrides object.Equals to use the type-safe Equals implementation.
@@ -95,7 +95,7 @@ namespace Rayforge.ManagedResources.Abstractions
         /// <returns>True if equal, false otherwise.</returns>
         public override bool Equals(object obj)
         {
-            if (obj is ManagedBuffer<Tdesc, Tinternal> other)
+            if (obj is ManagedBuffer<TDesc, TInternal> other)
                 return Equals(other);
             return false;
         }

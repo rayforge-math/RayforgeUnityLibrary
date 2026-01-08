@@ -8,11 +8,11 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// Base class for RenderGraph pass input/output configuration and pass metadata.
     /// Supports up to 8 input textures directly.
     /// </summary>
-    /// <typeparam name="Tmeta">Type of the pass metadata (e.g., compute or raster meta).</typeparam>
-    /// <typeparam name="Tdest">Type of the destination output texture.</typeparam>
-    public partial class PassDataBase<Tmeta, Tdest> : IDisposable
-        where Tmeta : struct
-        where Tdest : struct
+    /// <typeparam name="TMeta">Type of the pass metadata (e.g., compute or raster meta).</typeparam>
+    /// <typeparam name="TDest">Type of the destination output texture.</typeparam>
+    public partial class PassDataBase<TMeta, TDest> : IDisposable
+        where TMeta : struct
+        where TDest : struct
     {
         // --- Fixed input slots ---
         private TextureMeta _input0;
@@ -29,21 +29,21 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         /// </summary>
         public const int InputCapacity = 8;
 
-        private Tdest m_Destination;
+        private TDest m_Destination;
         /// <summary>
-        /// Destination texture that this pass writes into.
+        /// Gets or sets the destination texture that this pass writes into.
         /// </summary>
-        public Tdest Destination
+        public TDest Destination
         {
             get => m_Destination;
             set => m_Destination = value;
         }
 
-        private Tmeta m_PassMeta;
+        private TMeta m_PassMeta;
         /// <summary>
-        /// Metadata describing this pass (e.g., shader, kernel, material, etc.).
+        /// Gets or sets the metadata describing this pass (e.g., shader, kernel, material).
         /// </summary>
-        public Tmeta PassMeta
+        public TMeta PassMeta
         {
             get => m_PassMeta;
             set => m_PassMeta = value;
@@ -55,10 +55,10 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         public virtual void Dispose() { }
 
         /// <summary>
-        /// Copies all configuration values from another pass.
+        /// Copies all configuration values from another pass data instance.
         /// </summary>
-        /// <param name="other">The pass data to copy values from.</param>
-        public void CopyFrom(PassDataBase<Tmeta, Tdest> other)
+        /// <param name="other">The pass data to copy from.</param>
+        public void CopyFrom(PassDataBase<TMeta, TDest> other)
         {
             for (int i = 0; i < InputCapacity; i++)
             {
@@ -72,9 +72,9 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         /// <summary>
         /// Sets the input texture at the specified index.
         /// </summary>
-        /// <param name="index">Input index (0-based, max 7).</param>
+        /// <param name="index">Zero-based input index (0-7).</param>
         /// <param name="input">The texture metadata to assign to the input slot.</param>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if the index is out of range.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the index is out of range [0-7].</exception>
         public void SetInput(int index, TextureMeta input)
         {
             switch (index)
@@ -87,23 +87,23 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                 case 5: _input5 = input; break;
                 case 6: _input6 = input; break;
                 case 7: _input7 = input; break;
-                default: throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} is out of range for PassDataBase (0-{InputCapacity - 1}).");
+                default: throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} is out of range (must be 0-{InputCapacity - 1}).");
             }
         }
 
         /// <summary>
-        /// Convenience method to set an input using property ID and texture handle at a specific index.
+        /// Sets an input texture at the specified index using a shader property ID and texture handle.
         /// </summary>
-        /// <param name="index">Input index (0-based).</param>
-        /// <param name="propertyId">Shader property ID of the input.</param>
+        /// <param name="index">Zero-based input index (0-7).</param>
+        /// <param name="propertyId">Shader property ID to bind the texture to.</param>
         /// <param name="handle">RenderGraph texture handle.</param>
         public void SetInput(int index, int propertyId, TextureHandle handle)
             => SetInput(index, new TextureMeta { propertyId = propertyId, handle = handle });
 
         /// <summary>
-        /// Convenience method to set the first input (index 0) using property ID and texture handle.
+        /// Sets the first input texture (index 0) using a shader property ID and texture handle.
         /// </summary>
-        /// <param name="propertyId">Shader property ID of the input.</param>
+        /// <param name="propertyId">Shader property ID to bind the texture to.</param>
         /// <param name="handle">RenderGraph texture handle.</param>
         public void SetInput(int propertyId, TextureHandle handle)
             => SetInput(0, new TextureMeta { propertyId = propertyId, handle = handle });
@@ -111,18 +111,18 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         /// <summary>
         /// Sets the destination texture for this pass.
         /// </summary>
-        /// <param name="destination">The texture metadata to write into.</param>
-        public void SetDestination(Tdest destination)
+        /// <param name="destination">The destination texture metadata.</param>
+        public void SetDestination(TDest destination)
         {
             m_Destination = destination;
         }
 
         /// <summary>
-        /// Gets the input texture at the specified index.
+        /// Gets the input texture metadata at the specified index.
         /// </summary>
-        /// <param name="index">Input index (0-based).</param>
-        /// <returns>The texture metadata stored at the given index.</returns>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown if the index is out of range.</exception>
+        /// <param name="index">Zero-based input index (0-7).</param>
+        /// <returns>The texture metadata stored at the specified index.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if the index is out of range [0-7].</exception>
         public TextureMeta GetInput(int index)
         {
             return index switch
@@ -135,12 +135,12 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                 5 => _input5,
                 6 => _input6,
                 7 => _input7,
-                _ => throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} is out of range for PassDataBase (0-{InputCapacity - 1})."),
+                _ => throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} is out of range (must be 0-{InputCapacity - 1})."),
             };
         }
 
         /// <summary>
-        /// Enumerates all valid (non-null) input textures.
+        /// Gets an enumerable of all valid (non-null) input textures assigned to this pass.
         /// </summary>
         /// <returns>An enumerable of valid <see cref="TextureMeta"/> inputs.</returns>
         public IEnumerable<TextureMeta> PassInput

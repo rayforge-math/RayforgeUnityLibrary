@@ -20,11 +20,11 @@ namespace Rayforge.Utility.RenderGraphs.Collections
     /// - Allowing optional mip map generation between handles in a RenderGraph-friendly way.
     /// - Providing easy access to individual mip handles and read-only spans for pass binding.
     /// </summary>
-    /// <typeparam name="Tdata">
+    /// <typeparam name="TData">
     /// Optional user data passed to the texture creation function, useful for passing context
     /// or resources needed during RenderGraph allocation.
     /// </typeparam>
-    public class RTHandleMipChain<Tdata> : MipChain<RTHandle, Tdata>
+    public class RTHandleMipChain<TData> : MipChain<RTHandle, TData>
     {
         /// <summary>
         /// Initializes a mip chain with a texture creation function.

@@ -7,13 +7,13 @@ namespace Rayforge.ManagedResources.Pooling
     /// A specialized buffer pool that supports batching for sequential buffers.
     /// Useful for ComputeBuffers or NativeArrays where allocations can be rounded
     /// to a batch size to reduce frequent reallocations.
-    /// Wraps buffers in <see cref="BatchedLeasedBuffer{Tdesc, Tbuffer}"/> when rented.
+    /// Wraps buffers in <see cref="BatchedLeasedBuffer{TDesc, TBuffer}"/> when rented.
     /// </summary>
-    /// <typeparam name="Tdesc">Descriptor type describing the buffer. Must be unmanaged, implement <see cref="IEquatable{Tdesc}"/>, and <see cref="IBatchingDescriptor"/>.</typeparam>
-    /// <typeparam name="Tbuffer">Type of the managed buffer (e.g., ManagedComputeBuffer). Must implement <see cref="IPooledBuffer{Tdesc}"/>.</typeparam>
-    public partial class BatchedLeasedBufferPool<Tdesc, Tbuffer> : LeasedBufferPoolBase<Tdesc, Tbuffer, BatchedLeasedBuffer<Tbuffer>>
-        where Tbuffer : IPooledBuffer<Tdesc>
-        where Tdesc : unmanaged, IEquatable<Tdesc>, IBatchingDescriptor
+    /// <typeparam name="TDesc">Descriptor type describing the buffer. Must be unmanaged, implement <see cref="IEquatable{TDesc}"/>, and <see cref="IBatchingDescriptor"/>.</typeparam>
+    /// <typeparam name="TBuffer">Type of the managed buffer (e.g., ManagedComputeBuffer). Must implement <see cref="IPooledBuffer{TDesc}"/>.</typeparam>
+    public partial class BatchedLeasedBufferPool<TDesc, TBuffer> : LeasedBufferPoolBase<TDesc, TBuffer, BatchedLeasedBuffer<TBuffer>>
+        where TBuffer : IPooledBuffer<TDesc>
+        where TDesc : unmanaged, IEquatable<TDesc>, IBatchingDescriptor
     {
         /// <summary>
         /// Minimum allocation size to ensure a base buffer size.
@@ -47,9 +47,9 @@ namespace Rayforge.ManagedResources.Pooling
         /// Wraps a raw buffer in a leased buffer that automatically returns to the pool.
         /// </summary>
         /// <param name="buffer">The raw buffer to wrap.</param>
-        /// <returns>A <see cref="BatchedLeasedBuffer{Tdesc, Tbuffer}"/> representing the leased buffer.</returns>
-        protected override BatchedLeasedBuffer<Tbuffer> CreateLease(Tbuffer buffer)
-            => new BatchedLeasedBuffer<Tbuffer>(
+        /// <returns>A <see cref="BatchedLeasedBuffer{TDesc, TBuffer}"/> representing the leased buffer.</returns>
+        protected override BatchedLeasedBuffer<TBuffer> CreateLease(TBuffer buffer)
+            => new BatchedLeasedBuffer<TBuffer>(
                 buffer,
                 Return,
                 IsBatchedSize,
@@ -80,7 +80,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// True if the buffer's current size corresponds exactly to the batched count; 
         /// otherwise, false.
         /// </returns>
-        private bool IsBatchedSize(Tbuffer buffer, int count)
+        private bool IsBatchedSize(TBuffer buffer, int count)
             => BatchedCount(count) == buffer.Descriptor.Count;
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// A buffer with the correct size according to batching rules. This may be the 
         /// original buffer if the size already matches, or a newly rented buffer otherwise.
         /// </returns>
-        private Tbuffer SwapInternal(Tbuffer buffer, int count)
+        private TBuffer SwapInternal(TBuffer buffer, int count)
         {
             if (!IsBatchedSize(buffer, count))
             {
@@ -111,8 +111,8 @@ namespace Rayforge.ManagedResources.Pooling
         /// This returns the raw buffer without wrapping it in a lease.
         /// </summary>
         /// <param name="desc">Descriptor for the buffer to rent.</param>
-        /// <returns>The rented buffer instance of type <typeparamref name="Tbuffer"/>.</returns>
-        protected override Tbuffer RentInternal(Tdesc desc)
+        /// <returns>The rented buffer instance of type <typeparamref name="TBuffer"/>.</returns>
+        protected override TBuffer RentInternal(TDesc desc)
         {
             desc.Count = BatchedCount(desc.Count);
             return base.RentInternal(desc);
@@ -120,11 +120,11 @@ namespace Rayforge.ManagedResources.Pooling
 
         /// <summary>
         /// Rents a buffer from the pool using batch-adjusted sizing.
-        /// The buffer is wrapped in a lease of type <see cref="BatchedLeasedBuffer{Tbuffer}"/>.
+        /// The buffer is wrapped in a lease of type <see cref="BatchedLeasedBuffer{TBuffer}"/>.
         /// </summary>
         /// <param name="desc">Descriptor used to identify or create the buffer.</param>
-        /// <returns>A leased buffer of type <see cref="BatchedLeasedBuffer{Tbuffer}"/>.</returns>
-        public override BatchedLeasedBuffer<Tbuffer> Rent(Tdesc desc)
+        /// <returns>A leased buffer of type <see cref="BatchedLeasedBuffer{TBuffer}"/>.</returns>
+        public override BatchedLeasedBuffer<TBuffer> Rent(TDesc desc)
         {
             desc.Count = BatchedCount(desc.Count);
             return base.Rent(desc);

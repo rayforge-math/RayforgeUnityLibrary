@@ -8,26 +8,26 @@ using UnityEngine.Rendering.RenderGraphModule;
 namespace Rayforge.Utility.RenderGraphs.Collections
 {
     /// <summary>
-    /// Represents an "unsafe" variant of <see cref="RTHandleMipChain{Tdata}"/>.
+    /// Represents an "unsafe" variant of <see cref="RTHandleMipChain{TData}"/>.
     /// 
-    /// This class inherits from <see cref="UnsafeMipChain{Thandle,Tdata}"/> and exposes 
-    /// advanced functionality not available in the safe <see cref="RTHandleMipChain{Tdata}"/>:
+    /// This class inherits from <see cref="UnsafeMipChain{THandle,TData}"/> and exposes 
+    /// advanced functionality not available in the safe <see cref="RTHandleMipChain{TData}"/>:
     /// - Checking ranges of mip handles for validity.
     /// - Copying subsets of chains or stacking multiple chains into one array.
     /// - Explicit control over handle array resizing and layout.
     ///
     /// Use this class only when you need these low-level capabilities and accept responsibility 
     /// for maintaining consistency. For most scenarios, prefer the safe 
-    /// <see cref="RTHandleMipChain{Tdata}"/> which provides the same basic functionality 
+    /// <see cref="RTHandleMipChain{TData}"/> which provides the same basic functionality 
     /// without exposing unsafe operations.
     ///
     /// Redundant `IsValid` methods are provided for API consistency with the safe variant.
     /// </summary>
-    /// <typeparam name="Tdata">
+    /// <typeparam name="TData">
     /// Optional user data passed to the texture creation function, useful for passing context
     /// or resources needed during RenderGraph allocation.
     /// </typeparam>
-    public class UnsafeRTHandleMipChain<Tdata> : UnsafeMipChain<RTHandle, Tdata>
+    public class UnsafeRTHandleMipChain<TData> : UnsafeMipChain<RTHandle, TData>
     {
         /// <summary>
         /// Initializes a mip chain with a texture creation function.
@@ -39,22 +39,22 @@ namespace Rayforge.Utility.RenderGraphs.Collections
     }
 
     /// <summary>
-    /// Represents an "unsafe" variant of <see cref="RTHandleMipChain{Tdata}"/>.
+    /// Represents an "unsafe" variant of <see cref="RTHandleMipChain{TData}"/>.
     /// 
-    /// This class inherits from <see cref="UnsafeMipChain{Thandle,Tdata}"/> and exposes 
-    /// advanced functionality not available in the safe <see cref="RTHandleMipChain{Tdata}"/>:
+    /// This class inherits from <see cref="UnsafeMipChain{THandle,TData}"/> and exposes 
+    /// advanced functionality not available in the safe <see cref="RTHandleMipChain{TData}"/>:
     /// - Checking ranges of mip handles for validity.
     /// - Copying subsets of chains or stacking multiple chains into one array.
     /// - Explicit control over handle array resizing and layout.
     ///
     /// Use this class only when you need these low-level capabilities and accept responsibility 
     /// for maintaining consistency. For most scenarios, prefer the safe 
-    /// <see cref="RTHandleMipChain{Tdata}"/> which provides the same basic functionality 
+    /// <see cref="RTHandleMipChain{TData}"/> which provides the same basic functionality 
     /// without exposing unsafe operations.
     ///
     /// Redundant `IsValid` methods are provided for API consistency with the safe variant.
     /// </summary>
-    /// <typeparam name="Tdata">
+    /// <typeparam name="TData">
     /// Optional user data passed to the texture creation function, useful for passing context
     /// or resources needed during RenderGraph allocation.
     /// </typeparam>

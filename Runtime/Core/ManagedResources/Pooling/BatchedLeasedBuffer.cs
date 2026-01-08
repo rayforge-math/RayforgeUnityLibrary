@@ -4,11 +4,11 @@ namespace Rayforge.ManagedResources.Pooling
 {
     /// <summary>
     /// Represents a leased buffer that supports batch validation within a pooled context.
-    /// This type extends <see cref="LeasedBuffer{Tdesc,Tbuffer}"/> by providing a mechanism
+    /// This type extends <see cref="LeasedBuffer{TDesc,TBuffer}"/> by providing a mechanism
     /// to verify whether the current buffer still fits within the batching constraints of the pool.
     /// </summary>
-    /// <typeparam name="Tbuffer">The managed buffer type implementing <see cref="IPooledBuffer{Tdesc}"/>.</typeparam>
-    public class BatchedLeasedBuffer<Tbuffer> : LeasedBuffer<Tbuffer>
+    /// <typeparam name="TBuffer">The managed buffer type implementing <see cref="IPooledBuffer{TDesc}"/>.</typeparam>
+    public class BatchedLeasedBuffer<TBuffer> : LeasedBuffer<TBuffer>
     {
         private readonly BatchCheckFunc m_OnBatchCheck;
         private readonly RequestBatchedBufferFunc m_RequestNewBuffer;
@@ -17,21 +17,21 @@ namespace Rayforge.ManagedResources.Pooling
         /// Delegate invoked to check whether a leased buffer still fits within the pool's current batching constraints.
         /// Used by batched pools to determine if a buffer can be reused for a given element count or requires reallocation.
         /// </summary>
-        /// <typeparam name="Tbuffer">The managed buffer type.</typeparam>
+        /// <typeparam name="TBuffer">The managed buffer type.</typeparam>
         /// <param name="buffer">The underlying buffer to swap.</param>
         /// <param name="desiredCount">The desired number of elements to validate against the current batch allocation.</param>
         /// <returns>True if the buffer is still valid for the given batch size; otherwise, false.</returns>
-        public delegate bool BatchCheckFunc(Tbuffer desc, int desiredCount);
+        public delegate bool BatchCheckFunc(TBuffer desc, int desiredCount);
 
         /// <summary>
         /// Delegate invoked to request a new batched buffer from the pool.
         /// Typically used when the current leased buffer is too small and needs resizing.
         /// </summary>
-        /// <typeparam name="Tbuffer">The managed buffer type.</typeparam>
+        /// <typeparam name="TBuffer">The managed buffer type.</typeparam>
         /// <param name="buffer">The underlying buffer to swap.</param>
         /// <param name="desiredCount">The requested element count.</param>
-        /// <returns>A new <see cref="BatchedLeasedBuffer{Tbuffer}"/> of the requested batch size.</returns>
-        public delegate Tbuffer RequestBatchedBufferFunc(Tbuffer buffer, int desiredCount);
+        /// <returns>A new <see cref="BatchedLeasedBuffer{TBuffer}"/> of the requested batch size.</returns>
+        public delegate TBuffer RequestBatchedBufferFunc(TBuffer buffer, int desiredCount);
 
         /// <summary>
         /// Creates a new batched leased buffer.
@@ -47,7 +47,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// Delegate invoked to request a new buffer of appropriate batch size if the current buffer is too small.
         /// </param>
         public BatchedLeasedBuffer(
-            Tbuffer buffer,
+            TBuffer buffer,
             LeasedReturnFunc onReturnHandle,
             BatchCheckFunc onBatchCheckHandle,
             RequestBatchedBufferFunc requestNewBufferFunc)

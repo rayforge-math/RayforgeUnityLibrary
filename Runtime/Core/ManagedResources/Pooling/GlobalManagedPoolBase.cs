@@ -4,10 +4,10 @@ namespace Rayforge.ManagedResources.Pooling
 {
     /// <summary>
     /// Base class providing a globally shared buffer pool for a specific 
-    /// <typeparamref name="Tdesc"/> / <typeparamref name="Tbuffer"/> type combination.
+    /// <typeparamref name="TDesc"/> / <typeparamref name="TBuffer"/> type combination.
     /// <para>
     /// For every unique set of template arguments, exactly one global buffer pool instance
-    /// (<see cref="LeasedBufferPool{Tdesc,Tbuffer}"/>) is created and shared across all 
+    /// (<see cref="LeasedBufferPool{TDesc,TBuffer}"/>) is created and shared across all 
     /// derived classes and call sites. By using a static pool this universally holds true.
     /// </para>
     /// <para>
@@ -21,22 +21,22 @@ namespace Rayforge.ManagedResources.Pooling
     /// still allowing flexible buffer access strategies in child classes.
     /// </para>
     /// </summary>
-    public partial class GlobalManagedPoolBase<Tdesc, Tbuffer>
-        where Tbuffer : IPooledBuffer<Tdesc>
-        where Tdesc : unmanaged, IEquatable<Tdesc>
+    public partial class GlobalManagedPoolBase<TDesc, TBuffer>
+        where TBuffer : IPooledBuffer<TDesc>
+        where TDesc : unmanaged, IEquatable<TDesc>
     {
         /// <summary>
         /// Internal static pool instance used for the default Rent() method.
         /// </summary>
-        protected static LeasedBufferPool<Tdesc, Tbuffer> m_Pool;
+        protected static LeasedBufferPool<TDesc, TBuffer> m_Pool;
 
         /// <summary>
         /// Rents a buffer from the global pool.
-        /// The returned buffer is wrapped in a <see cref="LeasedBuffer{Tdesc,Tbuffer}"/> and automatically returned when disposed.
+        /// The returned buffer is wrapped in a <see cref="LeasedBuffer{TDesc,TBuffer}"/> and automatically returned when disposed.
         /// </summary>
         /// <param name="desc">Descriptor describing the desired compute buffer.</param>
         /// <returns>A leased buffer representing the rented <see cref="ManagedComputeBuffer"/>.</returns>
-        public static LeasedBuffer<Tbuffer> Rent(Tdesc desc)
+        public static LeasedBuffer<TBuffer> Rent(TDesc desc)
             => m_Pool.Rent(desc);
 
         /// <summary>

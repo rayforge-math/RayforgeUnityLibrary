@@ -8,18 +8,18 @@ namespace Rayforge.Rendering.Collections
 {
     /// <summary>
     /// Represents an "unsafe" mip chain with additional flexibility for advanced scenarios.
-    /// This class extends <see cref="MipChain{Thandle, Tdata}"/> and allows:
+    /// This class extends <see cref="MipChain{THandle, TData}"/> and allows:
     /// - Creating mip levels starting at arbitrary indices in the handle array.
     /// - Optionally shrinking the handle array to exactly fit the created mip levels.
     /// - Stacking multiple mip chains into a single handle array.
     /// 
     /// Use with caution: manipulating start indices and shrink behavior can break
     /// the assumptions of a standard mip chain, so this class is intended for advanced usage
-    /// where you explicitly want to bypass the safety guarantees of <see cref="MipChain{Thandle, Tdata}"/>.
+    /// where you explicitly want to bypass the safety guarantees of <see cref="MipChain{THandle, TData}"/>.
     /// </summary>
-    /// <typeparam name="Thandle">Type of the handle (e.g., TextureHandle, RenderTexture, etc.).</typeparam>
-    /// <typeparam name="Tdata">Optional user data passed to the creation function for context or parameters.</typeparam>
-    public class UnsafeMipChain<Thandle, Tdata> : MipChain<Thandle, Tdata>
+    /// <typeparam name="THandle">Type of the handle (e.g., TextureHandle, RenderTexture, etc.).</typeparam>
+    /// <typeparam name="TData">Optional user data passed to the creation function for context or parameters.</typeparam>
+    public class UnsafeMipChain<THandle, TData> : MipChain<THandle, TData>
     {
         /// <summary>
         /// Initializes the mip chain with a handle creation function.
@@ -37,7 +37,7 @@ namespace Rayforge.Rendering.Collections
         /// </summary>
         /// <param name="descriptorChain">The descriptor chain providing the descriptor for the first mip level.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void CreateFirst(DescriptorMipChain descriptorChain, Tdata data = default)
+        public void CreateFirst(DescriptorMipChain descriptorChain, TData data = default)
             => CreateUnsafe(descriptorChain, 0, 1, 0, false, data);
 
         /// <summary>
@@ -49,7 +49,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="startMip">Index of the first mip level to create.</param>
         /// <param name="count">Number of mip levels to create.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void CreateUnsafe(DescriptorMipChain descriptorChain, int startMip, int count, Tdata data = default)
+        public void CreateUnsafe(DescriptorMipChain descriptorChain, int startMip, int count, TData data = default)
             => CreateUnsafe(descriptorChain, startMip, count, startMip, false, data);
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Rayforge.Rendering.Collections
         /// otherwise, the array is only enlarged.
         /// </param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void CreateUnsafe(DescriptorMipChain descriptorChain, int startMip, int count, bool shrink = false, Tdata data = default)
+        public void CreateUnsafe(DescriptorMipChain descriptorChain, int startMip, int count, bool shrink = false, TData data = default)
             => CreateUnsafe(descriptorChain, startMip, count, startMip, shrink, data);
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Rayforge.Rendering.Collections
         /// otherwise, the array is only enlarged.
         /// </param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void CreateUnsafe(DescriptorMipChain descriptorChain, int startMip, int count, int handleStartIndex, bool shrink = false, Tdata data = default)
+        public void CreateUnsafe(DescriptorMipChain descriptorChain, int startMip, int count, int handleStartIndex, bool shrink = false, TData data = default)
         {
             if (descriptorChain == null || descriptorChain.MipCount == 0)
                 throw new ArgumentException("DescriptorMipChain must not be null or empty.", nameof(descriptorChain));
@@ -109,7 +109,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="startMip">Index of the first mip level to create.</param>
         /// <param name="count">Number of mip levels to create starting from <paramref name="startMip"/>.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void CreateUnsafe(RenderTextureDescriptor descriptor, int startMip, int count, Tdata data = default)
+        public void CreateUnsafe(RenderTextureDescriptor descriptor, int startMip, int count, TData data = default)
             => CreateUnsafe(descriptor.width, descriptor.height, descriptor, startMip, count, startMip, false, data);
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="startMip">Index of the first mip level to create.</param>
         /// <param name="count">Number of mip levels to create starting from <paramref name="startMip"/>.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void CreateUnsafe(int width, int height, RenderTextureDescriptor descriptor, int startMip, int count, Tdata data = default)
+        public void CreateUnsafe(int width, int height, RenderTextureDescriptor descriptor, int startMip, int count, TData data = default)
             => CreateUnsafe(width, height, descriptor, startMip, count, startMip, false, data);
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace Rayforge.Rendering.Collections
         /// otherwise, the array is only enlarged.
         /// </param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void CreateUnsafe(int width, int height, RenderTextureDescriptor descriptor, int startMip, int count, bool shrink = false, Tdata data = default)
+        public void CreateUnsafe(int width, int height, RenderTextureDescriptor descriptor, int startMip, int count, bool shrink = false, TData data = default)
             => CreateUnsafe(width, height, descriptor, startMip, count, startMip, shrink, data);
 
         /// <summary>
@@ -161,7 +161,7 @@ namespace Rayforge.Rendering.Collections
         /// If true, allows the handle array to be resized down if it is larger than needed; otherwise only enlarges.
         /// </param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void CreateUnsafe(int width, int height, RenderTextureDescriptor descriptor, int startMip, int count, int handleStartIndex, bool shrink = false, Tdata data = default)
+        public void CreateUnsafe(int width, int height, RenderTextureDescriptor descriptor, int startMip, int count, int handleStartIndex, bool shrink = false, TData data = default)
         {
             if (width <= 0 || height <= 0)
                 throw new ArgumentException("Base width and height must be greater than zero.");
@@ -197,7 +197,7 @@ namespace Rayforge.Rendering.Collections
         /// </summary>
         /// <param name="index">Target index in the handle array.</param>
         /// <param name="handle">Handle to assign.</param>
-        public void SetHandleUnsafe(int index, Thandle handle)
+        public void SetHandleUnsafe(int index, THandle handle)
         {
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
@@ -221,7 +221,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="start">Start index in the source chain.</param>
         /// <param name="count">Number of handles to copy.</param>
         /// <param name="handleStartIndex">Start index in the handle array where the first handle will be stored.</param>
-        public void CopyFromUnsafe(MipChain<Thandle, Tdata> other, int start, int count, int handleStartIndex)
+        public void CopyFromUnsafe(MipChain<THandle, TData> other, int start, int count, int handleStartIndex)
             => CopyFromUnsafe(other.Handles, start, count, handleStartIndex);
 
         /// <summary>
@@ -236,7 +236,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="start">Start index in the source chain.</param>
         /// <param name="count">Number of handles to copy.</param>
         /// <param name="handleStartIndex">Start index in the handle array where the first handle will be stored.</param>
-        public void CopyFromUnsafe(IReadOnlyList<Thandle> other, int start, int count, int handleStartIndex)
+        public void CopyFromUnsafe(IReadOnlyList<THandle> other, int start, int count, int handleStartIndex)
         {
             if (other == null)
                 throw new ArgumentNullException(nameof(other));

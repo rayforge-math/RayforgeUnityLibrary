@@ -4,13 +4,13 @@ namespace Rayforge.ManagedResources.Pooling
 {
     /// <summary>
     /// Simple buffer pool that returns standard leased buffers.
-    /// Wraps buffers in <see cref="LeasedBuffer{Tdesc, Tbuffer}"/> when rented.
+    /// Wraps buffers in <see cref="LeasedBuffer{TDesc, TBuffer}"/> when rented.
     /// </summary>
-    /// <typeparam name="Tdesc">Descriptor type for buffer configuration. Must be unmanaged and implement <see cref="IEquatable{Tdesc}"/>.</typeparam>
-    /// <typeparam name="Tbuffer">Type of buffer managed by the pool. Must implement <see cref="IPooledBuffer{Tdesc}"/>.</typeparam>
-    public partial class LeasedBufferPool<Tdesc, Tbuffer> : LeasedBufferPoolBase<Tdesc, Tbuffer, LeasedBuffer<Tbuffer>>
-        where Tbuffer : IPooledBuffer<Tdesc>
-        where Tdesc : unmanaged, IEquatable<Tdesc>
+    /// <typeparam name="TDesc">Descriptor type for buffer configuration. Must be unmanaged and implement <see cref="IEquatable{TDesc}"/>.</typeparam>
+    /// <typeparam name="TBuffer">Type of buffer managed by the pool. Must implement <see cref="IPooledBuffer{TDesc}"/>.</typeparam>
+    public partial class LeasedBufferPool<TDesc, TBuffer> : LeasedBufferPoolBase<TDesc, TBuffer, LeasedBuffer<TBuffer>>
+        where TBuffer : IPooledBuffer<TDesc>
+        where TDesc : unmanaged, IEquatable<TDesc>
     {
         /// <summary>
         /// Creates a new leased buffer pool.
@@ -24,8 +24,8 @@ namespace Rayforge.ManagedResources.Pooling
         /// Wraps a raw buffer in a leased buffer that automatically returns to the pool on disposal.
         /// </summary>
         /// <param name="buffer">The raw buffer to wrap.</param>
-        /// <returns>A <see cref="LeasedBuffer{Tdesc, Tbuffer}"/> representing the leased buffer.</returns>
-        protected override LeasedBuffer<Tbuffer> CreateLease(Tbuffer buffer)
-            => new LeasedBuffer<Tbuffer>(buffer, Return);
+        /// <returns>A <see cref="LeasedBuffer{TDesc, TBuffer}"/> representing the leased buffer.</returns>
+        protected override LeasedBuffer<TBuffer> CreateLease(TBuffer buffer)
+            => new LeasedBuffer<TBuffer>(buffer, Return);
     }
 }

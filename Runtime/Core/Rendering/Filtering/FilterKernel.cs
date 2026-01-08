@@ -77,7 +77,7 @@ namespace Rayforge.Rendering.Filtering
         /// Kernel values are always recomputed, as filter parameters may change
         /// independently of the radius.
         /// </remarks>
-        public void Apply<Tparam>(Filter<Tparam> filter, bool normalize = true)
+        public void Apply<TParam>(Filter<TParam> filter, bool normalize = true)
         {
             if (m_Changed)
             {

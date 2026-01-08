@@ -11,9 +11,9 @@ namespace Rayforge.Rendering.Collections
     /// Represents a chain of handles corresponding to mip levels of a texture.
     /// Provides creation, resizing, copying, and optional generation of successive mip levels.
     /// </summary>
-    /// <typeparam name="Thandle">Type of the handle (e.g., TextureHandle, RenderTexture, etc.).</typeparam>
-    /// <typeparam name="Tdata">Optional user data passed to the creation function for context or parameters.</typeparam>
-    public class MipChain<Thandle, Tdata> : IRenderingCollection<Thandle>
+    /// <typeparam name="THandle">Type of the handle (e.g., TextureHandle, RenderTexture, etc.).</typeparam>
+    /// <typeparam name="TData">Optional user data passed to the creation function for context or parameters.</typeparam>
+    public class MipChain<THandle, TData> : IRenderingCollection<THandle>
     {
         /// <summary>
         /// Delegate for creating a handle for a mip level.
@@ -22,7 +22,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="descriptor">Descriptor describing the texture to create.</param>
         /// <param name="mipLevel">Index of the mip level being created.</param>
         /// <param name="data">Optional user data.</param>
-        public delegate void CreateFunction(ref Thandle handle, RenderTextureDescriptor descriptor, int mipLevel, Tdata data = default);
+        public delegate void CreateFunction(ref THandle handle, RenderTextureDescriptor descriptor, int mipLevel, TData data = default);
 
         /// <summary>
         /// Delegate for generating mip maps between two handles.
@@ -30,17 +30,17 @@ namespace Rayforge.Rendering.Collections
         /// <param name="src">Source handle (previous level).</param>
         /// <param name="dest">Destination handle (current level).</param>
         /// <param name="mipLevel">The mip level index being generated.</param>
-        public delegate void GenerateFunction(Thandle src, Thandle dest, int mipLevel);
+        public delegate void GenerateFunction(THandle src, THandle dest, int mipLevel);
 
-        protected Thandle[] m_Handles;
+        protected THandle[] m_Handles;
         private CreateFunction m_CreateFunc;
 
         /// <summary>Read-only access to the handles.</summary>
-        public IReadOnlyList<Thandle> Handles => m_Handles ?? Array.Empty<Thandle>();
+        public IReadOnlyList<THandle> Handles => m_Handles ?? Array.Empty<THandle>();
 
         /// <summary>Access a specific mip level handle by index.</summary>
         /// <param name="index">The mip level index.</param>
-        public Thandle this[int index] => m_Handles[index];
+        public THandle this[int index] => m_Handles[index];
 
         /// <summary>Total number of mip levels.</summary>
         public int MipCount => m_Handles?.Length ?? 0;
@@ -55,7 +55,7 @@ namespace Rayforge.Rendering.Collections
                 throw new ArgumentNullException(nameof(createFunc));
 
             m_CreateFunc = createFunc;
-            m_Handles = Array.Empty<Thandle>();
+            m_Handles = Array.Empty<THandle>();
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Rayforge.Rendering.Collections
         /// </summary>
         /// <param name="descriptorChain">The descriptor chain providing descriptors for each mip level.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void Create(DescriptorMipChain descriptorChain, Tdata data = default)
+        public void Create(DescriptorMipChain descriptorChain, TData data = default)
         {
             if (descriptorChain == null || descriptorChain.MipCount == 0)
                 throw new ArgumentException("DescriptorMipChain must not be null or empty.", nameof(descriptorChain));
@@ -88,7 +88,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="descriptor">Base descriptor for mip creation; will be resized for each mip level.</param>
         /// <param name="mipCount">Total number of mip levels to create.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void Create(int width, int height, RenderTextureDescriptor descriptor, int mipCount = 1, Tdata data = default)
+        public void Create(int width, int height, RenderTextureDescriptor descriptor, int mipCount = 1, TData data = default)
         {
             if (width <= 0 || height <= 0)
                 throw new ArgumentException("Base width and height must be greater than zero.");
@@ -118,7 +118,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="descriptor">Base descriptor for mip creation; will be resized for each mip level.</param>
         /// <param name="mipCount">Total number of mip levels to create.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        public void Create(RenderTextureDescriptor descriptor, int mipCount = 1, Tdata data = default)
+        public void Create(RenderTextureDescriptor descriptor, int mipCount = 1, TData data = default)
         {
             Vector2Int baseRes = new Vector2Int(descriptor.width, descriptor.height);
 
@@ -139,7 +139,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="index">Index of the mip level to create.</param>
         /// <param name="descriptor">Descriptor to use for this mip level.</param>
         /// <param name="data">Optional user data passed to the creation function.</param>
-        protected void Create(int index, RenderTextureDescriptor descriptor, Tdata data = default)
+        protected void Create(int index, RenderTextureDescriptor descriptor, TData data = default)
             => m_CreateFunc.Invoke(ref m_Handles[index], descriptor, index, data);
 
         /// <summary>
@@ -161,11 +161,11 @@ namespace Rayforge.Rendering.Collections
             if (MipCount == newLength) return;
             if (newLength == 0)
             {
-                m_Handles = Array.Empty<Thandle>();
+                m_Handles = Array.Empty<THandle>();
                 return;
             }
 
-            var newHandles = new Thandle[newLength];
+            var newHandles = new THandle[newLength];
 
             if (m_Handles != null && preserveCount > 0)
             {
@@ -182,7 +182,7 @@ namespace Rayforge.Rendering.Collections
         /// <summary>
         /// Returns a read-only span of handles.
         /// </summary>
-        public ReadOnlySpan<Thandle> AsSpan()
+        public ReadOnlySpan<THandle> AsSpan()
             => m_Handles.AsSpan(0, MipCount);
 
         /// <summary>
@@ -190,7 +190,7 @@ namespace Rayforge.Rendering.Collections
         /// </summary>
         /// <param name="start">Start index of the span.</param>
         /// <param name="length">Number of elements in the span.</param>
-        public ReadOnlySpan<Thandle> AsSpan(int start, int length)
+        public ReadOnlySpan<THandle> AsSpan(int start, int length)
         {
             start = Math.Clamp(start, 0, MipCount);
             length = Math.Clamp(length, 0, MipCount - start);
@@ -201,7 +201,7 @@ namespace Rayforge.Rendering.Collections
         /// Copies all handles from another mip chain.
         /// </summary>
         /// <param name="other">Source mip chain.</param>
-        public void CopyFrom(MipChain<Thandle, Tdata> other)
+        public void CopyFrom(MipChain<THandle, TData> other)
             => CopyFrom(other, 0, other.MipCount);
 
         /// <summary>
@@ -215,7 +215,7 @@ namespace Rayforge.Rendering.Collections
         /// <param name="other">Source mip chain.</param>
         /// <param name="start">Start index in the source chain.</param>
         /// <param name="count">Number of handles to copy.</param>
-        public void CopyFrom(MipChain<Thandle, Tdata> other, int start, int count)
+        public void CopyFrom(MipChain<THandle, TData> other, int start, int count)
         {
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
@@ -233,7 +233,7 @@ namespace Rayforge.Rendering.Collections
         /// Useful when no actual mip levels are needed and a single texture/handle represents the entire chain.
         /// </summary>
         /// <param name="handle">The single handle representing the chain.</param>
-        public void CopyFrom(Thandle handle)
+        public void CopyFrom(THandle handle)
         {
             Resize(1);
             m_Handles[0] = handle;

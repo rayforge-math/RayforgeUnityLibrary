@@ -11,11 +11,11 @@ namespace Rayforge.Utility.RenderGraphs.Collections
     /// One handle represents the current target (write), the other holds the previous frame's data (read).
     /// Suitable for temporal effects like reprojection, motion blur, or any frame-history dependent process.
     /// </summary>
-    /// <typeparam name="Tdata">
+    /// <typeparam name="TData">
     /// Optional user-defined context passed to the allocation function. Useful for providing external resources,
     /// a render graph context, or any other data required during allocation without capturing from the surrounding scope.
     /// </typeparam>
-    public class HistoryRTHandles<Tdata> : HistoryHandles<RTHandle>
+    public class HistoryRTHandles<TData> : HistoryHandles<RTHandle>
     {
         /// <summary>
         /// Function signature for creating or reallocating a texture handle.
@@ -25,7 +25,7 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         /// <param name="name">Optional name for debugging/profiling.</param>
         /// <param name="data">Optional user-provided context for allocation logic.</param>
         /// <returns><c>true</c> if a handle was allocated/reallocated, <c>false</c> otherwise.</returns>
-        public delegate bool TextureReAllocFunction(ref RTHandle handle, RenderTextureDescriptor descriptor, string name, Tdata data = default);
+        public delegate bool TextureReAllocFunction(ref RTHandle handle, RenderTextureDescriptor descriptor, string name, TData data = default);
 
         private string[] m_HandleNames;
         private TextureReAllocFunction m_ReAllocFunc;
@@ -33,7 +33,7 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         private const string k_DefaultHandleName = "HistoryHandle";
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HistoryRTHandles{Tdata}"/>.
+        /// Initializes a new instance of the <see cref="HistoryRTHandles{TData}"/>.
         /// </summary>
         /// <param name="reAllocFunc">Delegate used to create or reallocate handles.</param>
         /// <param name="initial0">Initial first handle (current).</param>
@@ -53,7 +53,7 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="HistoryRTHandles{Tdata}"/>.
+        /// Initializes a new instance of the <see cref="HistoryRTHandles{TData}"/>.
         /// The handles are initially null; allocation is expected to be done later via <see cref="ReAllocateHandlesIfNeeded"/>.
         /// </summary>
         /// <param name="reAllocFunc">Delegate used to create or reallocate handles.</param>
@@ -71,7 +71,7 @@ namespace Rayforge.Utility.RenderGraphs.Collections
         /// <param name="swap">If true, swaps the current and previous handle after allocation.</param>
         /// <param name="data">Optional user-defined context passed to the allocation function.</param>
         /// <returns><c>true</c> if at least one handle was allocated/reallocated, <c>false</c> otherwise.</returns>
-        public bool ReAllocateHandlesIfNeeded(RenderTextureDescriptor descriptor, bool swap = false, Tdata data = default)
+        public bool ReAllocateHandlesIfNeeded(RenderTextureDescriptor descriptor, bool swap = false, TData data = default)
         {
             bool alloc = false;
 
@@ -95,7 +95,7 @@ namespace Rayforge.Utility.RenderGraphs.Collections
     /// One handle represents the current target (write), the other holds the previous frame's data (read).
     /// Suitable for temporal effects like reprojection, motion blur, or any frame-history dependent process.
     /// </summary>
-    /// <typeparam name="Tdata">
+    /// <typeparam name="TData">
     /// Optional user-defined context passed to the allocation function. Useful for providing external resources,
     /// a render graph context, or any other data required during allocation without capturing from the surrounding scope.
     /// </typeparam>

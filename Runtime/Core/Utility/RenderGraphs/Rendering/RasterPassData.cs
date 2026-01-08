@@ -3,23 +3,27 @@ using UnityEngine.Rendering.RenderGraphModule;
 namespace Rayforge.Utility.RenderGraphs.Rendering
 {
     /// <summary>
-    /// Base class for Raster RenderGraph pass input/output configuration and material binding.
+    /// Base class for raster RenderGraph pass input/output configuration and material binding.
     /// Contains the destination texture and the core pass metadata.
     /// </summary>
-    /// <typeparam name="Tmeta">The type of the core pass metadata (e.g., RasterPassMeta).</typeparam>
-    public partial class RasterPassDataBase<Tmeta> : PassDataBase<Tmeta, TextureHandle>
-        where Tmeta : struct
+    /// <typeparam name="TMeta">The type of the pass metadata (e.g., <see cref="RasterPassMeta{TDerived}"/>).</typeparam>
+    public partial class RasterPassDataBase<TMeta> : PassDataBase<TMeta, TextureHandle>
+        where TMeta : struct
     { }
 
     /// <summary>
-    /// Strongly typed Raster pass using <see cref="RasterPassMeta"/> as the core pass metadata.
+    /// Raster pass data using <see cref="RasterPassMeta{TDerived}"/> as the pass metadata.
+    /// Provides typed access to render target configuration and material-based rendering.
     /// </summary>
-    public class RasterPassData<Tdata> : RasterPassDataBase<RasterPassMeta<Tdata>>
+    /// <typeparam name="TDerived">The derived pass data type for type-safe callbacks.</typeparam>
+    public class RasterPassData<TDerived> : RasterPassDataBase<RasterPassMeta<TDerived>>
     { }
 
     /// <summary>
-    /// Strongly typed Raster pass for execution with <see cref="UnsafeCommandBuffer"/>.
+    /// Raster pass data for execution with <see cref="UnsafeCommandBuffer"/>.
+    /// Uses <see cref="UnsafeRasterPassMeta{TDerived}"/> for low-level command buffer access.
     /// </summary>
-    public class UnsafeRasterPassData<Tdata> : RasterPassDataBase<UnsafeRasterPassMeta<Tdata>>
+    /// <typeparam name="TDerived">The derived pass data type for type-safe callbacks.</typeparam>
+    public class UnsafeRasterPassData<TDerived> : RasterPassDataBase<UnsafeRasterPassMeta<TDerived>>
     { }
 }

@@ -6,14 +6,14 @@ namespace Rayforge.ManagedResources.Pooling
     /// Interface for pooled GPU/graphics resources.
     /// Provides access to the descriptor and lifecycle management (release).
     /// </summary>
-    /// <typeparam name="Tdesc">Descriptor type describing the resource properties.</typeparam>
-    public interface IPooledBuffer<Tdesc> : IDisposable
-        where Tdesc : unmanaged, IEquatable<Tdesc>
+    /// <typeparam name="TDesc">Descriptor type describing the resource properties.</typeparam>
+    public interface IPooledBuffer<TDesc> : IDisposable
+        where TDesc : unmanaged, IEquatable<TDesc>
     {
         /// <summary>
         /// Descriptor describing the resource properties.
         /// </summary>
-        public Tdesc Descriptor { get; }
+        public TDesc Descriptor { get; }
 
         /// <summary>
         /// Releases the resource without disposing the wrapper itself.

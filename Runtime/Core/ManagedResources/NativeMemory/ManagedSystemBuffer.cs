@@ -4,21 +4,21 @@ using Unity.Collections;
 namespace Rayforge.ManagedResources.NativeMemory
 {
     /// <summary>
-    /// Managed wrapper around a <see cref="NativeArray{T}"/>.
+    /// Managed wrapper around a <see cref="NativeArray{TType}"/>.
     /// Provides automatic creation, release, and pooling support.
     /// </summary>
-    /// <typeparam name="T">The struct type stored in the array.</typeparam>
-    public sealed class ManagedSystemBuffer<T> : ManagedBuffer<SystemBufferDescriptor, NativeArray<T>>
-        where T : struct
+    /// <typeparam name="TType">The struct type stored in the array.</typeparam>
+    public sealed class ManagedSystemBuffer<TType> : ManagedBuffer<SystemBufferDescriptor, NativeArray<TType>>
+        where TType : struct
     {
         public ManagedSystemBuffer(SystemBufferDescriptor desc)
-            : base(new NativeArray<T>(desc.count, desc.allocator), desc)
+            : base(new NativeArray<TType>(desc.count, desc.allocator), desc)
         { }
 
         /// <summary>
         /// Compares managed system buffers by reference.
         /// </summary>
-        public override bool Equals(ManagedBuffer<SystemBufferDescriptor, NativeArray<T>> other)
+        public override bool Equals(ManagedBuffer<SystemBufferDescriptor, NativeArray<TType>> other)
             => ReferenceEquals(this, other);
 
         /// <summary>

@@ -5,7 +5,7 @@ namespace Rayforge.ManagedResources.Pooling
     /// <summary>
     /// Specialized managed compute buffer pool with batching support.
     /// Provides default create/destroy logic for <see cref="ManagedComputeBuffer"/> instances.
-    /// Wraps buffers in <see cref="BatchedLeasedBuffer{Tdesc, Tbuffer}"/> when rented.
+    /// Wraps buffers in <see cref="BatchedLeasedBuffer{TDesc, TBuffer}"/> when rented.
     /// </summary>
     public sealed class ManagedComputeBufferPool : BatchedLeasedBufferPool<ComputeBufferDescriptor, ManagedComputeBuffer>
     {

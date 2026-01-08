@@ -22,16 +22,16 @@ namespace Rayforge.ManagedResources.NativeMemory
 
         /// <summary>
         /// Creates a compute buffer.
-        /// Automatically determines stride based on <typeparamref name="T"/>.
+        /// Automatically determines stride based on <typeparamref name="TType"/>.
         /// </summary>
         /// <typeparam name="T">The element type stored in the compute buffer.</typeparam>
         /// <param name="count">Number of elements in the buffer.</param>
         /// <param name="type">Optional compute buffer type. Default is structured.</param>
         /// <returns>A leased buffer representing the rented <see cref="ManagedComputeBuffer"/>.</returns>
-        public static ManagedComputeBuffer Create<T>(int count, ComputeBufferType type = ComputeBufferType.Structured)
-            where T : unmanaged
+        public static ManagedComputeBuffer Create<TType>(int count, ComputeBufferType type = ComputeBufferType.Structured)
+            where TType : unmanaged
         {
-            int stride = Marshal.SizeOf<T>();
+            int stride = Marshal.SizeOf<TType>();
             var desc = new ComputeBufferDescriptor { count = count, stride = stride, type = type };
             return new ManagedComputeBuffer(desc);
         }

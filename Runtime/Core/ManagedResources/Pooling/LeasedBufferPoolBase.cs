@@ -9,17 +9,17 @@ namespace Rayforge.ManagedResources.Pooling
     /// or automatic cleanup behavior.
     ///
     /// Provides mechanisms for:
-    /// - Renting a buffer as a lease object of type <typeparamref name="Tlease"/>.
+    /// - Renting a buffer as a lease object of type <typeparamref name="TLease"/>.
     /// - Returning buffers to the pool.
     /// - Creating new buffers directly without leasing (useful for batch resizing or hot-swapping).
     /// </summary>
-    /// <typeparam name="Tdesc">Descriptor type used to categorize buffers. Must be unmanaged and implement <see cref="IEquatable{Tdesc}"/>.</typeparam>
-    /// <typeparam name="Tbuffer">The pooled buffer type, must implement <see cref="IPooledBuffer{Tdesc}"/>.</typeparam>
-    /// <typeparam name="Tlease">The lease wrapper type returned by the pool, must inherit from <see cref="LeasedBufferBase{Tbuffer}"/>.</typeparam>
-    public abstract class LeasedBufferPoolBase<Tdesc, Tbuffer, Tlease> : IDisposable
-        where Tbuffer : IPooledBuffer<Tdesc>
-        where Tdesc : unmanaged, IEquatable<Tdesc>
-        where Tlease : LeasedBuffer<Tbuffer>
+    /// <typeparam name="TDesc">Descriptor type used to categorize buffers. Must be unmanaged and implement <see cref="IEquatable{TDesc}"/>.</typeparam>
+    /// <typeparam name="TBuffer">The pooled buffer type, must implement <see cref="IPooledBuffer{TDesc}"/>.</typeparam>
+    /// <typeparam name="TLease">The lease wrapper type returned by the pool, must inherit from <see cref="LeasedBufferBase{TBuffer}"/>.</typeparam>
+    public abstract class LeasedBufferPoolBase<TDesc, TBuffer, TLease> : IDisposable
+        where TBuffer : IPooledBuffer<TDesc>
+        where TDesc : unmanaged, IEquatable<TDesc>
+        where TLease : LeasedBuffer<TBuffer>
     {
         /// <summary>
         /// Factory used to create new buffers on demand.
@@ -34,22 +34,22 @@ namespace Rayforge.ManagedResources.Pooling
         /// <summary>
         /// Free buffers grouped by descriptor for quick reuse.
         /// </summary>
-        protected readonly Dictionary<Tdesc, Stack<Tbuffer>> m_FreeDict = new();
+        protected readonly Dictionary<TDesc, Stack<TBuffer>> m_FreeDict = new();
 
         /// <summary>
         /// Buffers currently leased out to consumers.
         /// </summary>
-        protected readonly HashSet<Tbuffer> m_Reserved = new();
+        protected readonly HashSet<TBuffer> m_Reserved = new();
 
         /// <summary>
         /// Factory to create a new buffer from a descriptor.
         /// </summary>
-        public delegate Tbuffer BufferCreateFunc(Tdesc desc);
+        public delegate TBuffer BufferCreateFunc(TDesc desc);
 
         /// <summary>
         /// Callback invoked when a buffer is permanently released from the pool.
         /// </summary>
-        public delegate void BufferReleaseFunc(Tbuffer buffer);
+        public delegate void BufferReleaseFunc(TBuffer buffer);
 
         /// <summary>
         /// Constructs a new base buffer pool with the provided create and release functions.
@@ -64,21 +64,21 @@ namespace Rayforge.ManagedResources.Pooling
 
         /// <summary>
         /// Derived pools must implement how the lease wrapper is constructed from a raw buffer.
-        /// This method is used internally by <see cref="Rent"/> to wrap a pooled buffer in a lease object of type <typeparamref name="Tlease"/>.
+        /// This method is used internally by <see cref="Rent"/> to wrap a pooled buffer in a lease object of type <typeparamref name="TLease"/>.
         /// </summary>
         /// <param name="buffer">The raw buffer to wrap in a lease.</param>
-        /// <returns>A lease object of type <typeparamref name="Tlease"/> that wraps the given buffer.</returns>
-        protected abstract Tlease CreateLease(Tbuffer buffer);
+        /// <returns>A lease object of type <typeparamref name="TLease"/> that wraps the given buffer.</returns>
+        protected abstract TLease CreateLease(TBuffer buffer);
 
         /// <summary>
         /// Rents a buffer internally from the pool. If no free buffer exists, a new one is created.
         /// This method returns the raw buffer without wrapping it in a lease.
         /// </summary>
         /// <param name="desc">Descriptor for the buffer to rent.</param>
-        /// <returns>The rented buffer instance of type <typeparamref name="Tbuffer"/>.</returns>
-        protected virtual Tbuffer RentInternal(Tdesc desc)
+        /// <returns>The rented buffer instance of type <typeparamref name="TBuffer"/>.</returns>
+        protected virtual TBuffer RentInternal(TDesc desc)
         {
-            Tbuffer buffer;
+            TBuffer buffer;
 
             if (m_FreeDict.TryGetValue(desc, out var stack) && stack.Count > 0)
             {
@@ -95,11 +95,11 @@ namespace Rayforge.ManagedResources.Pooling
 
         /// <summary>
         /// Rents a buffer from the pool. If no free buffer exists, a new one is created.
-        /// The buffer is wrapped in a lease object of type <typeparamref name="Tlease"/> via <see cref="CreateLease"/>.
+        /// The buffer is wrapped in a lease object of type <typeparamref name="TLease"/> via <see cref="CreateLease"/>.
         /// </summary>
         /// <param name="desc">Descriptor used to identify or create the buffer.</param>
         /// <returns>A lease object wrapping the rented buffer.</returns>
-        public virtual Tlease Rent(Tdesc desc)
+        public virtual TLease Rent(TDesc desc)
         {
             var buffer = RentInternal(desc);
             return CreateLease(buffer);
@@ -111,14 +111,14 @@ namespace Rayforge.ManagedResources.Pooling
         /// </summary>
         /// <param name="buffer">The buffer being returned.</param>
         /// <returns>True if the buffer was successfully returned; false if it was not recognized as reserved.</returns>
-        protected virtual bool Return(Tbuffer buffer)
+        protected virtual bool Return(TBuffer buffer)
         {
             if (!m_Reserved.Remove(buffer))
                 return false;
 
             if (!m_FreeDict.TryGetValue(buffer.Descriptor, out var stack))
             {
-                stack = new Stack<Tbuffer>();
+                stack = new Stack<TBuffer>();
                 m_FreeDict[buffer.Descriptor] = stack;
             }
 

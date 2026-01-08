@@ -6,44 +6,45 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// Specialized pass data for compute passes.
     /// Provides convenience setters for input and destination textures using <see cref="TextureHandle"/>.
     /// </summary>
-    public class ComputePassData<Tdata> : PassDataBase<ComputePassMeta<Tdata>, TextureMeta>
+    public class ComputePassData<TDerived> : PassDataBase<ComputePassMeta<TDerived>, TextureMeta>
     {
         /// <summary>
-        /// Sets the destination texture using a RenderGraph handle and optional property ID.
+        /// Sets the destination texture using a RenderGraph handle and optional shader property ID.
         /// </summary>
         /// <param name="handle">The texture handle to write into.</param>
-        /// <param name="propertyId">Optional shader property ID to assign to the destination.</param>
+        /// <param name="propertyId">Optional shader property ID to bind the texture to.</param>
         public void SetDestination(TextureHandle handle, int propertyId = 0)
             => SetDestination(new TextureMeta { handle = handle, propertyId = propertyId });
 
         /// <summary>
-        /// Sets an input at the specified index using a texture handle and optional property ID.
+        /// Sets an input texture at the specified index using a handle and optional shader property ID.
         /// </summary>
-        /// <param name="index">Input index (0-based).</param>
+        /// <param name="index">Zero-based input index.</param>
         /// <param name="handle">The texture handle to assign.</param>
-        /// <param name="propertyId">Optional shader property ID to assign to the input.</param>
+        /// <param name="propertyId">Optional shader property ID to bind the texture to.</param>
         public void SetInput(int index, TextureHandle handle, int propertyId = 0)
             => SetInput(index, new TextureMeta { handle = handle, propertyId = propertyId });
 
         /// <summary>
-        /// Sets the first input (index 0) using a texture handle and optional property ID.
+        /// Sets the first input texture (index 0) using a handle and optional shader property ID.
         /// </summary>
         /// <param name="handle">The texture handle to assign.</param>
-        /// <param name="propertyId">Optional shader property ID to assign to the input.</param>
+        /// <param name="propertyId">Optional shader property ID to bind the texture to.</param>
         public void SetInput(TextureHandle handle, int propertyId = 0)
             => SetInput(0, handle, propertyId);
 
         /// <summary>
-        /// Returns the destination texture handle stored in this pass.
+        /// Gets the destination texture handle stored in this pass.
         /// </summary>
+        /// <returns>The destination <see cref="TextureHandle"/>.</returns>
         public TextureHandle GetDestinationHandle()
             => Destination.handle;
 
         /// <summary>
-        /// Returns the input texture handle at the specified index.
+        /// Gets the input texture handle at the specified index.
         /// </summary>
-        /// <param name="index">Input index (0-based).</param>
-        /// <returns>The <see cref="TextureHandle"/> stored at the input slot.</returns>
+        /// <param name="index">Zero-based input index.</param>
+        /// <returns>The <see cref="TextureHandle"/> at the specified input slot.</returns>
         public TextureHandle GetInputHandle(int index)
             => GetInput(index).handle;
     }

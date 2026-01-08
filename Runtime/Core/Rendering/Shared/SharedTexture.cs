@@ -13,14 +13,14 @@ namespace Rayforge.Rendering.Shared
         /// Ensures that the specified texture is assigned to the global shader property
         /// identified by the given name. If the property is already set, it does nothing.
         /// </summary>
-        /// <typeparam name="Ttex">
+        /// <typeparam name="TTex">
         /// The texture type to assign (e.g., <see cref="Texture2D"/>, <see cref="RenderTexture"/> or <see cref="Texture3D"/>).
         /// Must derive from <see cref="Texture"/>.
         /// </typeparam>
         /// <param name="property">The name of the global shader property (e.g., "_MainTex").</param>
         /// <param name="texture">The texture instance to assign.</param>
-        public static void Ensure<Ttex>(string property, Ttex texture)
-            where Ttex : Texture
+        public static void Ensure<TTex>(string property, TTex texture)
+            where TTex : Texture
             => Ensure(Shader.PropertyToID(property), texture);
 
         /// <summary>
@@ -28,7 +28,7 @@ namespace Rayforge.Rendering.Shared
         /// identified by the given property ID. If a texture is already set under that
         /// property, the assignment is skipped to avoid redundant global state changes.
         /// </summary>
-        /// <typeparam name="Ttex">
+        /// <typeparam name="TTex">
         /// The texture type to assign (Texture2D, RenderTexture, Texture3D, etc.).
         /// Must derive from <see cref="Texture"/>.
         /// </typeparam>
@@ -38,8 +38,8 @@ namespace Rayforge.Rendering.Shared
         /// Set to true to overwrite existing global textures even if one already exists.
         /// Default is false.
         /// </param>
-        public static void Ensure<Ttex>(int propertyId, Ttex texture, bool forceOverwrite = false)
-            where Ttex : Texture
+        public static void Ensure<TTex>(int propertyId, TTex texture, bool forceOverwrite = false)
+            where TTex : Texture
         {
             if (texture == null)
             {

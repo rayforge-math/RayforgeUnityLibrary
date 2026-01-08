@@ -7,8 +7,8 @@ namespace Rayforge.Rendering.Abstractions
 	/// Represents a collection of renderable handles, providing both read-only access
 	/// and span-based access for efficient operations on contiguous memory sections.
 	/// </summary>
-	/// <typeparam name="Thandle">Type of the handle stored in the collection (e.g., TextureHandle).</typeparam>
-	public interface IRenderingCollection<Thandle>
+	/// <typeparam name="THandle">Type of the handle stored in the collection (e.g., TextureHandle).</typeparam>
+	public interface IRenderingCollection<THandle>
 	{
 		/// <summary>
 		/// Gets a read-only view of the handles in the collection.
@@ -17,7 +17,7 @@ namespace Rayforge.Rendering.Abstractions
 		/// LINQ queries, or compatibility with APIs expecting <see cref="IReadOnlyList{T}"/>.
 		/// </para>
 		/// </summary>
-		IReadOnlyList<Thandle> Handles { get; }
+		IReadOnlyList<THandle> Handles { get; }
 
 		/// <summary>
 		/// Provides a <see cref="ReadOnlySpan{T}"/> over a subrange of the collection.
@@ -33,7 +33,7 @@ namespace Rayforge.Rendering.Abstractions
 		/// Number of elements in the span starting from <paramref name="index"/>.
 		/// </param>
 		/// <returns>A <see cref="ReadOnlySpan{T}"/> representing the requested subrange.</returns>
-		ReadOnlySpan<Thandle> AsSpan(int index, int count);
+		ReadOnlySpan<THandle> AsSpan(int index, int count);
 
 		/// <summary>
 		/// Provides a <see cref="ReadOnlySpan{T}"/> over the entire collection.
@@ -42,6 +42,6 @@ namespace Rayforge.Rendering.Abstractions
 		/// </para>
 		/// </summary>
 		/// <returns>A <see cref="ReadOnlySpan{T}"/> representing all handles in the collection.</returns>
-		ReadOnlySpan<Thandle> AsSpan();
+		ReadOnlySpan<THandle> AsSpan();
 	}
 }

@@ -6,14 +6,15 @@ using UnityEngine.Rendering;
 namespace Rayforge.Utility.RenderGraphs.Rendering
 {
     /// <summary>
-    /// Internal wrapper for a raster pass that may include a callback.
-    /// Not intended for external use; encapsulates the callback handling.
+    /// Internal wrapper for a raster pass with optional callback support.
+    /// Not intended for external use; encapsulates callback handling for different command buffer types.
     /// </summary>
-    /// <typeparam name="Tcmd">
+    /// <typeparam name="TCmd">
     /// Command buffer type, e.g., <see cref="RasterCommandBuffer"/> or <see cref="UnsafeCommandBuffer"/>.
     /// </typeparam>
-    internal readonly struct RasterPassMetaInternal<Tcmd, Tdata>
-        where Tcmd : BaseCommandBuffer
+    /// <typeparam name="TData">Custom data type passed to the callback.</typeparam>
+    internal readonly struct RasterPassMetaInternal<TCmd, TData>
+        where TCmd : BaseCommandBuffer
     {
         /// <summary>
         /// Core raster pass metadata (material, pass index, property block).
@@ -21,13 +22,13 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         public readonly RasterMeta Meta;
 
         /// <summary>
-        /// Optional callback invoked during execution of this pass.
+        /// Optional callback invoked during pass execution to configure material properties.
         /// </summary>
-        public readonly Action<Tcmd, MaterialPropertyBlock, Tdata> UpdateCallback;
+        public readonly Action<TCmd, MaterialPropertyBlock, TData> UpdateCallback;
 
         public RasterPassMetaInternal(
             RasterMeta meta,
-            Action<Tcmd, MaterialPropertyBlock, Tdata> updateCallback)
+            Action<TCmd, MaterialPropertyBlock, TData> updateCallback)
         {
             Meta = meta;
             UpdateCallback = updateCallback;
@@ -35,76 +36,116 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     }
 
     /// <summary>
-    /// Public, strongly typed wrapper for a raster pass executed on a <see cref="RasterCommandBuffer"/>.
+    /// Metadata for a raster pass executed on a <see cref="RasterCommandBuffer"/>.
+    /// Wraps <see cref="RasterMeta"/> and an optional material setup callback.
     /// </summary>
-    public readonly struct RasterPassMeta<Tdata>
+    /// <typeparam name="TData">Custom data type passed to the callback.</typeparam>
+    public readonly struct RasterPassMeta<TData>
     {
-        private readonly RasterPassMetaInternal<RasterCommandBuffer, Tdata> k_Internal;
+        private readonly RasterPassMetaInternal<RasterCommandBuffer, TData> k_Internal;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="RasterPassMeta{TData}"/> using a material and pass index.
+        /// </summary>
+        /// <param name="material">The material to render with.</param>
+        /// <param name="passId">The shader pass index to execute.</param>
+        /// <param name="propertyBlock">Optional material property block for per-draw properties.</param>
+        /// <param name="updateCallback">Optional callback invoked before rendering to configure material properties.</param>
         public RasterPassMeta(
             Material material,
             int passId,
             MaterialPropertyBlock propertyBlock = null,
-            Action<RasterCommandBuffer, MaterialPropertyBlock, Tdata> updateCallback = null)
+            Action<RasterCommandBuffer, MaterialPropertyBlock, TData> updateCallback = null)
         {
-            k_Internal = new RasterPassMetaInternal<RasterCommandBuffer, Tdata>(
+            k_Internal = new RasterPassMetaInternal<RasterCommandBuffer, TData>(
                 new RasterMeta(material, passId, propertyBlock),
                 updateCallback);
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="RasterPassMeta{TData}"/> using a material and pass name.
+        /// </summary>
+        /// <param name="material">The material to render with.</param>
+        /// <param name="passName">The shader pass name to execute.</param>
+        /// <param name="propertyBlock">Optional material property block for per-draw properties.</param>
+        /// <param name="updateCallback">Optional callback invoked before rendering to configure material properties.</param>
         public RasterPassMeta(
             Material material,
             string passName,
             MaterialPropertyBlock propertyBlock = null,
-            Action<RasterCommandBuffer, MaterialPropertyBlock, Tdata> updateCallback = null)
+            Action<RasterCommandBuffer, MaterialPropertyBlock, TData> updateCallback = null)
         {
-            k_Internal = new RasterPassMetaInternal<RasterCommandBuffer, Tdata>(
+            k_Internal = new RasterPassMetaInternal<RasterCommandBuffer, TData>(
                 new RasterMeta(material, passName, propertyBlock),
                 updateCallback);
         }
 
-        /// <summary>Raster metadata (material, pass, property block).</summary>
+        /// <summary>
+        /// Gets the core raster metadata (material, pass, property block).
+        /// </summary>
         public RasterMeta Meta => k_Internal.Meta;
 
-        /// <summary>Optional update callback.</summary>
-        public Action<RasterCommandBuffer, MaterialPropertyBlock, Tdata> UpdateCallback
+        /// <summary>
+        /// Gets the optional callback invoked before rendering.
+        /// </summary>
+        public Action<RasterCommandBuffer, MaterialPropertyBlock, TData> UpdateCallback
             => k_Internal.UpdateCallback;
     }
 
     /// <summary>
-    /// Public, strongly typed wrapper for a raster pass executed on an <see cref="UnsafeCommandBuffer"/>.
+    /// Metadata for a raster pass executed on an <see cref="UnsafeCommandBuffer"/>.
+    /// Provides low-level command buffer access with <see cref="RasterMeta"/> and an optional callback.
     /// </summary>
-    public readonly struct UnsafeRasterPassMeta<Tdata>
+    /// <typeparam name="TData">Custom data type passed to the callback.</typeparam>
+    public readonly struct UnsafeRasterPassMeta<TData>
     {
-        private readonly RasterPassMetaInternal<UnsafeCommandBuffer, Tdata> k_Internal;
+        private readonly RasterPassMetaInternal<UnsafeCommandBuffer, TData> k_Internal;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="UnsafeRasterPassMeta{TData}"/> using a material and pass index.
+        /// </summary>
+        /// <param name="material">The material to render with.</param>
+        /// <param name="passId">The shader pass index to execute.</param>
+        /// <param name="propertyBlock">Optional material property block for per-draw properties.</param>
+        /// <param name="updateCallback">Optional callback invoked before rendering for low-level command buffer operations.</param>
         public UnsafeRasterPassMeta(
             Material material,
             int passId,
             MaterialPropertyBlock propertyBlock = null,
-            Action<UnsafeCommandBuffer, MaterialPropertyBlock, Tdata> updateCallback = null)
+            Action<UnsafeCommandBuffer, MaterialPropertyBlock, TData> updateCallback = null)
         {
-            k_Internal = new RasterPassMetaInternal<UnsafeCommandBuffer, Tdata>(
+            k_Internal = new RasterPassMetaInternal<UnsafeCommandBuffer, TData>(
                 new RasterMeta(material, passId, propertyBlock),
                 updateCallback);
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="UnsafeRasterPassMeta{TData}"/> using a material and pass name.
+        /// </summary>
+        /// <param name="material">The material to render with.</param>
+        /// <param name="passName">The shader pass name to execute.</param>
+        /// <param name="propertyBlock">Optional material property block for per-draw properties.</param>
+        /// <param name="updateCallback">Optional callback invoked before rendering for low-level command buffer operations.</param>
         public UnsafeRasterPassMeta(
             Material material,
             string passName,
             MaterialPropertyBlock propertyBlock = null,
-            Action<UnsafeCommandBuffer, MaterialPropertyBlock, Tdata> updateCallback = null)
+            Action<UnsafeCommandBuffer, MaterialPropertyBlock, TData> updateCallback = null)
         {
-            k_Internal = new RasterPassMetaInternal<UnsafeCommandBuffer, Tdata>(
+            k_Internal = new RasterPassMetaInternal<UnsafeCommandBuffer, TData>(
                 new RasterMeta(material, passName, propertyBlock),
                 updateCallback);
         }
 
-        /// <summary>Raster metadata (material, pass, property block).</summary>
+        /// <summary>
+        /// Gets the core raster metadata (material, pass, property block).
+        /// </summary>
         public RasterMeta Meta => k_Internal.Meta;
 
-        /// <summary>Optional update callback.</summary>
-        public Action<UnsafeCommandBuffer, MaterialPropertyBlock, Tdata> UpdateCallback
+        /// <summary>
+        /// Gets the optional callback invoked before rendering.
+        /// </summary>
+        public Action<UnsafeCommandBuffer, MaterialPropertyBlock, TData> UpdateCallback
             => k_Internal.UpdateCallback;
     }
 }

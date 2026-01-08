@@ -22,17 +22,17 @@ namespace Rayforge.ManagedResources.Pooling
 
         /// <summary>
         /// Rents a typed compute buffer from the global pool.
-        /// Automatically determines stride based on <typeparamref name="T"/>.
-        /// The returned buffer is wrapped in a <see cref="LeasedBuffer{Tdesc,Tbuffer}"/> and automatically returned when disposed.
+        /// Automatically determines stride based on <typeparamref name="TType"/>.
+        /// The returned buffer is wrapped in a <see cref="LeasedBuffer{TDesc,TBuffer}"/> and automatically returned when disposed.
         /// </summary>
-        /// <typeparam name="T">The element type stored in the compute buffer.</typeparam>
+        /// <typeparam name="TType">The element type stored in the compute buffer.</typeparam>
         /// <param name="count">Number of elements in the buffer.</param>
         /// <param name="type">Optional compute buffer type. Default is structured.</param>
         /// <returns>A leased buffer representing the rented <see cref="ManagedComputeBuffer"/>.</returns>
-        public static LeasedBuffer<ManagedComputeBuffer> Rent<T>(int count, ComputeBufferType type = ComputeBufferType.Structured)
-            where T : unmanaged
+        public static LeasedBuffer<ManagedComputeBuffer> Rent<TType>(int count, ComputeBufferType type = ComputeBufferType.Structured)
+            where TType : unmanaged
         {
-            int stride = Marshal.SizeOf<T>();
+            int stride = Marshal.SizeOf<TType>();
             var desc = new ComputeBufferDescriptor { count = count, stride = stride, type = type };
             return m_Pool.Rent(desc);
         }

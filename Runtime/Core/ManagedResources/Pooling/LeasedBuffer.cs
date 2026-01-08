@@ -6,9 +6,9 @@ namespace Rayforge.ManagedResources.Pooling
     /// Base class for all leased buffer wrappers. Handles lifetime management,
     /// validation, and return-to-pool semantics.
     /// </summary>
-    public class LeasedBuffer<Tbuffer>
+    public class LeasedBuffer<TBuffer>
     {
-        protected Tbuffer m_BufferHandle;
+        protected TBuffer m_BufferHandle;
         protected bool m_Valid;
         private readonly LeasedReturnFunc m_OnReturn;
 
@@ -17,16 +17,16 @@ namespace Rayforge.ManagedResources.Pooling
         /// The delegate should handle marking the buffer as free and any custom logic.
         /// Returns true if the buffer was successfully returned; false if the buffer was not recognized or could not be returned.
         /// </summary>
-        /// <typeparam name="Tbuffer">The managed buffer type.</typeparam>
+        /// <typeparam name="TBuffer">The managed buffer type.</typeparam>
         /// <param name="buffer">The buffer being returned to the pool.</param>
         /// <returns>True if the buffer was successfully returned; otherwise, false.</returns>
-        public delegate bool LeasedReturnFunc(Tbuffer buffer);
+        public delegate bool LeasedReturnFunc(TBuffer buffer);
 
         /// <summary>
         /// The underlying pooled buffer instance.
         /// Throws if accessed after return.
         /// </summary>
-        public Tbuffer BufferHandle
+        public TBuffer BufferHandle
         {
             get
             {
@@ -41,7 +41,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// </summary>
         public bool IsValid => m_Valid;
 
-        public LeasedBuffer(Tbuffer buffer, LeasedReturnFunc onReturnHandle)
+        public LeasedBuffer(TBuffer buffer, LeasedReturnFunc onReturnHandle)
         {
             m_BufferHandle = buffer ?? throw new ArgumentNullException(nameof(buffer));
             m_OnReturn = onReturnHandle ?? throw new ArgumentNullException(nameof(onReturnHandle));
