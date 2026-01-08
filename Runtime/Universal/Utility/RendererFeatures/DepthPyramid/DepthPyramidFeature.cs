@@ -20,7 +20,7 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         /// <summary>
         /// The type of input the render pass requires from the camera.
         /// </summary>
-        private const ScriptableRenderPassInput k_PassInput = ScriptableRenderPassInput.Depth | ScriptableRenderPassInput.Color;
+        private const ScriptableRenderPassInput k_PassInput = ScriptableRenderPassInput.Depth;
 
         [SerializeField, InspectorName("Injection Point")]
         private RenderPassEvent m_InjectionPoint = RenderPassEvent.AfterRenderingPrePasses;
@@ -109,13 +109,17 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 m_RenderPass.renderPassEvent = m_InjectionPoint;
                 m_RenderPass.UpdateMipCount(m_MipCount);
 
+                var passInput = k_PassInput;
 #if UNITY_EDITOR
                 m_RenderPass.UpdateDebugSettings(showDepthPyramid, mipLevel);
-                if(showDepthPyramid) 
-                    m_RenderPass.renderPassEvent = RenderPassEvent.AfterRenderingSkybox;
+                if (showDepthPyramid)
+                {
+                    m_RenderPass.renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
+                    passInput |= ScriptableRenderPassInput.Color;
+                }
 #endif
 
-                m_RenderPass.ConfigureInput(k_PassInput);
+                m_RenderPass.ConfigureInput(passInput);
                 renderer.EnqueuePass(m_RenderPass);
             }
         }

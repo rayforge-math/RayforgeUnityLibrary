@@ -18,10 +18,16 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
     public class DepthPyramidPass : ScriptableRenderPass, IDisposable
     {
         public const int MipCountMax = 16;
+        private const int k_DownsampleMipCountMax = MipCountMax - 1;
 
         private class DepthPyramidPassData : ComputePassData<DepthPyramidPassData>
         {
+            DownsampleHighZParams passParam;
 
+            public override void CopyUserData(DepthPyramidPassData other)
+            {
+                passParam = other.passParam;
+            }
         }
 
         private const string k_DownsampleHighZKernelName = "DownsampleHighZ";
@@ -41,8 +47,12 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         private static readonly int k_DownsampleHighZParamsId = Shader.PropertyToID("_DownsampleHighZParams");
 
         private Vector2Int m_LastResolution = new Vector2Int(-1, -1);
-        private int m_MipCount = 2;
-        public int MipCount => m_MipCount;
+        private int m_DownsampleMipCount = 2;
+        public int MipCount
+        {
+            get => m_DownsampleMipCount + 1;
+            set => m_DownsampleMipCount = value - 1;
+        }
 
         private readonly RTHandleMipChain k_DepthPyramidHandles;
         private RenderTextureDescriptor m_DepthPyramidDescriptor;
@@ -82,17 +92,18 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
         public void UpdateMipCount(int mipCount)
         {
-            m_MipCount = Math.Clamp(mipCount, 0, MipCountMax);
+            m_DownsampleMipCount = Math.Clamp(mipCount - 1, 0, MipCountMax);
         }
 
 #if UNITY_EDITOR
         private bool debug = false;
         private int debugMipLevel = 0;
+        private int debugDownsampleMipLevel => debugMipLevel - 1;
 
         public void UpdateDebugSettings(bool showPyramid, int mipLevel)
         {
             debug = showPyramid;
-            debugMipLevel = Mathf.Clamp(mipLevel, 0, MipCount - 1);
+            debugMipLevel = Mathf.Clamp(mipLevel, 0, k_DownsampleMipCountMax);
         }
 #endif
 
@@ -106,13 +117,19 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 m_DepthPyramidDescriptor.colorFormat = RenderTextureFormat.RFloat;
                 m_DepthPyramidDescriptor.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
 
-                k_DepthPyramidHandles.Create(m_DepthPyramidDescriptor, m_MipCount);
-
                 m_LastResolution = resolution;
             }
-            else if (k_DepthPyramidHandles.MipCount != m_MipCount)
+            
+            if (k_DepthPyramidHandles.MipCount != m_DownsampleMipCount)
             {
-                k_DepthPyramidHandles.Create(m_DepthPyramidDescriptor, m_MipCount);
+                if (m_DownsampleMipCount > 0)
+                {
+                    k_DepthPyramidHandles.Create(m_DepthPyramidDescriptor, m_DownsampleMipCount);
+                }
+                else
+                {
+                    k_DepthPyramidHandles.Resize(m_DownsampleMipCount);
+                }
             }
         }
 
@@ -130,23 +147,31 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
             UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
 
             TextureHandle srcDepthBuffer = resourceData.activeDepthTexture;
-            TextureHandle srcCamColor = resourceData.activeColorTexture;
 
             // The following line ensures that the render pass doesn't blit from the back buffer and the color texture attachment is valid
-            if (resourceData.isActiveTargetBackBuffer || !srcDepthBuffer.IsValid() || !srcCamColor.IsValid())
+            if (resourceData.isActiveTargetBackBuffer || !srcDepthBuffer.IsValid())
             {
                 return;
             }
 
             UdpateSettings(cameraData);
 
-            var destHandle = k_DepthPyramidHandles[0].ToRenderGraphHandle(renderGraph);
-            if(!destHandle.IsValid())
+            TextureHandle mipN0 = default;
+            TextureHandle mipN1 = srcDepthBuffer;
+            for(int i = 0; i < k_DepthPyramidHandles.MipCount - 1; ++i)
             {
-                return;
+                mipN0 = mipN1;
+                mipN1 = k_DepthPyramidHandles[i].ToRenderGraphHandle(renderGraph);
+
+                if (!mipN0.IsValid() || !mipN1.IsValid())
+                    continue;
+
+                k_PassData.SetInput(mipN0, k_SourceId);
+                k_PassData.SetDestination(mipN1);
+                RenderPassRecorder.AddComputePass(renderGraph, k_DownsampleHighZKernelName, k_PassData);
             }
 
-            renderGraph.AddBlitPass(srcDepthBuffer, destHandle, Vector2.one, Vector2.zero);
+
             /*
             // initial blit
             var dispatchMeta = new ComputeDispatchMeta(k_KernelMeta, Mathf.CeilToInt(m_LastResolution.x / 8.0f), Mathf.CeilToInt(m_LastResolution.y / 8.0f), 1);
@@ -162,8 +187,17 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 #if UNITY_EDITOR
             if (debug)
             {
-                var debugHandle = k_DepthPyramidHandles[debugMipLevel].ToRenderGraphHandle(renderGraph);
-                renderGraph.AddBlitPass(debugHandle, srcCamColor, Vector2.one, Vector2.zero);
+                TextureHandle debugHandle = default;
+                if (debugDownsampleMipLevel < 0)
+                {
+                    debugHandle = srcDepthBuffer;
+                }
+                else
+                {
+                    debugHandle = k_DepthPyramidHandles[debugDownsampleMipLevel].ToRenderGraphHandle(renderGraph);
+                }
+                     
+                renderGraph.AddBlitPass(debugHandle, resourceData.activeColorTexture, Vector2.one, Vector2.zero);
                 return;
             }
 #endif

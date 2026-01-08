@@ -8,9 +8,11 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// Base class for RenderGraph pass input/output configuration and pass metadata.
     /// Supports up to 8 input textures directly.
     /// </summary>
+    /// <typeparam name="TDerived">Type of the derived class (CRTP).</typeparam>
     /// <typeparam name="TMeta">Type of the pass metadata (e.g., compute or raster meta).</typeparam>
     /// <typeparam name="TDest">Type of the destination output texture.</typeparam>
-    public partial class PassDataBase<TMeta, TDest> : IDisposable
+    public abstract partial class PassDataBase<TDerived, TMeta, TDest> : IDisposable
+        where TDerived : PassDataBase<TDerived, TMeta, TDest>
         where TMeta : struct
         where TDest : struct
     {
@@ -58,16 +60,24 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         /// Copies all configuration values from another pass data instance.
         /// </summary>
         /// <param name="other">The pass data to copy from.</param>
-        public void CopyFrom(PassDataBase<TMeta, TDest> other)
+        public void CopyFrom(TDerived other)
         {
-            for (int i = 0; i < InputCapacity; i++)
+            for (int i = 0; i < InputCapacity; ++i)
             {
                 SetInput(i, other.GetInput(i));
             }
 
             m_Destination = other.m_Destination;
             m_PassMeta = other.m_PassMeta;
+
+            CopyUserData(other);
         }
+
+        /// <summary>
+        /// Override this in derived pass data to copy additional fields.
+        /// Otherwise data is not present in render pass dispatch.
+        /// </summary>
+        public abstract void CopyUserData(TDerived other);
 
         /// <summary>
         /// Sets the input texture at the specified index.
