@@ -15,7 +15,7 @@ namespace Rayforge.ManagedResources.Pooling
         static GlobalManagedComputeBufferPool()
         {
             m_Pool = new LeasedBufferPool<ComputeBufferDescriptor, ManagedComputeBuffer>(
-                createFunc: (desc) => new ManagedComputeBuffer(desc),
+                createFunc: (desc) => ManagedComputeBuffer.Create(desc),
                 releaseFunc: (buffer) => buffer.Dispose()
             );
         }
@@ -33,7 +33,7 @@ namespace Rayforge.ManagedResources.Pooling
             where TType : unmanaged
         {
             int stride = Marshal.SizeOf<TType>();
-            var desc = new ComputeBufferDescriptor { count = count, stride = stride, type = type };
+            var desc = new ComputeBufferDescriptor { Count = count, Stride = stride, Type = type };
             return m_Pool.Rent(desc);
         }
     }

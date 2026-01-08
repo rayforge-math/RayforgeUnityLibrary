@@ -44,6 +44,9 @@ namespace Rayforge.ManagedResources.Abstractions
         /// </summary>
         /// <param name="buffer">The internal resource to manage.</param>
         /// <param name="descriptor">Descriptor describing the resource properties.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="buffer"/> represents an invalid or null internal resource.
+        /// </exception>
         public ManagedBuffer(TInternal buffer, TDesc descriptor)
         {
             m_Buffer = buffer;
@@ -68,6 +71,9 @@ namespace Rayforge.ManagedResources.Abstractions
         /// Core dispose logic. Calls <see cref="Release"/>.
         /// </summary>
         /// <param name="disposing">True if called from Dispose(), false if from finalizer.</param>
+        /// <exception cref="Exception">
+        /// Propagates any exception thrown by the underlying resource during release.
+        /// </exception>
         protected virtual void Dispose(bool disposing)
         {
             if (!m_Disposed)
@@ -104,6 +110,9 @@ namespace Rayforge.ManagedResources.Abstractions
         /// Releases the internal resource (e.g., Dispose NativeArray, Release GPU buffer).
         /// Must be implemented by derived classes.
         /// </summary>
+        /// <exception cref="Exception">
+        /// Propagates any exception thrown by the underlying resource during release.
+        /// </exception>
         public abstract void Release();
     }
 }

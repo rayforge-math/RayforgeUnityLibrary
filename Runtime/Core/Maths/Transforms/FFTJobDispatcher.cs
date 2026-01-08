@@ -75,10 +75,10 @@ namespace Rayforge.Maths.Transforms
         {
             SystemBufferDescriptor desc = new SystemBufferDescriptor
             {
-                count = Mathf.NextPowerOfTwo(size),
-                allocator = Allocator.Persistent
+                Count = Mathf.NextPowerOfTwo(size),
+                Allocator = Allocator.Persistent
             };
-            return new ManagedSystemBuffer<Complex>(desc);
+            return ManagedSystemBuffer<Complex>.Create(desc);
         }
 
         /// <summary>

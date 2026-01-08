@@ -13,7 +13,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// </summary>
         public ManagedTexture2DPool()
             : base(
-                createFunc: desc => new ManagedTexture2D(desc),
+                createFunc: desc => ManagedTexture2D.Create(desc),
                 releaseFunc: buffer => buffer.Release())
         { }
 

@@ -1,3 +1,5 @@
+using System;
+
 namespace Rayforge.Rendering.Filtering
 {
     /// <summary>
@@ -30,8 +32,14 @@ namespace Rayforge.Rendering.Filtering
         /// <summary>
         /// Creates a new filter wrapper around the given function and parameter.
         /// </summary>
+        /// <param name="function">The filter function to invoke. Must not be null.</param>
+        /// <param name="param">Filter-specific parameter.</param>
+        /// <exception cref="ArgumentNullException">Thrown if the function is null.</exception>
         public Filter(FilterFunction function, TParam param)
         {
+            if (function == null)
+                throw new ArgumentNullException(nameof(function), "Filter function cannot be null.");
+
             m_FilterFunc = function;
             m_Param = param;
         }
@@ -39,7 +47,15 @@ namespace Rayforge.Rendering.Filtering
         /// <summary>
         /// Evaluates the filter at the given kernel index.
         /// </summary>
+        /// <param name="x">Distance from the kernel center.</param>
+        /// <returns>Computed kernel weight.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the filter function was not initialized.</exception>
         public float Invoke(int x)
-            => m_FilterFunc.Invoke(x, m_Param);
+        {
+            if (m_FilterFunc == null)
+                throw new InvalidOperationException("Cannot invoke filter: function is null.");
+
+            return m_FilterFunc.Invoke(x, m_Param);
+        }
     }
 }

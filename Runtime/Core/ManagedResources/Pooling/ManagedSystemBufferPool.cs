@@ -17,7 +17,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// <param name="batchSize">Batch size for rounding allocations (0 disables batching, default is 0).</param>
         public ManagedSystemBufferPool(int baseSize = 1, int batchSize = 0)
             : base(
-                createFunc: desc => new ManagedSystemBuffer<TType>(desc),
+                createFunc: desc => ManagedSystemBuffer<TType>.Create(desc),
                 releaseFunc: buffer => buffer.Release(),
                 baseSize: baseSize,
                 batchSize: batchSize)

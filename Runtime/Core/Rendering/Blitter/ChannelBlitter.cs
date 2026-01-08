@@ -1,9 +1,9 @@
-using Rayforge.ManagedResources.NativeMemory;
-using Rayforge.ShaderExtensions.Blitter;
-using UnityEngine;
-using Rayforge.ManagedResources.NativeMemory.Helpers;
 using Rayforge.Common;
-
+using Rayforge.ManagedResources.NativeMemory;
+using Rayforge.ManagedResources.NativeMemory.Helpers;
+using Rayforge.ShaderExtensions.Blitter;
+using System;
+using UnityEngine;
 using static UnityEngine.Resources;
 
 namespace Rayforge.Rendering.Blitter
@@ -72,11 +72,22 @@ namespace Rayforge.Rendering.Blitter
 
         /// <summary>
         /// Static constructor: loads shaders and initializes the raster blit material and property block.
+        /// Throws exceptions if shaders cannot be found or loaded.
         /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if the compute shader <c>ComputeChannelBlitter</c> could not be loaded
+        /// or if the raster shader <c>RasterChannelBlitter</c> could not be found.
+        /// </exception>
         static ChannelBlitter()
         {
             k_ComputeBlitShader = Load<ComputeShader>(k_ComputeBlitShaderName);
+            if (k_ComputeBlitShader == null)
+                throw new InvalidOperationException($"Compute shader '{k_ComputeBlitShaderName}' could not be loaded.");
+
             var shader = Shader.Find(ResourcePaths.ShaderNamespace + k_RasterBlitShaderName);
+            if (shader == null)
+                throw new InvalidOperationException($"Raster shader '{k_RasterBlitShaderName}' could not be found.");
+
             k_RasterBlitMaterial = new Material(shader);
             k_PropertyBlock = new MaterialPropertyBlock();
         }
@@ -88,6 +99,10 @@ namespace Rayforge.Rendering.Blitter
         /// <param name="dest">Destination render texture.</param>
         /// <param name="type">Pipeline type (Compute or Raster) to use.</param>
         /// <param name="param">Channel mapping and rectangle parameters.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="source"/> or <paramref name="dest"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <paramref name="type"/> is unknown or if <paramref name="param"/> has non-positive size.
+        /// </exception>
         public static void Blit(Texture source, RenderTexture dest, BlitType type, ChannelBlitterParams param)
         {
             switch (type)
@@ -98,21 +113,9 @@ namespace Rayforge.Rendering.Blitter
                 case BlitType.Compute:
                     ComputeBlit(source, dest, param);
                     break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), "Unknown blit type.");
             }
-        }
-
-        /// <summary>
-        /// Performs a rasterization blit using a pre-filled MaterialPropertyBlock.
-        /// </summary>
-        /// <param name="source">Source texture.</param>
-        /// <param name="dest">Destination render target.</param>
-        /// <param name="mpb">MaterialPropertyBlock containing channel and blit parameters.</param>
-        public static void RasterBlit(Texture source, RenderTexture dest, MaterialPropertyBlock mpb)
-        {
-            mpb.SetTexture(BlitParameters.BlitTextureId, source);
-            Graphics.SetRenderTarget(dest);
-            Graphics.DrawProcedural(k_RasterBlitMaterial, new Bounds(Vector2.zero, Vector2.one), MeshTopology.Triangles, 3, 1, null, mpb);
-            Graphics.SetRenderTarget(null);
         }
 
         /// <summary>
@@ -122,8 +125,12 @@ namespace Rayforge.Rendering.Blitter
         /// <param name="dest">Destination render target.</param>
         /// <param name="param">Cbuffer expected to contain <see cref="ChannelBlitterParams"/>.</param>
         /// <param name="offset"><see cref="ChannelBlitterParams"/> struct offset within cbuffer.</param>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="source"/>, <paramref name="dest"/>, or <paramref name="param"/> is null.</exception>
         public static void RasterBlit(Texture source, RenderTexture dest, ManagedComputeBuffer param, int offset = 0)
         {
+            if (param == null) 
+                throw new ArgumentNullException(nameof(param));
+
             k_PropertyBlock.SetCBuffer(k_ChannelBlitterParamsId, param, offset);
             RasterBlit(source, dest, k_PropertyBlock);
         }
@@ -135,8 +142,12 @@ namespace Rayforge.Rendering.Blitter
         /// <param name="source">Source texture.</param>
         /// <param name="dest">Destination render target.</param>
         /// <param name="param">Channel mapping and offset/size rectangle.</param>
-        private static void RasterBlit(Texture source, RenderTexture dest, ChannelBlitterParams param)
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if param.size is non-positive.</exception>
+        public static void RasterBlit(Texture source, RenderTexture dest, ChannelBlitterParams param)
         {
+            if (param.size.x <= 0 || param.size.y <= 0)
+                throw new ArgumentOutOfRangeException(nameof(param), "Size must be positive.");
+
             k_PropertyBlock.SetVector(k_BlitParamsId, new Vector4(param.offset.x, param.offset.y, param.size.x, param.size.y));
             k_PropertyBlock.SetInteger(k_ChannelRId, (int)param.R);
             k_PropertyBlock.SetInteger(k_ChannelGId, (int)param.G);
@@ -144,6 +155,28 @@ namespace Rayforge.Rendering.Blitter
             k_PropertyBlock.SetInteger(k_ChannelAId, (int)param.A);
 
             RasterBlit(source, dest, k_PropertyBlock);
+        }
+
+        /// <summary>
+        /// Performs a rasterization blit using a pre-filled MaterialPropertyBlock.
+        /// </summary>
+        /// <param name="source">Source texture.</param>
+        /// <param name="dest">Destination render target.</param>
+        /// <param name="mpb">MaterialPropertyBlock containing channel and blit parameters.</param>
+        /// <exception cref="ArgumentNullException">Thrown if source, dest or mpb is null.</exception>
+        public static void RasterBlit(Texture source, RenderTexture dest, MaterialPropertyBlock mpb)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+            if (dest == null)
+                throw new ArgumentNullException(nameof(dest));
+            if (mpb == null)
+                throw new ArgumentNullException(nameof(mpb));
+
+            mpb.SetTexture(BlitParameters.BlitTextureId, source);
+            Graphics.SetRenderTarget(dest);
+            Graphics.DrawProcedural(k_RasterBlitMaterial, new Bounds(Vector2.zero, Vector2.one), MeshTopology.Triangles, 3, 1, null, mpb);
+            Graphics.SetRenderTarget(null);
         }
 
         /// <summary>
@@ -161,6 +194,13 @@ namespace Rayforge.Rendering.Blitter
         /// <param name="param">Channel mapping and offset/size rectangle.</param>
         public static void ComputeBlit(Texture source, RenderTexture dest, ChannelBlitterParams param)
         {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+            if (dest == null)
+                throw new ArgumentNullException(nameof(dest));
+            if (param.size.x <= 0 || param.size.y <= 0)
+                throw new ArgumentOutOfRangeException(nameof(param), "Size must be positive.");
+
             k_ComputeBlitShader.SetVector(k_BlitParamsId, new Vector4(param.offset.x, param.offset.y, param.size.x, param.size.y));
             k_ComputeBlitShader.SetInt(k_ChannelRId, (int)param.R);
             k_ComputeBlitShader.SetInt(k_ChannelGId, (int)param.G);

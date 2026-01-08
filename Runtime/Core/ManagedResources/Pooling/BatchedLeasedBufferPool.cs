@@ -1,4 +1,4 @@
-using Rayforge.ManagedResources.Abstractions;
+﻿using Rayforge.ManagedResources.Abstractions;
 using System;
 
 namespace Rayforge.ManagedResources.Pooling
@@ -32,6 +32,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// <param name="releaseFunc">Function to release a buffer permanently.</param>
         /// <param name="baseSize">Minimum base allocation size.</param>
         /// <param name="batchSize">Batch size for rounding allocations.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="baseSize"/> is less than 1 or <paramref name="batchSize"/> is negative.</exception>
         public BatchedLeasedBufferPool(
             BufferCreateFunc createFunc,
             BufferReleaseFunc releaseFunc,
@@ -39,8 +40,13 @@ namespace Rayforge.ManagedResources.Pooling
             int batchSize = 0)
             : base(createFunc, releaseFunc)
         {
-            BaseSize = Math.Max(baseSize, 1);
-            BatchSize = Math.Max(batchSize, 0);
+            if (baseSize < 1)
+                throw new ArgumentOutOfRangeException(nameof(baseSize), "Base size must be at least 1.");
+            if (batchSize < 0)
+                throw new ArgumentOutOfRangeException(nameof(batchSize), "Batch size cannot be negative.");
+
+            BaseSize = baseSize;
+            BatchSize = batchSize;
         }
 
         /// <summary>
@@ -62,8 +68,12 @@ namespace Rayforge.ManagedResources.Pooling
         /// </summary>
         /// <param name="requestedCount">The requested element count.</param>
         /// <returns>The adjusted element count according to batch settings.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="requestedCount"/> is less than 1.</exception>
         private int BatchedCount(int requestedCount)
         {
+            if (requestedCount < 1)
+                throw new ArgumentOutOfRangeException(nameof(requestedCount), "Requested count must be at least 1.");
+
             int adjusted = Math.Max(1, Math.Max(requestedCount, BaseSize));
             if (BatchSize > 0)
                 adjusted = ((adjusted + BatchSize - 1) / BatchSize) * BatchSize;
@@ -74,14 +84,23 @@ namespace Rayforge.ManagedResources.Pooling
         /// Checks whether the given buffer's size already matches the requested count
         /// after applying batching rules.
         /// </summary>
-        /// <param name="buffer">The buffer to check.</param>
-        /// <param name="count">The desired element count.</param>
+        /// <param name="buffer">The buffer to check. Cannot be null.</param>
+        /// <param name="count">The desired element count. Must be ≥ 1.</param>
         /// <returns>
         /// True if the buffer's current size corresponds exactly to the batched count; 
         /// otherwise, false.
         /// </returns>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="buffer"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if <paramref name="count"/> is less than 1.</exception>
         private bool IsBatchedSize(TBuffer buffer, int count)
-            => BatchedCount(count) == buffer.Descriptor.Count;
+        {
+            if (buffer == null)
+                throw new ArgumentNullException(nameof(buffer));
+            if (count < 1)
+                throw new ArgumentOutOfRangeException(nameof(count), "Count must be at least 1.");
+
+            return BatchedCount(count) == buffer.Descriptor.Count;
+        }
 
         /// <summary>
         /// Ensures that a buffer matches the requested count according to batching rules.
@@ -108,9 +127,8 @@ namespace Rayforge.ManagedResources.Pooling
 
         /// <summary>
         /// Rents a buffer internally from the pool using batch-adjusted sizing.
-        /// This returns the raw buffer without wrapping it in a lease.
         /// </summary>
-        /// <param name="desc">Descriptor for the buffer to rent.</param>
+        /// <param name="desc">Descriptor for the buffer to rent. Cannot be null. Count must be ≥ 1.</param>
         /// <returns>The rented buffer instance of type <typeparamref name="TBuffer"/>.</returns>
         protected override TBuffer RentInternal(TDesc desc)
         {
@@ -122,7 +140,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// Rents a buffer from the pool using batch-adjusted sizing.
         /// The buffer is wrapped in a lease of type <see cref="BatchedLeasedBuffer{TBuffer}"/>.
         /// </summary>
-        /// <param name="desc">Descriptor used to identify or create the buffer.</param>
+        /// <param name="desc">Descriptor used to identify or create the buffer. Cannot be null. Count must be ≥ 1.</param>
         /// <returns>A leased buffer of type <see cref="BatchedLeasedBuffer{TBuffer}"/>.</returns>
         public override BatchedLeasedBuffer<TBuffer> Rent(TDesc desc)
         {

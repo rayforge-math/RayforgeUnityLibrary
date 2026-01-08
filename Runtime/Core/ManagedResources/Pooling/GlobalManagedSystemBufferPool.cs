@@ -16,7 +16,7 @@ namespace Rayforge.ManagedResources.Pooling
         static GlobalManagedSystemBufferPool()
         {
             m_Pool = new LeasedBufferPool<SystemBufferDescriptor, ManagedSystemBuffer<TType>>(
-                createFunc: desc => new ManagedSystemBuffer<TType>(desc),
+                createFunc: desc => ManagedSystemBuffer<TType>.Create(desc),
                 releaseFunc: buffer => buffer.Release()
             );
         }

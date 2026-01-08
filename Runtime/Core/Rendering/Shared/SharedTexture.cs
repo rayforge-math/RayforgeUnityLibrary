@@ -1,3 +1,4 @@
+using Rayforge.Diagnostics;
 using UnityEngine;
 
 namespace Rayforge.Rendering.Shared
@@ -41,11 +42,9 @@ namespace Rayforge.Rendering.Shared
         public static void Ensure<TTex>(int propertyId, TTex texture, bool forceOverwrite = false)
             where TTex : Texture
         {
+            Assertions.NotNull(texture, $"Tried to assign a NULL texture to global ID {propertyId}.");
             if (texture == null)
-            {
-                Debug.LogWarning($"Tried to assign a NULL texture to global ID {propertyId}.");
                 return;
-            }
 
             var existing = Shader.GetGlobalTexture(propertyId);
             if (existing == null || forceOverwrite)

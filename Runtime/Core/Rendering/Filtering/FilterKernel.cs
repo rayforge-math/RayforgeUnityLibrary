@@ -1,6 +1,7 @@
-using System.Collections.Generic;
-using Rayforge.ManagedResources.Abstractions;
 using Rayforge.Diagnostics;
+using Rayforge.ManagedResources.Abstractions;
+using System;
+using System.Collections.Generic;
 
 namespace Rayforge.Rendering.Filtering
 {
@@ -39,6 +40,7 @@ namespace Rayforge.Rendering.Filtering
         /// Kernel radius.
         /// Changing this marks the kernel for recomputation.
         /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if radius is negative.</exception>
         public int Radius
         {
             get => m_Radius;
@@ -46,7 +48,7 @@ namespace Rayforge.Rendering.Filtering
             {
                 if (m_Radius != value)
                 {
-                    Assertions.AtLeastZero(value, "radius must be greater than or equal to 0");
+                    CheckRadius(value);
                     m_Radius = value;
                     m_Changed = true;
                 }
@@ -61,9 +63,11 @@ namespace Rayforge.Rendering.Filtering
         /// <summary>
         /// Creates a new kernel with the given radius.
         /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if radius is negative.</exception>
         public FilterKernel(int radius)
         {
-            Assertions.AtLeastZero(radius, "radius must be greater than or equal to 0");
+            CheckRadius(radius);
+
             m_Radius = radius;
             m_Changed = false;
             m_Kernel = new float[ToBufferSize(radius)];
@@ -100,6 +104,18 @@ namespace Rayforge.Rendering.Filtering
                 for (int i = 0; i <= m_Radius; ++i)
                     m_Kernel[i] /= sum;
             }
+        }
+
+        /// <summary>
+        /// Throws an exception if the radius is negative.
+        /// Ensures kernel integrity.
+        /// </summary>
+        /// <param name="radius">Radius to check.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if radius is negative.</exception>
+        private static void CheckRadius(int radius)
+        {
+            if (radius < 0)
+                throw new ArgumentOutOfRangeException(nameof(radius), "Radius cannot be negative.");
         }
     }
 }

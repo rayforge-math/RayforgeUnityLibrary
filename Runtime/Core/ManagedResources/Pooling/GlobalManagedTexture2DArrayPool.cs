@@ -14,7 +14,7 @@ namespace Rayforge.ManagedResources.Pooling
         static GlobalManagedTexture2DArrayPool()
         {
             m_Pool = new LeasedBufferPool<Texture2dArrayDescriptor, ManagedTexture2DArray>(
-                createFunc: desc => new ManagedTexture2DArray(desc),
+                createFunc: desc => ManagedTexture2DArray.Create(desc),
                 releaseFunc: buffer => buffer.Release()
             );
         }

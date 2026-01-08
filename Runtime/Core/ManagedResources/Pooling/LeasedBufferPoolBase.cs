@@ -1,3 +1,4 @@
+using Rayforge.Diagnostics;
 using System;
 using System.Collections.Generic;
 
@@ -56,10 +57,15 @@ namespace Rayforge.ManagedResources.Pooling
         /// </summary>
         /// <param name="createFunc">Function used to create a new buffer when the pool has no free buffers.</param>
         /// <param name="releaseFunc">Function used to permanently release a buffer when the pool is cleared or disposed.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="createFunc"/> or <paramref name="releaseFunc"/> is null.
+        /// </exception>
         protected LeasedBufferPoolBase(BufferCreateFunc createFunc, BufferReleaseFunc releaseFunc)
         {
-            m_CreateFunc = createFunc ?? throw new ArgumentNullException(nameof(createFunc));
-            m_ReleaseFunc = releaseFunc ?? throw new ArgumentNullException(nameof(releaseFunc));
+            m_CreateFunc = createFunc ?? 
+                throw new ArgumentNullException(nameof(createFunc));
+            m_ReleaseFunc = releaseFunc ?? 
+                throw new ArgumentNullException(nameof(releaseFunc));
         }
 
         /// <summary>
@@ -110,11 +116,13 @@ namespace Rayforge.ManagedResources.Pooling
         /// Adds the buffer back into the free collection for reuse.
         /// </summary>
         /// <param name="buffer">The buffer being returned.</param>
-        /// <returns>True if the buffer was successfully returned; false if it was not recognized as reserved.</returns>
-        protected virtual bool Return(TBuffer buffer)
+        protected virtual void Return(TBuffer buffer)
         {
-            if (!m_Reserved.Remove(buffer))
-                return false;
+            var leased = m_Reserved.Remove(buffer);
+            Assertions.IsTrue(leased, $"Attempted to return a buffer that is not currently reserved: {buffer}");
+
+            if (!leased)
+                return;
 
             if (!m_FreeDict.TryGetValue(buffer.Descriptor, out var stack))
             {
@@ -123,7 +131,6 @@ namespace Rayforge.ManagedResources.Pooling
             }
 
             stack.Push(buffer);
-            return true;
         }
 
         /// <summary>

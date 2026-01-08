@@ -1,4 +1,5 @@
 using Rayforge.ManagedResources.Abstractions;
+using System;
 using Unity.Collections;
 
 namespace Rayforge.ManagedResources.NativeMemory
@@ -11,9 +12,32 @@ namespace Rayforge.ManagedResources.NativeMemory
     public sealed class ManagedSystemBuffer<TType> : ManagedBuffer<SystemBufferDescriptor, NativeArray<TType>>
         where TType : struct
     {
-        public ManagedSystemBuffer(SystemBufferDescriptor desc)
-            : base(new NativeArray<TType>(desc.count, desc.allocator), desc)
+        /// <summary>
+        /// Private constructor to initialize the managed system buffer.
+        /// Use <see cref="Create"/> instead.
+        /// </summary>
+        /// <param name="buffer">The internal <see cref="NativeArray{T}"/> to manage.</param>
+        /// <param name="descriptor">Descriptor describing buffer properties.</param>
+        private ManagedSystemBuffer(NativeArray<TType> buffer, SystemBufferDescriptor descriptor)
+            : base(buffer, descriptor)
         { }
+
+        /// <summary>
+        /// Creates a managed system buffer with the specified descriptor.
+        /// </summary>
+        /// <param name="desc">Descriptor defining the element count and allocator.</param>
+        /// <returns>A new <see cref="ManagedSystemBuffer{TType}"/> instance.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <see cref="SystemBufferDescriptor.Count"/> is less than 1.
+        /// </exception>
+        public static ManagedSystemBuffer<TType> Create(SystemBufferDescriptor desc)
+        {
+            if (desc.Count <= 0)
+                throw new ArgumentOutOfRangeException(nameof(desc.Count), "System buffer count must be greater than zero.");
+
+            var buffer = new NativeArray<TType>(desc.Count, desc.Allocator);
+            return new ManagedSystemBuffer<TType>(buffer, desc);
+        }
 
         /// <summary>
         /// Compares managed system buffers by reference.
@@ -25,6 +49,11 @@ namespace Rayforge.ManagedResources.NativeMemory
         /// Releases the underlying NativeArray memory.
         /// </summary>
         public override void Release()
-            => m_Buffer.Dispose();
+        {
+            if (m_Buffer.IsCreated)
+            {
+                m_Buffer.Dispose();
+            }
+        }
     }
 }

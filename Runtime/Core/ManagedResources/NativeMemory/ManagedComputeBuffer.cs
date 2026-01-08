@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.Rendering.RenderGraphModule;
 
 namespace Rayforge.ManagedResources.NativeMemory
 {
@@ -14,26 +15,68 @@ namespace Rayforge.ManagedResources.NativeMemory
     public sealed class ManagedComputeBuffer : ManagedBuffer<ComputeBufferDescriptor, ComputeBuffer>
     {
         /// <summary>
-        /// Allocates a new compute buffer based on the given descriptor.
+        /// Private constructor: initializes the managed buffer with an existing ComputeBuffer and descriptor.
+        /// Use the <see cref="Create"/> methods to allocate buffers safely.
         /// </summary>
-        public ManagedComputeBuffer(ComputeBufferDescriptor desc)
-            : base(new ComputeBuffer(desc.count, desc.stride, desc.type), desc)
+        /// <param name="buffer">The internal <see cref="ComputeBuffer"/> to manage.</param>
+        /// <param name="desc">Descriptor describing buffer properties.</param>
+        private ManagedComputeBuffer(ComputeBuffer buffer, ComputeBufferDescriptor desc)
+            : base(buffer, desc)
         { }
 
         /// <summary>
-        /// Creates a compute buffer.
-        /// Automatically determines stride based on <typeparamref name="TType"/>.
+        /// Creates a compute buffer from a descriptor.
+        /// Validates count and stride before allocation.
         /// </summary>
-        /// <typeparam name="T">The element type stored in the compute buffer.</typeparam>
+        /// <param name="desc">Descriptor defining the buffer size, stride, and type.</param>
+        /// <returns>A new <see cref="ManagedComputeBuffer"/> instance.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <see cref="ComputeBufferDescriptor.Count"/> is <= 0
+        /// or <see cref="ComputeBufferDescriptor.Stride"/> is <= 0.
+        /// </exception>
+        public static ManagedComputeBuffer Create(ComputeBufferDescriptor desc)
+        {
+            if (desc.Count <= 0)
+                throw new ArgumentOutOfRangeException(nameof(desc.Count), "ComputeBuffer count must be > 0.");
+            if (desc.Stride <= 0)
+                throw new ArgumentOutOfRangeException(nameof(desc.Stride), "ComputeBuffer stride must be > 0.");
+
+            var buffer = new ComputeBuffer(desc.Count, desc.Stride, desc.Type);
+            return new ManagedComputeBuffer(buffer, desc);
+        }
+
+        /// <summary>
+        /// Creates a compute buffer from a raw count and stride.
+        /// </summary>
         /// <param name="count">Number of elements in the buffer.</param>
-        /// <param name="type">Optional compute buffer type. Default is structured.</param>
-        /// <returns>A leased buffer representing the rented <see cref="ManagedComputeBuffer"/>.</returns>
+        /// <param name="stride">Stride in bytes per element.</param>
+        /// <param name="type">Optional buffer type. Defaults to <see cref="ComputeBufferType.Structured"/>.</param>
+        /// <returns>A new <see cref="ManagedComputeBuffer"/> instance.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <paramref name="count"/> or <paramref name="stride"/> are <= 0.
+        /// </exception>
+        public static ManagedComputeBuffer Create(int count, int stride, ComputeBufferType type = ComputeBufferType.Structured)
+        {
+            var desc = new ComputeBufferDescriptor { Count = count, Stride = stride, Type = type };
+            return Create(desc);
+        }
+
+        /// <summary>
+        /// Creates a compute buffer for a strongly-typed element array.
+        /// Automatically calculates the stride from the type size.
+        /// </summary>
+        /// <typeparam name="TType">The unmanaged element type stored in the buffer.</typeparam>
+        /// <param name="count">Number of elements in the buffer.</param>
+        /// <param name="type">Optional buffer type. Defaults to <see cref="ComputeBufferType.Structured"/>.</param>
+        /// <returns>A new <see cref="ManagedComputeBuffer"/> instance.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <paramref name="count"/> is <= 0 or if stride (calculated from <typeparamref name="TType"/>) is 0.
+        /// </exception>
         public static ManagedComputeBuffer Create<TType>(int count, ComputeBufferType type = ComputeBufferType.Structured)
             where TType : unmanaged
         {
             int stride = Marshal.SizeOf<TType>();
-            var desc = new ComputeBufferDescriptor { count = count, stride = stride, type = type };
-            return new ManagedComputeBuffer(desc);
+            return Create(count, stride, type);
         }
 
         /// <summary>

@@ -10,47 +10,61 @@ namespace Rayforge.ManagedResources.NativeMemory
     /// </summary>
     public sealed class ManagedTexture2DArray : ManagedBuffer<Texture2dArrayDescriptor, Texture2DArray>
     {
-        public ManagedTexture2DArray(Texture2dArrayDescriptor descriptor)
-            : base(CreateAndConfigure(descriptor), descriptor)
+        /// <summary>
+        /// Private constructor used internally to wrap an existing <see cref="Texture2DArray"/> and descriptor.
+        /// </summary>
+        private ManagedTexture2DArray(Texture2DArray texture, Texture2dArrayDescriptor descriptor)
+            : base(texture, descriptor)
         { }
 
         /// <summary>
-        /// Releases the underlying texture array.
+        /// Creates a managed Texture2DArray from the provided descriptor.
+        /// Validates dimensions and layer count before allocation.
+        /// </summary>
+        /// <param name="desc">Descriptor defining each texture in the array and number of layers.</param>
+        /// <returns>A new <see cref="ManagedTexture2DArray"/> instance.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <see cref="Texture2dArrayDescriptor.Count"/>, Width or Height is less than 1.
+        /// </exception>
+        public static ManagedTexture2DArray Create(Texture2dArrayDescriptor desc)
+        {
+            var d = desc.Descriptor;
+
+            if (desc.Count <= 0)
+                throw new ArgumentOutOfRangeException(nameof(desc.Count), "Texture2DArray count must be > 0.");
+            if (d.Width <= 0)
+                throw new ArgumentOutOfRangeException(nameof(d.Width), "Texture width must be > 0.");
+            if (d.Height <= 0)
+                throw new ArgumentOutOfRangeException(nameof(d.Height), "Texture height must be > 0.");
+
+            var texture = new Texture2DArray(
+                d.Width,
+                d.Height,
+                desc.Count,
+                d.ColorFormat,
+                d.MipCount > 1,
+                d.Linear)
+            {
+                filterMode = d.FilterMode,
+                wrapMode = d.WrapMode,
+                anisoLevel = 0
+            };
+            texture.Apply(false);
+
+            return new ManagedTexture2DArray(texture, desc);
+        }
+
+        /// <summary>
+        /// Releases the underlying Texture2DArray.
+        /// After calling this, the buffer is no longer valid.
         /// </summary>
         public override void Release()
         {
             if (m_Buffer != null)
             {
-                Texture2DArray.Destroy(m_Buffer);
+                UnityEngine.Object.Destroy(m_Buffer);
                 m_Buffer = null;
             }
-        }
-
-        /// <summary>
-        /// Instantiates and configures the Texture2DArray based on the descriptor.
-        /// </summary>
-        private static Texture2DArray CreateAndConfigure(Texture2dArrayDescriptor desc)
-        {
-            if (desc.count <= 0)
-                throw new ArgumentException("Texture2DArray count must be > 0");
-            if (desc.descriptor.width <= 0 || desc.descriptor.height <= 0)
-                throw new ArgumentException("Texture dimensions must be > 0");
-
-            var texture = new Texture2DArray(
-                desc.descriptor.width,
-                desc.descriptor.height,
-                desc.count,
-                desc.descriptor.colorFormat,
-                desc.descriptor.mipCount > 1,
-                desc.descriptor.linear
-            );
-
-            texture.filterMode = desc.descriptor.filterMode;
-            texture.wrapMode = desc.descriptor.wrapMode;
-            texture.anisoLevel = 0;
-            texture.Apply(false);
-
-            return texture;
         }
 
         /// <summary>
@@ -65,7 +79,7 @@ namespace Rayforge.ManagedResources.NativeMemory
                 return false;
             }
 
-            var descriptor = m_Descriptor.descriptor;
+            var descriptor = m_Descriptor.Descriptor;
             for (int i = 0; i < textures.Length; i++)
             {
                 if (textures[i] == null)
@@ -74,38 +88,38 @@ namespace Rayforge.ManagedResources.NativeMemory
                     return false;
                 }
 
-                if (textures[i].width != descriptor.width || textures[i].height != descriptor.height)
+                if (textures[i].width != descriptor.Width || textures[i].height != descriptor.Height)
                 {
                     Debug.LogError($"Texture at index {i} has mismatched dimensions. " +
-                                $"Expected: {descriptor.width}x{descriptor.height}, Got: {textures[i].width}x{textures[i].height}");
+                                $"Expected: {descriptor.Width}x{descriptor.Height}, Got: {textures[i].width}x{textures[i].height}");
                     return false;
                 }
 
-                if (textures[i].format != descriptor.colorFormat)
+                if (textures[i].format != descriptor.ColorFormat)
                 {
                     Debug.LogWarning($"Texture at index {i} has format {textures[i].format}, " +
-                                    $"but expected {descriptor.colorFormat}. This may cause conversion overhead.");
+                                    $"but expected {descriptor.ColorFormat}. This may cause conversion overhead.");
                 }
 
-                if (textures[i].mipmapCount != descriptor.mipCount)
+                if (textures[i].mipmapCount != descriptor.MipCount)
                 {
                     Debug.LogWarning($"Texture at index {i} has mipmap count {textures[i].mipmapCount}, " +
-                                    $"but expected {descriptor.mipCount}. This may result in faulty graphics.");
+                                    $"but expected {descriptor.MipCount}. This may result in faulty graphics.");
                 }
             }
 
-            if (textures.Length > m_Descriptor.count)
+            if (textures.Length > m_Descriptor.Count)
             {
-                Debug.LogWarning($"More textures ({textures.Length}) provided than array size ({m_Descriptor.count}). " +
-                                $"Only the first {m_Descriptor.count} will be used.");
+                Debug.LogWarning($"More textures ({textures.Length}) provided than array size ({m_Descriptor.Count}). " +
+                                $"Only the first {m_Descriptor.Count} will be used.");
             }
 
             try
             {
-                int texturesToCopy = Mathf.Min(textures.Length, m_Descriptor.count);
+                int texturesToCopy = Mathf.Min(textures.Length, m_Descriptor.Count);
                 for (int i = 0; i < texturesToCopy; i++)
                 {
-                    for (int j = 0; j < descriptor.mipCount; ++j)
+                    for (int j = 0; j < descriptor.MipCount; ++j)
                     {
                         try
                         {

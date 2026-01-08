@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -14,8 +15,18 @@ namespace Rayforge.Rendering.Helpers
         /// <param name="enableRandomWrite">Whether the texture allows random write access by a ComputeShader. Default is <c>true</c>.</param>
         /// <param name="msaaSamples">Number of MSAA samples. Default is 1 (no MSAA). High-Z buffers typically should not use MSAA.</param>
         /// <returns>A configured <see cref="RenderTextureDescriptor"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <paramref name="width"/> or <paramref name="height"/> is less than or equal to zero or if <paramref name="msaaSamples"/> is less than 1.
+        /// </exception>
         public static RenderTextureDescriptor DepthBuffer(int width, int height, bool enableRandomWrite = true, int msaaSamples = 1)
         {
+            if (width <= 0) 
+                throw new ArgumentOutOfRangeException(nameof(width), "Width must be > 0.");
+            if (height <= 0) 
+                throw new ArgumentOutOfRangeException(nameof(height), "Height must be > 0.");
+            if (msaaSamples < 1)
+                throw new ArgumentOutOfRangeException(nameof(msaaSamples), "MSAA samples must be at least 1.");
+
             return new RenderTextureDescriptor(width, height)
             {
                 colorFormat = RenderTextureFormat.Depth,
@@ -35,6 +46,9 @@ namespace Rayforge.Rendering.Helpers
         /// </summary>
         /// <param name="width">Texture width in pixels.</param>
         /// <param name="height">Texture height in pixels.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <paramref name="width"/> or <paramref name="height"/> is less than or equal to zero or if <paramref name="msaaSamples"/> is less than 1.
+        /// </exception>
         public static RenderTextureDescriptor DepthBufferFullScreen(bool enableRandomWrite = true, int msaaSamples = 1)
             => DepthBuffer(Screen.width, Screen.height, enableRandomWrite, msaaSamples);
     }

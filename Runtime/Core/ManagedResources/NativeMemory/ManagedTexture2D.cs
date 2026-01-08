@@ -1,5 +1,5 @@
 using Rayforge.ManagedResources.Abstractions;
-
+using System;
 using UnityEngine;
 
 namespace Rayforge.ManagedResources.NativeMemory
@@ -12,37 +12,61 @@ namespace Rayforge.ManagedResources.NativeMemory
     public sealed class ManagedTexture2D : ManagedBuffer<Texture2dDescriptor, Texture2D>
     {
         /// <summary>Width of the texture.</summary>
-        public int Width => m_Descriptor.width;
+        public int Width => m_Descriptor.Width;
 
         /// <summary>Height of the texture.</summary>
-        public int Height => m_Descriptor.height;
+        public int Height => m_Descriptor.Height;
 
         /// <summary>
-        /// Creates a managed Texture2D with the provided descriptor.
+        /// Private constructor used internally to wrap an existing <see cref="Texture2D"/> and descriptor.
         /// </summary>
-        public ManagedTexture2D(Texture2dDescriptor desc)
-            : base(CreateAndConfigureTexture(desc), desc)
+        /// <param name="texture">The internal Texture2D resource.</param>
+        /// <param name="descriptor">Descriptor defining the texture properties.</param>
+        private ManagedTexture2D(Texture2D texture, Texture2dDescriptor descriptor)
+            : base(texture, descriptor)
         { }
 
         /// <summary>
-        /// Instantiates the actual Texture2D object based on the descriptor.
-        /// Configures filter and wrap modes.
+        /// Creates a managed Texture2D from the given descriptor.
+        /// Validates the descriptor before allocation.
         /// </summary>
-        private static Texture2D CreateAndConfigureTexture(Texture2dDescriptor desc)
+        /// <param name="desc">Descriptor describing resolution, format, mipmap settings, and filtering.</param>
+        /// <returns>A new <see cref="ManagedTexture2D"/> instance.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if <see cref="Texture2dDescriptor.Width"/> or <see cref="Texture2dDescriptor.Height"/> is less than 1.
+        /// </exception>
+        public static ManagedTexture2D Create(Texture2dDescriptor desc)
         {
-            return new Texture2D(desc.width, desc.height, desc.colorFormat, desc.mipCount, desc.linear)
+            if (desc.Width <= 0)
+                throw new ArgumentOutOfRangeException(nameof(desc.Width), "Texture width must be greater than zero.");
+            if (desc.Height <= 0)
+                throw new ArgumentOutOfRangeException(nameof(desc.Height), "Texture height must be greater than zero.");
+
+            var texture = new Texture2D(
+                desc.Width,
+                desc.Height,
+                desc.ColorFormat,
+                desc.MipCount,
+                desc.Linear)
             {
-                filterMode = desc.filterMode,
-                wrapMode = desc.wrapMode
+                filterMode = desc.FilterMode,
+                wrapMode = desc.WrapMode
             };
+
+            return new ManagedTexture2D(texture, desc);
         }
 
         /// <summary>
         /// Releases the underlying texture. After this call, the texture is no longer valid.
-        /// Note: does not destroy the wrapper itself, enabling pooling or reuse.
         /// </summary>
         public override void Release()
-            => m_Buffer = null;
+        {
+            if (m_Buffer != null)
+            {
+                UnityEngine.Object.Destroy(m_Buffer);
+                m_Buffer = null;
+            }
+        }
 
         /// <summary>
         /// Compares managed textures by reference. Suitable for pooling or tracking.

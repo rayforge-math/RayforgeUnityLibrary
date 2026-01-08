@@ -14,7 +14,7 @@ namespace Rayforge.ManagedResources.Pooling
         /// </summary>
         public ManagedRenderTexturePool()
             : base(
-                createFunc: desc => new ManagedRenderTexture(desc, FilterMode.Bilinear, TextureWrapMode.Clamp),
+                createFunc: desc => ManagedRenderTexture.Create(desc, FilterMode.Bilinear, TextureWrapMode.Clamp),
                 releaseFunc: buffer => buffer.Release())
         { }
 

@@ -1,3 +1,4 @@
+using Rayforge.Diagnostics;
 using System;
 
 namespace Rayforge.ManagedResources.NativeMemory
@@ -8,23 +9,46 @@ namespace Rayforge.ManagedResources.NativeMemory
     /// </summary>
     public struct Texture2dArrayDescriptor : IEquatable<Texture2dArrayDescriptor>
     {
+        private Texture2dDescriptor descriptor;
+        private int count;
+
         /// <summary>
         /// Descriptor that defines width, height, format and sampling settings
         /// for each texture in the array.
         /// </summary>
-        public Texture2dDescriptor descriptor;
+        public Texture2dDescriptor Descriptor
+        {
+            get => descriptor;
+            set => descriptor.CopyFrom(value);
+        }
 
         /// <summary>
-        /// Number of texture layers in the array.
+        /// Number of texture layers in the array. Must be > 0.
         /// </summary>
-        public int count;
+        public int Count
+        {
+            get => count;
+            set
+            {
+                Assertions.AtLeastOne(value, "Count must be greater than zero.");
+                count = value;
+            }
+        }
+
+        /// <summary>
+        /// Copies all fields from another descriptor, applying assertions.
+        /// </summary>
+        public void CopyFrom(Texture2dArrayDescriptor other)
+        {
+            Descriptor = other.Descriptor; // Assertion triggers if invalid
+            Count = other.Count;           // Assertion triggers if <= 0
+        }
 
         /// <summary>
         /// Compares both the inner descriptor and the array layer count.
         /// </summary>
         public bool Equals(Texture2dArrayDescriptor other)
-            => descriptor.Equals(other.descriptor)
-            && count == other.count;
+            => descriptor.Equals(other.descriptor) && count == other.count;
 
         /// <summary>
         /// Ensures compatibility with object-based comparisons.
@@ -38,11 +62,9 @@ namespace Rayforge.ManagedResources.NativeMemory
         public override int GetHashCode()
             => (descriptor, count).GetHashCode();
 
-        /// <summary>Equality operator.</summary>
         public static bool operator ==(Texture2dArrayDescriptor left, Texture2dArrayDescriptor right)
             => left.Equals(right);
 
-        /// <summary>Inequality operator.</summary>
         public static bool operator !=(Texture2dArrayDescriptor left, Texture2dArrayDescriptor right)
             => !left.Equals(right);
     }

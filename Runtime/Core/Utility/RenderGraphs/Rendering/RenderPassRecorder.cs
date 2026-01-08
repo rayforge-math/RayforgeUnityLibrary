@@ -1,3 +1,4 @@
+using Rayforge.Diagnostics;
 using Rayforge.ShaderExtensions.Blitter;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -45,6 +46,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         public static void AddUnsafeRenderPass<TPassData>(RenderGraph renderGraph, string passName, TPassData passData)
             where TPassData : UnsafeRasterPassData<TPassData>, new()
         {
+            CheckPreRequesites(renderGraph, passData);
+
             using (var builder = renderGraph.AddUnsafePass(passName, out TPassData data))
             {
                 data.CopyFrom(passData);
@@ -95,6 +98,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         public static void AddRasterRenderPass<TPassData>(RenderGraph renderGraph, string passName, TPassData passData)
             where TPassData : RasterPassData<TPassData>, new()
         {
+            CheckPreRequesites(renderGraph, passData);
+
             using (var builder = renderGraph.AddRasterRenderPass(passName, out TPassData data))
             {
                 data.CopyFrom(passData);
@@ -141,6 +146,8 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         public static void AddComputePass<TPassData>(RenderGraph renderGraph, string passName, TPassData passData)
             where TPassData : ComputePassData<TPassData>, new()
         {
+            CheckPreRequesites(renderGraph, passData);
+
             using (var builder = renderGraph.AddComputePass(passName, out TPassData data))
             {
                 data.CopyFrom(passData);
@@ -174,6 +181,38 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                     );
                 });
             }
+        }
+
+        /// <summary>
+        /// Verifies basic preconditions for adding a RenderGraph pass.
+        /// </summary>
+        /// <remarks>
+        /// This method performs <b>development-time validation only</b>.
+        /// The checked conditions represent programmer errors (invalid API usage)
+        /// rather than recoverable runtime failures.
+        ///
+        /// Assertions are intentionally used instead of exceptions:
+        /// - These conditions must always be true in a correct render setup.
+        /// - Violations indicate a bug in pass construction or call order.
+        /// - In non-development builds, the checks are compiled out to avoid overhead.
+        /// </remarks>
+        /// <typeparam name="TPassData">
+        /// Type of the pass data being validated.
+        /// </typeparam>
+        /// <param name="renderGraph">
+        /// The <see cref="RenderGraph"/> instance the pass is added to.
+        /// Must not be <c>null</c>.
+        /// </param>
+        /// <param name="passData">
+        /// The pass data instance containing input/output configuration and metadata.
+        /// Must not be <c>null</c>.
+        /// </param>
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        private static void CheckPreRequesites<TPassData>(RenderGraph renderGraph, TPassData passData)
+        {
+            Assertions.NotNull(renderGraph, "RenderGraph must not be null.");
+            Assertions.NotNull(passData, "PassData must not be null.");
         }
     }
 }

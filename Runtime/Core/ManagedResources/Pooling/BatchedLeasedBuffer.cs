@@ -46,6 +46,9 @@ namespace Rayforge.ManagedResources.Pooling
         /// <param name="requestNewBufferFunc">
         /// Delegate invoked to request a new buffer of appropriate batch size if the current buffer is too small.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if <paramref name="onBatchCheckHandle"/> or <paramref name="requestNewBufferFunc"/> is null.
+        /// </exception>
         public BatchedLeasedBuffer(
             TBuffer buffer,
             LeasedReturnFunc onReturnHandle,
@@ -53,8 +56,10 @@ namespace Rayforge.ManagedResources.Pooling
             RequestBatchedBufferFunc requestNewBufferFunc)
             : base(buffer, onReturnHandle)
         {
-            m_OnBatchCheck = onBatchCheckHandle ?? throw new ArgumentNullException(nameof(onBatchCheckHandle));
-            m_RequestNewBuffer = requestNewBufferFunc ?? throw new ArgumentNullException(nameof(requestNewBufferFunc));
+            m_OnBatchCheck = onBatchCheckHandle ?? 
+                throw new ArgumentNullException(nameof(onBatchCheckHandle));
+            m_RequestNewBuffer = requestNewBufferFunc ?? 
+                throw new ArgumentNullException(nameof(requestNewBufferFunc));
         }
 
         /// <summary>

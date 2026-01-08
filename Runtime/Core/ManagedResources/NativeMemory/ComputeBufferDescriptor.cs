@@ -1,3 +1,4 @@
+using Rayforge.Diagnostics;
 using Rayforge.ManagedResources.Abstractions;
 using System;
 using UnityEngine;
@@ -11,13 +12,13 @@ namespace Rayforge.ManagedResources.NativeMemory
     public struct ComputeBufferDescriptor : IEquatable<ComputeBufferDescriptor>, IBatchingDescriptor
     {
         /// <summary>Number of elements in the buffer.</summary>
-        public int count;
+        private int count;
 
         /// <summary>Stride in bytes per element.</summary>
-        public int stride;
+        private int stride;
 
         /// <summary>Type of the ComputeBuffer (Default, Structured, etc.).</summary>
-        public ComputeBufferType type;
+        private ComputeBufferType type;
 
         /// <summary>
         /// Number of elements requested in the buffer. 
@@ -26,7 +27,29 @@ namespace Rayforge.ManagedResources.NativeMemory
         public int Count
         {
             get => count;
-            set => count = value;
+            set
+            {
+                Assertions.AtLeastOne(value, "Count must be > 0.");
+                count = value;
+            }
+        }
+
+        /// <summary>Stride in bytes per element. Must be > 0.</summary>
+        public int Stride
+        {
+            get => stride;
+            set
+            {
+                Assertions.AtLeastOne(value, "Stride must be greater than zero.");
+                stride = value;
+            }
+        }
+
+        /// <summary>Type of the ComputeBuffer.</summary>
+        public ComputeBufferType Type
+        {
+            get => type;
+            set => type = value;
         }
 
         /// <summary>

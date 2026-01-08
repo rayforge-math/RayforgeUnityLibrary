@@ -10,8 +10,35 @@ namespace Rayforge.Diagnostics
     public static class Assertions
     {
         /// <summary>
-        /// Basic boolean assertion.
-        /// Logs an error in the Unity editor or throws an exception in development builds if the condition is false.
+        /// Lightweight assertion utility intended for validating internal invariants
+        /// and unexpected states that should never occur during correct program execution.
+        ///
+        /// Assertions are meant for:
+        /// - Detecting logic errors during development
+        /// - Catching invalid internal states caused by programmer mistakes
+        /// - Flagging conditions that "should not happen", but do not fundamentally break
+        ///   program correctness or leave the system in an unrecoverable state
+        ///
+        /// Assertions are NOT a replacement for exceptions.
+        /// Use exceptions for:
+        /// - Invalid input or violated API contracts
+        /// - Failed allocations or resource creation
+        /// - Any error that must be handled or propagated to calling code
+        ///
+        /// Behavior:
+        /// - In the Unity Editor: logs an error with source location information
+        /// - In Development Builds: throws an exception to fail fast
+        /// - In Release Builds: stripped entirely
+        ///
+        /// Examples of appropriate use:
+        /// - A pooled buffer being returned twice
+        /// - A descriptor mismatch that should be impossible by construction
+        /// - A state machine entering an invalid transition
+        ///
+        /// Examples of inappropriate use (use exceptions instead):
+        /// - Failure to allocate GPU or system memory
+        /// - Invalid user input or public API misuse
+        /// - Any error that leaves the system in an undefined or broken state
         /// </summary>
         /// <param name="condition">The boolean condition to validate. Must be true to pass.</param>
         /// <param name="error">Error message to display if the assertion fails.</param>
@@ -90,7 +117,7 @@ namespace Rayforge.Diagnostics
         /// <summary>
         /// Validates that an integer value is greater than or equal to zero.
         /// </summary>
-        /// <param name="value">The integer value to check. Must be > 0.</param>
+        /// <param name="value">The integer value to check. Must be >= 0.</param>
         /// <param name="error">Optional custom error message.</param>
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
         [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
@@ -102,13 +129,37 @@ namespace Rayforge.Diagnostics
         /// <summary>
         /// Validates that a floating-point value is greater than or equal to zero.
         /// </summary>
-        /// <param name="value">The float value to check. Must be > 0.</param>
+        /// <param name="value">The float value to check. Must be >= 0.</param>
         /// <param name="error">Optional custom error message.</param>
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
         [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
         public static void AtLeastZero(float value, string error = null)
         {
             Assert(value > 0f || Mathf.Approximately(value, 0f), error ?? "Value must be greater than or equal to 0.");
+        }
+
+        /// <summary>
+        /// Validates that an integer value is greater than zero.
+        /// </summary>
+        /// <param name="value">The integer value to check. Must be > 0.</param>
+        /// <param name="error">Optional custom error message.</param>
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        public static void AtLeastOne(int value, string error = null)
+        {
+            Assert(value > 0, error ?? "Value must be greater than 0.");
+        }
+
+        /// <summary>
+        /// Validates that a floating-point value is greater than zero.
+        /// </summary>
+        /// <param name="value">The float value to check. Must be > 0.</param>
+        /// <param name="error">Optional custom error message.</param>
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
+        public static void AtLeastOne(float value, string error = null)
+        {
+            Assert(value > 1f || Mathf.Approximately(value, 1f), error ?? "Value must be greater than 0.");
         }
 
         /// <summary>

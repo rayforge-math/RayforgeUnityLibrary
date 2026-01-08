@@ -1,3 +1,4 @@
+using Rayforge.Diagnostics;
 using Rayforge.ManagedResources.Abstractions;
 using System;
 using Unity.Collections;
@@ -9,27 +10,36 @@ namespace Rayforge.ManagedResources.NativeMemory
     /// </summary>
     public struct SystemBufferDescriptor : IEquatable<SystemBufferDescriptor>, IBatchingDescriptor
     {
-        /// <summary>Number of elements in the buffer.</summary>
-        public int count;
-
-        /// <summary>Allocator used for the NativeArray.</summary>
-        public Allocator allocator;
+        private int count;
+        private Allocator allocator;
 
         /// <summary>
-        /// Number of elements requested in the buffer. 
-        /// The pool may use this value along with the batch size to determine actual allocation size.
+        /// Number of elements in the buffer. Must be > 0.
         /// </summary>
         public int Count
         {
             get => count;
-            set => count = value;
+            set
+            {
+                Assertions.AtLeastOne(value, "Count must be greater than zero.");
+                count = value;
+            }
+        }
+
+        /// <summary>
+        /// Allocator used for the NativeArray.
+        /// </summary>
+        public Allocator Allocator
+        {
+            get => allocator;
+            set => allocator = value;
         }
 
         /// <summary>
         /// Compares two descriptors for equality.
         /// </summary>
         public bool Equals(SystemBufferDescriptor other)
-            => count == other.count && allocator == other.allocator;
+            => Count == other.Count && Allocator == other.Allocator;
 
         /// <summary>
         /// Overrides object.Equals to match IEquatable implementation.
@@ -41,13 +51,11 @@ namespace Rayforge.ManagedResources.NativeMemory
         /// Provides a hash code for use in dictionaries or hash sets.
         /// </summary>
         public override int GetHashCode()
-            => (count, allocator).GetHashCode();
+            => (Count, Allocator).GetHashCode();
 
-        /// <summary>Equality operator.</summary>
         public static bool operator ==(SystemBufferDescriptor lhs, SystemBufferDescriptor rhs)
             => lhs.Equals(rhs);
 
-        /// <summary>Inequality operator.</summary>
         public static bool operator !=(SystemBufferDescriptor lhs, SystemBufferDescriptor rhs)
             => !lhs.Equals(rhs);
     }

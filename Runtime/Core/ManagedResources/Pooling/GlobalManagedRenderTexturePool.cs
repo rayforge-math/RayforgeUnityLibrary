@@ -15,7 +15,7 @@ namespace Rayforge.ManagedResources.Pooling
         static GlobalManagedRenderTexturePool()
         {
             m_Pool = new LeasedBufferPool<RenderTextureDescriptorWrapper, ManagedRenderTexture>(
-                createFunc: desc => new ManagedRenderTexture(desc, FilterMode.Bilinear, TextureWrapMode.Clamp),
+                createFunc: desc => ManagedRenderTexture.Create(desc, FilterMode.Bilinear, TextureWrapMode.Clamp),
                 releaseFunc: buffer => buffer.Release()
             );
         }
