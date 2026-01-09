@@ -59,7 +59,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                 }
                 builder.UseTexture(data.Destination, AccessFlags.Write);
 
-                builder.SetRenderFunc((TPassData data, UnsafeGraphContext ctx) =>
+                builder.SetRenderFunc(static (TPassData data, UnsafeGraphContext ctx) =>
                 {
                     var passMeta = data.PassMeta;
 
@@ -110,7 +110,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                 }
                 builder.SetRenderAttachment(data.Destination, 0, AccessFlags.Write);
 
-                builder.SetRenderFunc((TPassData data, RasterGraphContext ctx) =>
+                builder.SetRenderFunc(static (TPassData data, RasterGraphContext ctx) =>
                 {
                     var passMeta = data.PassMeta;
 
@@ -157,7 +157,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                 }
                 builder.UseTexture(data.Destination.handle, AccessFlags.Write);
 
-                builder.SetRenderFunc((TPassData data, ComputeGraphContext ctx) =>
+                builder.SetRenderFunc(static (TPassData data, ComputeGraphContext ctx) =>
                 {
                     var passMeta = data.PassMeta;
 

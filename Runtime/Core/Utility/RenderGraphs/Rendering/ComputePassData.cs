@@ -19,6 +19,18 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
 
         /// <summary>
         /// Optional callback invoked before dispatch to bind resources, set constants, etc.
+        /// <para>
+        /// <b>Performance note:</b> To avoid heap allocations per frame and to comply with RenderGraph's
+        /// GC-free design, this callback should be assigned using a <c>static</c> lambda whenever possible.
+        /// </para>
+        /// <para>
+        /// Using non-static lambdas or capturing local variables will create a closure object on the heap,
+        /// which can result in per-frame allocations and temporary GC pressure.
+        /// </para>
+        /// <para>
+        /// This design follows Unity's RenderGraph pattern, where all internal pass data and dispatch
+        /// logic is value-type-based and heap-free, ensuring predictable frame timings and zero GC overhead.
+        /// </para>
         /// </summary>
         public Action<ComputeCommandBuffer, TDerived> UpdateCallback { get; set; }
 

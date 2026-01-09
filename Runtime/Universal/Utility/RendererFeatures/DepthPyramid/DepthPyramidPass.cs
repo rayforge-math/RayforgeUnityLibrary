@@ -167,9 +167,9 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 m_PassData.sourceRes = resMipN0;
                 m_PassData.destRes = resMipN1;
                 m_PassData.PassMeta = passMeta;
-                m_PassData.UpdateCallback = (cmd, data) =>
+                m_PassData.UpdateCallback = static (cmd, data) =>
                 {
-                    var shader = m_PassData.PassMeta.Shader;
+                    var shader = data.PassMeta.Shader;
                     cmd.SetComputeVectorParam(shader, k_SourceResId, data.sourceRes);
                     cmd.SetComputeVectorParam(shader, k_DestResId, data.destRes);
                 };
