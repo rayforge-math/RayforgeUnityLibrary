@@ -6,16 +6,28 @@ using Rayforge.Rendering.Passes;
 namespace Rayforge.Utility.RenderGraphs.Rendering
 {
     /// <summary>
-    /// Specialized pass data for compute passes.
-    /// Provides convenience setters for input and destination textures using <see cref="TextureHandle"/>.
+    /// Base class for compute RenderGraph pass input/output configuration and dispatch metadata.
+    /// Contains the destination texture(s) and the core compute pass metadata.
     /// </summary>
     /// <remarks>
     /// This class is declared as <c>partial</c> to allow projects to extend compute pass data
-    /// with additional per-pass fields (e.g. debug flags, shared constants, frame indices)
-    /// without modifying the core framework or introducing additional inheritance layers.
+    /// with additional fields that should be present on all compute passes of this type
+    /// (e.g. debug flags, frame indices, shared constants, or platform-specific parameters),
+    /// without requiring inheritance or modification of the core framework.
     /// 
     /// Extensions should remain data-only and must not introduce execution logic.
+    /// 
+    /// Any per-dispatch logic should instead be implemented via <see cref="UpdateCallback"/>,
+    /// which receives the fully populated pass data instance and allows binding of resources
+    /// and constants without capturing external state.
+    /// 
+    /// This design follows Unity's RenderGraph principles:
+    /// pass data is immutable during execution, value-type based, and free of per-frame
+    /// heap allocations, ensuring predictable performance and zero-GC behavior.
     /// </remarks>
+    /// <typeparam name="TDerived">
+    /// Concrete pass data type (CRTP) enabling type-safe callbacks and extensions without allocations.
+    /// </typeparam>
     public abstract partial class ComputePassData<TDerived> : PassDataBase<TDerived, ComputePassMeta, TextureMeta>
         where TDerived : PassDataBase<TDerived, ComputePassMeta, TextureMeta>
     {

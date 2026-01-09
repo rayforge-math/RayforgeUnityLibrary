@@ -17,11 +17,19 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// without requiring inheritance or modification of the core framework.
     /// 
     /// Extensions should remain data-only and must not introduce execution logic.
+    /// 
+    /// Any per-dispatch logic should instead be implemented via <see cref="UpdateCallback"/>,
+    /// which receives the fully populated pass data instance and allows binding of resources
+    /// and constants without capturing external state.
     /// </remarks>
-    /// <typeparam name="TMeta">The type of the pass metadata (e.g., <see cref="RasterPassMeta"/>).</typeparam>
-    public abstract partial class RasterPassDataBase<TDerived, TMeta, TCmd> : PassDataBase<TDerived, TMeta, TextureHandle>
-        where TDerived : PassDataBase<TDerived, TMeta, TextureHandle>
-        where TMeta : struct
+    /// <typeparam name="TDerived">
+    /// Concrete pass data type (CRTP) enabling type-safe callbacks and extensions without allocations.
+    /// </typeparam>
+    /// <typeparam name="TCmd">
+    /// Command buffer type used to record rendering commands for this pass.
+    /// </typeparam>
+    public abstract partial class RasterPassDataBase<TDerived, TCmd> : PassDataBase<TDerived, RasterPassMeta, TextureHandle>
+        where TDerived : PassDataBase<TDerived, RasterPassMeta, TextureHandle>
         where TCmd : BaseCommandBuffer
     {
         /// <summary>
@@ -48,20 +56,23 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     }
 
     /// <summary>
-    /// Raster pass data using <see cref="RasterPassMeta"/> as the pass metadata.
-    /// Provides typed access to render target configuration and material-based rendering.
+    /// Raster pass data using <see cref="RasterPassMeta"/> and a safe <see cref="RasterCommandBuffer"/>.
     /// </summary>
-    /// <typeparam name="TDerived">The derived pass data type for type-safe callbacks.</typeparam>
-    public abstract partial class RasterPassData<TDerived> : RasterPassDataBase<TDerived, RasterPassMeta, RasterCommandBuffer>
+    /// <typeparam name="TDerived">
+    /// Concrete raster pass data type enabling type-safe callbacks without allocations.
+    /// </typeparam>
+    public abstract partial class RasterPassData<TDerived> : RasterPassDataBase<TDerived, RasterCommandBuffer>
         where TDerived : RasterPassData<TDerived>
     { }
 
     /// <summary>
-    /// Raster pass data for execution with <see cref="UnsafeCommandBuffer"/>.
-    /// Uses <see cref="RasterPassMeta"/> for low-level command buffer access.
+    /// Raster pass data using <see cref="RasterPassMeta"/> with low-level
+    /// <see cref="UnsafeCommandBuffer"/> access.
     /// </summary>
-    /// <typeparam name="TDerived">The derived pass data type for type-safe callbacks.</typeparam>
-    public abstract partial class UnsafeRasterPassData<TDerived> : RasterPassDataBase<TDerived, RasterPassMeta, UnsafeCommandBuffer>
+    /// <typeparam name="TDerived">
+    /// Concrete raster pass data type enabling type-safe callbacks without allocations.
+    /// </typeparam>
+    public abstract partial class UnsafeRasterPassData<TDerived> : RasterPassDataBase<TDerived, UnsafeCommandBuffer> 
         where TDerived : UnsafeRasterPassData<TDerived>
     { }
 }
