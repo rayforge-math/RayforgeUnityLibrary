@@ -29,7 +29,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// Command buffer type used to record rendering commands for this pass.
     /// </typeparam>
     public abstract partial class RasterPassDataBase<TDerived, TCmd> : PassDataBase<TDerived, RasterPassMeta, TextureHandle>
-        where TDerived : PassDataBase<TDerived, RasterPassMeta, TextureHandle>
+        where TDerived : RasterPassDataBase<TDerived, TCmd>
         where TCmd : BaseCommandBuffer
     {
         /// <summary>

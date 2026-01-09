@@ -29,7 +29,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// Concrete pass data type (CRTP) enabling type-safe callbacks and extensions without allocations.
     /// </typeparam>
     public abstract partial class ComputePassData<TDerived> : PassDataBase<TDerived, ComputePassMeta, TextureMeta>
-        where TDerived : PassDataBase<TDerived, ComputePassMeta, TextureMeta>
+        where TDerived : ComputePassData<TDerived>
     {
         /// <summary>
         /// Optional callback invoked before dispatch to bind resources, set constants, etc.
