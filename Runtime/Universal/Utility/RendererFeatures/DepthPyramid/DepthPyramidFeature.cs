@@ -12,35 +12,74 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
     /// </summary>
     public class DepthPyramidFeature : ScriptableRendererFeature
     {
+        /// <summary>
+        /// Maximum number of mip levels supported by the depth pyramid.
+        /// </summary>
         public const int MipCountMax = DepthPyramidPass.MipCountMax;
 
+        /// <summary>
+        /// Name of the shader used to generate the depth pyramid.
+        /// </summary>
         private const string k_ShaderName = "DepthPyramid";
+
+        /// <summary>
+        /// Full path to the depth pyramid shader within the project's resources.
+        /// </summary>
         private static readonly string k_FullShaderName = ResourcePaths.ShaderResourceFolder + k_ShaderName;
 
         /// <summary>
-        /// The type of input the render pass requires from the camera.
+        /// The type of input required from the camera for this render pass.
+        /// Depth pyramid generation requires the camera's depth texture.
         /// </summary>
         private const ScriptableRenderPassInput k_PassInput = ScriptableRenderPassInput.Depth;
 
+        /// <summary>
+        /// Determines at which point in the camera's render pipeline the pass is injected.
+        /// For the depth pyramid, it should be AfterRenderingPrePasses to ensure
+        /// the camera depth texture is available but before lighting passes that may consume it.
+        /// </summary>
         [SerializeField, InspectorName("Injection Point")]
+        [Tooltip(
+            "When the depth pyramid pass should be executed in the camera render pipeline.\n" +
+            "- Recommended: AfterRenderingPrePasses, so the camera's depth texture is available.\n" +
+            "- Not later (e.g., AfterRenderingOpaques), because other passes like SSAO, shadows, or post-processing " +
+            "may need the depth pyramid earlier in the frame.\n" +
+            "- Injecting too early may fail if the depth texture is not yet created."
+        )]
         private RenderPassEvent m_InjectionPoint = RenderPassEvent.AfterRenderingPrePasses;
 
+        /// <summary>
+        /// Number of mip levels to generate for the depth pyramid.
+        /// Must be between 1 and <see cref="MipCountMax"/>.
+        /// </summary>
         [Range(1, MipCountMax), SerializeField, InspectorName("Mip Count")]
+        [Tooltip("Number of mip levels to generate for the depth pyramid (1 = full resolution only).")]
         public int m_MipCount = 8;
 
 #if UNITY_EDITOR
         [Header("Debug")]
+
+        /// <summary>
+        /// Toggle to visualize the depth pyramid in the editor for debugging purposes.
+        /// </summary>
+        [Tooltip("Toggle to visualize the generated depth pyramid in the editor.")]
         public bool showDepthPyramid = false;
+
+        /// <summary>
+        /// The mip level to visualize when debugging.
+        /// Only used if <see cref="showDepthPyramid"/> is enabled.
+        /// </summary>
         [Range(0, MipCountMax - 1)]
+        [Tooltip("Which mip level of the depth pyramid to display for debugging.")]
         public int mipLevel = 0;
 #endif
 
+#if UNITY_EDITOR
         public void OnValidate()
         {
-#if UNITY_EDITOR
             mipLevel = Math.Clamp(mipLevel, 0, m_MipCount - 1);
-#endif
         }
+#endif
 
         /// <summary>
         /// The render pass injection point in the pipeline.  
