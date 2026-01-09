@@ -3,6 +3,7 @@ using Rayforge.ShaderExtensions.Blitter;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Windows;
 
 namespace Rayforge.Utility.RenderGraphs.Rendering
 {
@@ -61,16 +62,15 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                 builder.SetRenderFunc((TPassData data, UnsafeGraphContext ctx) =>
                 {
                     var passMeta = data.PassMeta;
-                    var rasterMeta = passMeta.Meta;
 
-                    MaterialPropertyBlock propertyBlock = rasterMeta.PropertyBlock;
+                    MaterialPropertyBlock propertyBlock = passMeta.PropertyBlock;
                     if (propertyBlock == null)
                     {
                         s_PropertyBlock.Clear();
                         propertyBlock = s_PropertyBlock;
                     }
 
-                    passMeta.UpdateCallback?.Invoke(ctx.cmd, propertyBlock, data);
+                    data.UpdateCallback?.Invoke(ctx.cmd, propertyBlock, data);
 
                     CommandBuffer unsafeCmd = CommandBufferHelpers.GetNativeCommandBuffer(ctx.cmd);
                     unsafeCmd.SetRenderTarget(data.Destination, 0, CubemapFace.Unknown, 0);
@@ -81,7 +81,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                     }
                     propertyBlock.SetVector(BlitParameters.BlitScaleBiasId, Vector2.one);
 
-                    unsafeCmd.DrawProcedural(Matrix4x4.identity, rasterMeta.Material, rasterMeta.PassId, MeshTopology.Triangles, 3, 1, propertyBlock);
+                    unsafeCmd.DrawProcedural(Matrix4x4.identity, passMeta.Material, passMeta.PassId, MeshTopology.Triangles, 3, 1, propertyBlock);
                 });
             }
         }
@@ -113,16 +113,15 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                 builder.SetRenderFunc((TPassData data, RasterGraphContext ctx) =>
                 {
                     var passMeta = data.PassMeta;
-                    var rasterMeta = passMeta.Meta;
 
-                    MaterialPropertyBlock propertyBlock = rasterMeta.PropertyBlock;
+                    MaterialPropertyBlock propertyBlock = passMeta.PropertyBlock;
                     if (propertyBlock == null)
                     {
                         s_PropertyBlock.Clear();
                         propertyBlock = s_PropertyBlock;
                     }
 
-                    data.PassMeta.UpdateCallback?.Invoke(ctx.cmd, propertyBlock, data);
+                    data.UpdateCallback?.Invoke(ctx.cmd, propertyBlock, data);
 
                     foreach (var input in data.PassInput)
                     {
@@ -130,7 +129,7 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                     }
                     propertyBlock.SetVector(BlitParameters.BlitScaleBiasId, Vector2.one);
 
-                    ctx.cmd.DrawProcedural(Matrix4x4.identity, rasterMeta.Material, rasterMeta.PassId, MeshTopology.Triangles, 3, 1, propertyBlock);
+                    ctx.cmd.DrawProcedural(Matrix4x4.identity, passMeta.Material, passMeta.PassId, MeshTopology.Triangles, 3, 1, propertyBlock);
                 });
             }
         }
@@ -161,23 +160,22 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
                 builder.SetRenderFunc((TPassData data, ComputeGraphContext ctx) =>
                 {
                     var passMeta = data.PassMeta;
-                    var computeMeta = passMeta.Meta;
 
-                    passMeta.UpdateCallback?.Invoke(ctx.cmd, data);
+                    data.UpdateCallback?.Invoke(ctx.cmd, data);
 
                     foreach (var input in data.PassInput)
                     {
-                        ctx.cmd.SetComputeTextureParam(computeMeta.Shader, computeMeta.KernelIndex, input.propertyId, input.handle);
+                        ctx.cmd.SetComputeTextureParam(passMeta.Shader, passMeta.KernelIndex, input.propertyId, input.handle);
                     }
                     var dest = data.Destination;
-                    ctx.cmd.SetComputeTextureParam(computeMeta.Shader, computeMeta.KernelIndex, dest.propertyId, dest.handle);
-
+                    ctx.cmd.SetComputeTextureParam(passMeta.Shader, passMeta.KernelIndex, dest.propertyId, dest.handle);
+                    
                     ctx.cmd.DispatchCompute(
-                        computeMeta.Shader,
-                        computeMeta.KernelIndex,
-                        computeMeta.ThreadGroupsX,
-                        computeMeta.ThreadGroupsY,
-                        computeMeta.ThreadGroupsZ
+                        passMeta.Shader,
+                        passMeta.KernelIndex,
+                        passMeta.ThreadGroupsX,
+                        passMeta.ThreadGroupsY,
+                        passMeta.ThreadGroupsZ
                     );
                 });
             }

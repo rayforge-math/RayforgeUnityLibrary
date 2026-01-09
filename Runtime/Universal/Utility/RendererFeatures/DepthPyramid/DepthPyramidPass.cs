@@ -1,6 +1,7 @@
 using Rayforge.Diagnostics;
 using Rayforge.ManagedResources.Abstractions;
 using Rayforge.Rendering.Helpers;
+using Rayforge.Rendering.Passes;
 using Rayforge.Utility.RenderGraphs.Collections;
 using Rayforge.Utility.RenderGraphs.Helpers;
 using Rayforge.Utility.RenderGraphs.Rendering;
@@ -22,11 +23,13 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
         private class DepthPyramidPassData : ComputePassData<DepthPyramidPassData>
         {
-            DownsampleHighZParams passParam;
+            public Vector2 sourceRes;
+            public Vector2 destRes;
 
             public override void CopyUserData(DepthPyramidPassData other)
             {
-                passParam = other.passParam;
+                sourceRes = other.sourceRes;
+                destRes = other.destRes;
             }
         }
 
@@ -35,16 +38,8 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         private static readonly int k_SourceId = Shader.PropertyToID("_Source");
         private static readonly int k_DestId = Shader.PropertyToID("_Dest");
 
-        // Bright pass parameters
-        [StructLayout(LayoutKind.Sequential)]
-        private struct DownsampleHighZParams : IComputeData<DownsampleHighZParams>
-        {
-            public Vector2Int sourceRes;
-            public Vector2Int destRes;
-
-            public DownsampleHighZParams RawData => this;
-        }
-        private static readonly int k_DownsampleHighZParamsId = Shader.PropertyToID("_DownsampleHighZParams");
+        private static readonly int k_SourceResId = Shader.PropertyToID("_SourceRes");
+        private static readonly int k_DestResId = Shader.PropertyToID("_DestRes");
 
         private Vector2Int m_LastResolution = new Vector2Int(-1, -1);
         private int m_DownsampleMipCount = 2;
@@ -59,18 +54,19 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 
         private const string k_DepthTextureMipName = "";
 
-        private readonly DepthPyramidPassData k_PassData = new();
+        private DepthPyramidPassData m_PassData = new DepthPyramidPassData();
+        private ComputePassMeta m_PassMeta;
 
         public DepthPyramidPass(ComputeShader shader)
         {
             Assertions.NotNull(shader);
 
-            var hasKernel = shader.HasKernel(k_DownsampleHighZKernelName);
-            Assertions.IsTrue(hasKernel);
-            if (!hasKernel) return;
+            m_PassMeta = new ComputePassMeta(shader, k_DownsampleHighZKernelName);
+            if (m_PassMeta.KernelIndex < 0)
+                return;
+            m_PassData = new DepthPyramidPassData();
 
-            var kernelId = shader.FindKernel(k_DownsampleHighZKernelName);
-
+            m_DepthPyramidDescriptor = DefaultDescriptors.DepthBufferFullScreen();
             k_DepthPyramidHandles = new RTHandleMipChain((
                 ref RTHandle handle,
                 RenderTextureDescriptor desc,
@@ -78,11 +74,6 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
             {
                 return RenderingUtils.ReAllocateHandleIfNeeded(ref handle, desc);
             });
-
-            m_DepthPyramidDescriptor = DefaultDescriptors.DepthBufferFullScreen();
-
-            k_PassData.PassMeta = new(shader, kernelId);
-
         }
 
         public void Dispose()
@@ -163,12 +154,28 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 mipN0 = mipN1;
                 mipN1 = k_DepthPyramidHandles[i].ToRenderGraphHandle(renderGraph);
 
-                if (!mipN0.IsValid() || !mipN1.IsValid())
+                if (!mipN1.IsValid())
                     break;
 
-                k_PassData.SetInput(mipN0, k_SourceId);
-                k_PassData.SetDestination(mipN1);
-                RenderPassRecorder.AddComputePass(renderGraph, k_DownsampleHighZKernelName, k_PassData);
+                Vector2Int resMipN0 = k_DepthPyramidHandles.GetDefaultMipResolution(i);
+                Vector2Int resMipN1 = k_DepthPyramidHandles.GetDefaultMipResolution(i + 1);
+
+                var passMeta = m_PassMeta;
+                passMeta.ThreadGroupsX = Mathf.CeilToInt(resMipN1.x / 8.0f);
+                passMeta.ThreadGroupsY = Mathf.CeilToInt(resMipN1.y / 8.0f);
+
+                m_PassData.SetInput(mipN0, k_SourceId);
+                m_PassData.SetDestination(mipN1, k_DestId);
+                m_PassData.sourceRes = resMipN0;
+                m_PassData.destRes = resMipN1;
+                m_PassData.PassMeta = passMeta;
+                m_PassData.UpdateCallback = (cmd, data) =>
+                {
+                    var shader = m_PassData.PassMeta.Shader;
+                    cmd.SetComputeVectorParam(shader, k_SourceResId, data.sourceRes);
+                    cmd.SetComputeVectorParam(shader, k_DestResId, data.destRes);
+                };
+                RenderPassRecorder.AddComputePass(renderGraph, k_DownsampleHighZKernelName, m_PassData);
             }
 
 

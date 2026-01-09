@@ -1,5 +1,4 @@
 using Rayforge.Diagnostics;
-using System;
 using UnityEngine;
 
 namespace Rayforge.Rendering.Passes
@@ -10,7 +9,7 @@ namespace Rayforge.Rendering.Passes
     /// Ensures that all values are valid for a dispatch.
     /// Assertions are used in editor/dev builds for developer feedback.
     /// </summary>
-    public struct ComputeMeta
+    public struct ComputePassMeta
     {
         private ComputeShader shader;
         private int kernelIndex;
@@ -87,11 +86,11 @@ namespace Rayforge.Rendering.Passes
         /// Construct from shader + kernel name.
         /// Assertions ensure developer mistakes are caught.
         /// </summary>
-        public ComputeMeta(
+        public ComputePassMeta(
             ComputeShader shader,
             string kernelName,
-            int threadGroupsX,
-            int threadGroupsY,
+            int threadGroupsX = 1,
+            int threadGroupsY = 1,
             int threadGroupsZ = 1)
         {
             this.shader = null;
@@ -116,11 +115,11 @@ namespace Rayforge.Rendering.Passes
         /// Construct from shader + kernel index.
         /// Assertions ensure developer mistakes are caught.
         /// </summary>
-        public ComputeMeta(
+        public ComputePassMeta(
             ComputeShader shader,
             int kernelIndex,
-            int threadGroupsX,
-            int threadGroupsY,
+            int threadGroupsX = 1,
+            int threadGroupsY = 1,
             int threadGroupsZ = 1)
         {
             this.shader = null;
@@ -146,5 +145,17 @@ namespace Rayforge.Rendering.Passes
             ThreadGroupsX > 0 &&
             ThreadGroupsY > 0 &&
             ThreadGroupsZ > 0;
+
+        /// <summary>
+        /// Returns a human-readable string describing this compute pass metadata.
+        /// Includes shader name, kernel index, and thread group counts.
+        /// </summary>
+        /// <returns>A string representation of the compute pass meta.</returns>
+        public override string ToString()
+        {
+            string shaderName = Shader != null ? Shader.name : "<null>";
+            return $"ComputePassMeta: Shader='{shaderName}', KernelIndex={KernelIndex}, " +
+                   $"ThreadGroups=({ThreadGroupsX}, {ThreadGroupsY}, {ThreadGroupsZ})";
+        }
     }
 }

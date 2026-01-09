@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,13 +21,113 @@ namespace Rayforge.Rendering.Collections
     /// <typeparam name="TData">Optional user data passed to the creation function for context or parameters.</typeparam>
     public class UnsafeMipChain<THandle, TData> : MipChain<THandle, TData>
     {
+        private Vector2Int[] m_MipResolutionCache;
+        private static readonly Vector2Int k_EmptyCacheEntry = Vector2Int.zero;
+
         /// <summary>
         /// Initializes the mip chain with a handle creation function.
         /// </summary>
         /// <param name="createFunc">Function to create each mip level.</param>
         public UnsafeMipChain(CreateFunction createFunc)
             : base(createFunc)
-        { }
+        {
+            m_MipResolutionCache = Array.Empty<Vector2Int>();
+
+            m_CreateFunc = (ref THandle handle, RenderTextureDescriptor desc, int mipLevel, TData data) =>
+            {
+                bool created = createFunc(ref handle, desc, mipLevel, data);
+
+                if (created)
+                {
+                    if (m_MipResolutionCache.Length <= mipLevel)
+                        Array.Resize(ref m_MipResolutionCache, mipLevel + 1);
+
+                    m_MipResolutionCache[mipLevel] = new Vector2Int(desc.width, desc.height);
+                }
+
+                return created;
+            };
+        }
+
+        /// <summary>
+        /// Retrieves the resolution of the specified mip level, using the cached value if available.
+        /// </summary>
+        /// <param name="mipLevel">
+        /// Index of the mip level to query (0 = base level, 1 = first mip, etc.).
+        /// </param>
+        /// <returns>
+        /// The <see cref="Vector2Int"/> representing the width and height of the mip level.
+        /// <para/>
+        /// - If the mip level was previously created in this <see cref="UnsafeMipChain"/>, 
+        ///   the cached real resolution is returned.
+        /// - Otherwise, the theoretical default resolution from the base <see cref="MipChain"/> is returned.
+        /// </returns>
+        /// <remarks>
+        /// This method ensures that the resolution always reflects the last created state for each mip level.
+        /// Caching all created mip resolutions avoids repeatedly recalculating or reading them from the descriptor,
+        /// and guarantees consistency for any runtime queries.
+        /// </remarks>
+        public Vector2Int GetCachedMipResolution(int mipLevel)
+        {
+            if (mipLevel < m_MipResolutionCache.Length)
+                return m_MipResolutionCache[mipLevel];
+
+            return GetDefaultMipResolution(mipLevel);
+        }
+
+        /// <summary>
+        /// Resets or resizes the mip resolution cache starting at a specific index.
+        /// </summary>
+        /// <param name="startIndex">
+        /// The mip level index at which to start resetting or truncating the cache.
+        /// Must be between 0 and the current cache length.
+        /// </param>
+        /// <param name="count">
+        /// The number of entries to reset.  
+        /// <list type="bullet">
+        /// <item>If <c>0</c> or greater than the remaining elements, the cache is truncated at <paramref name="startIndex"/>.</item>
+        /// <item>Otherwise, only the specified range is reset to <c>k_EmptyCacheEntry</c>.</item>
+        /// </list>
+        /// </param>
+        /// <remarks>
+        /// - Truncating the cache does not preserve any entries beyond <paramref name="startIndex"/>.
+        /// - Resetting individual entries sets them to <c>k_EmptyCacheEntry</c>, typically <c>Vector2Int.zero</c>,
+        ///   which causes <see cref="GetCachedMipResolution"/> to fall back to the default resolution.
+        /// </remarks>
+        public void ResetResolutionCache(int startIndex, int count = 0)
+        {
+            if (startIndex < 0 || startIndex > m_MipResolutionCache.Length)
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
+
+            int remaining = m_MipResolutionCache.Length - startIndex;
+
+            // Truncate cache if count is 0 or exceeds remaining entries
+            if (count == 0 || count >= remaining)
+            {
+                if (startIndex == 0)
+                {
+                    // Reset entire cache
+                    m_MipResolutionCache = Array.Empty<Vector2Int>();
+                }
+                else
+                {
+                    // Truncate cache at startIndex
+                    Array.Resize(ref m_MipResolutionCache, startIndex);
+                }
+            }
+            else
+            {
+                // Reset only the specified range to empty
+                for (int i = startIndex; i < startIndex + count; i++)
+                    m_MipResolutionCache[i] = k_EmptyCacheEntry;
+            }
+        }
+
+        /// <summary>
+        /// Completely resets the mip resolution cache.
+        /// </summary>
+        public void ResetResolutionCache()
+            => ResetResolutionCache(0, 0);
 
         /// <summary>
         /// Creates only the first mip level from the specified <see cref="DescriptorMipChain"/>.

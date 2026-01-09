@@ -1,7 +1,5 @@
 using Rayforge.Diagnostics;
-using System;
 using UnityEngine;
-using static UnityEditor.ShaderData;
 
 namespace Rayforge.Rendering.Passes
 {
@@ -13,7 +11,7 @@ namespace Rayforge.Rendering.Passes
     /// Designed for use with RenderGraph or low-level raster pass execution.
     /// Assertions are used to catch developer mistakes; production will not throw.
     /// </summary>
-    public struct RasterMeta
+    public struct RasterPassMeta
     {
         private Material material;
         private int passId;
@@ -61,7 +59,7 @@ namespace Rayforge.Rendering.Passes
         /// Constructs a <see cref="RasterMeta"/> from a <see cref="Material"/> and an explicit pass index.
         /// Uses property setters so assertions are triggered for invalid values.
         /// </summary>
-        public RasterMeta(Material material, int passId, MaterialPropertyBlock propertyBlock = null)
+        public RasterPassMeta(Material material, int passId, MaterialPropertyBlock propertyBlock = null)
         {
             this.material = null;
             this.passId = 0;
@@ -77,7 +75,7 @@ namespace Rayforge.Rendering.Passes
         /// Resolves the pass index automatically using <see cref="Material.FindPass"/>.
         /// Uses property setters and assertions for validation.
         /// </summary>
-        public RasterMeta(Material material, string passName, MaterialPropertyBlock propertyBlock = null)
+        public RasterPassMeta(Material material, string passName, MaterialPropertyBlock propertyBlock = null)
         {
             this.material = null;
             this.passId = 0;
@@ -103,12 +101,17 @@ namespace Rayforge.Rendering.Passes
         public bool IsValid => Material != null && PassId >= 0;
 
         /// <summary>
-        /// Returns a string representation of the raster pass.
+        /// Returns a human-readable string describing this raster pass metadata.
+        /// Includes material name, pass index, validity, and whether a property block is set.
         /// </summary>
+        /// <returns>A string representation of the raster pass meta.</returns>
         public override string ToString()
         {
             string matName = Material != null ? Material.name : "<null>";
-            return $"{matName} [Pass {PassId}]";
+            string propBlockInfo = PropertyBlock != null ? "with PropertyBlock" : "no PropertyBlock";
+            string validInfo = IsValid ? "Valid" : "Invalid";
+
+            return $"RasterPassMeta: Material='{matName}', PassId={PassId}, {propBlockInfo}, {validInfo}";
         }
     }
 }

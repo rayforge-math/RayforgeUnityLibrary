@@ -3,7 +3,6 @@ using Rayforge.Rendering.Collections.Helpers;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using static Codice.Client.Common.EventTracking.TrackFeatureUseEvent.Features.DesktopGUI.Filters;
 
 namespace Rayforge.Rendering.Collections
 {
@@ -37,10 +36,10 @@ namespace Rayforge.Rendering.Collections
         public delegate void GenerateFunction(THandle src, THandle dest, int mipLevel);
 
         protected THandle[] m_Handles;
-        private CreateFunction m_CreateFunc;
+        protected CreateFunction m_CreateFunc;
 
         private Vector2Int m_BaseResolution = new Vector2Int(-1 , -1);
-        private static readonly Func<int, Vector2Int, Vector2Int> k_MipResFunc = MipChainHelpers.DefaultMipResolution;
+        private static readonly Func<int, Vector2Int, Vector2Int> m_CalculateMipResFunc = MipChainHelpers.DefaultMipResolution;
 
         /// <summary>Read-only access to the handles.</summary>
         public IReadOnlyList<THandle> Handles => m_Handles ?? Array.Empty<THandle>();
@@ -67,6 +66,19 @@ namespace Rayforge.Rendering.Collections
             m_CreateFunc = createFunc;
             m_Handles = Array.Empty<THandle>();
         }
+
+        /// <summary>
+        /// Computes the theoretical resolution of the specified mip level, based on the base resolution.
+        /// </summary>
+        /// <param name="mipLevel">
+        /// Index of the mip level to compute (0 = base level, 1 = first mip, etc.).
+        /// </param>
+        /// <returns>
+        /// A <see cref="Vector2Int"/> representing the width and height of the mip level
+        /// as defined by the configured mip resolution calculation function (default / theoretical).
+        /// </returns>
+        public Vector2Int GetDefaultMipResolution(int mipLevel)
+            => m_CalculateMipResFunc(mipLevel, m_BaseResolution);
 
         /// <summary>
         /// Creates all mip levels from the specified <see cref="DescriptorMipChain"/>.
@@ -131,7 +143,7 @@ namespace Rayforge.Rendering.Collections
             bool anyCreated = false;
             for (int i = 0; i < mipCount; i++)
             {
-                var mipRes = k_MipResFunc.Invoke(i, m_BaseResolution);
+                var mipRes = GetDefaultMipResolution(i);
                 descriptor.width = mipRes.x;
                 descriptor.height = mipRes.y;
                 anyCreated |= Create(i, descriptor, data);

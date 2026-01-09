@@ -1,4 +1,7 @@
-﻿using UnityEngine.Rendering.RenderGraphModule;
+﻿using System;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
+using Rayforge.Rendering.Passes;
 
 namespace Rayforge.Utility.RenderGraphs.Rendering
 {
@@ -6,9 +9,19 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// Specialized pass data for compute passes.
     /// Provides convenience setters for input and destination textures using <see cref="TextureHandle"/>.
     /// </summary>
-    public abstract partial class ComputePassData<TDerived> : PassDataBase<TDerived, ComputePassMeta<TDerived>, TextureMeta>
-        where TDerived : PassDataBase<TDerived, ComputePassMeta<TDerived>, TextureMeta>
+    public abstract partial class ComputePassData<TDerived> : PassDataBase<TDerived, ComputePassMeta, TextureMeta>
+        where TDerived : PassDataBase<TDerived, ComputePassMeta, TextureMeta>
     {
+        /// <summary>
+        /// Core compute metadata (shader, kernel, thread groups).
+        /// </summary>
+        public ComputePassMeta Meta { get; set; }
+
+        /// <summary>
+        /// Optional callback invoked before dispatch to bind resources, set constants, etc.
+        /// </summary>
+        public Action<ComputeCommandBuffer, TDerived> UpdateCallback { get; set; }
+
         /// <summary>
         /// Sets the destination texture using a RenderGraph handle and optional shader property ID.
         /// </summary>
