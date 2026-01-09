@@ -1,5 +1,6 @@
 using Rayforge.Diagnostics;
 using Rayforge.ManagedResources.Abstractions;
+using Rayforge.Rendering.Collections.Helpers;
 using Rayforge.Rendering.Helpers;
 using Rayforge.Rendering.Passes;
 using Rayforge.Utility.RenderGraphs.Collections;
@@ -98,9 +99,11 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
         }
 #endif
 
-        private void CheckAndUpdateTextures(Vector2Int resolution)
+        private void CheckAndUpdateTextures(Vector2Int baseRes)
         {
-            if(m_LastResolution != resolution)
+            var resolution = MipChainHelpers.DefaultMipResolution(1, baseRes);
+
+            if (m_LastResolution != resolution)
             {
                 m_DepthPyramidDescriptor.width = resolution.x;
                 m_DepthPyramidDescriptor.height = resolution.y;
@@ -124,14 +127,6 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
             }
         }
 
-        private void UdpateSettings(UniversalCameraData cameraData)
-        {
-            var camera = cameraData.camera;
-            var resolution = new Vector2Int { x = camera.pixelWidth, y = camera.pixelHeight };
-
-            CheckAndUpdateTextures(resolution);
-        }
-
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
             UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
@@ -145,11 +140,14 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 return;
             }
 
-            UdpateSettings(cameraData);
+            var camera = cameraData.camera;
+            var baseRes = new Vector2Int { x = camera.pixelWidth, y = camera.pixelHeight }; ;
+
+            CheckAndUpdateTextures(baseRes);
 
             TextureHandle mipN0 = default;
             TextureHandle mipN1 = srcDepthBuffer;
-            for(int i = 0; i < k_DepthPyramidHandles.MipCount - 1; ++i)
+            for(int i = 0; i < k_DepthPyramidHandles.MipCount; ++i)
             {
                 mipN0 = mipN1;
                 mipN1 = k_DepthPyramidHandles[i].ToRenderGraphHandle(renderGraph);
@@ -157,8 +155,8 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                 if (!mipN1.IsValid())
                     break;
 
-                Vector2Int resMipN0 = k_DepthPyramidHandles.GetDefaultMipResolution(i);
-                Vector2Int resMipN1 = k_DepthPyramidHandles.GetDefaultMipResolution(i + 1);
+                Vector2Int resMipN0 = MipChainHelpers.DefaultMipResolution(i, baseRes);
+                Vector2Int resMipN1 = MipChainHelpers.DefaultMipResolution(i + 1, baseRes);
 
                 var passMeta = m_PassMeta;
                 passMeta.ThreadGroupsX = Mathf.CeilToInt(resMipN1.x / 8.0f);
@@ -175,21 +173,9 @@ namespace Rayforge.Utility.RendererFeatures.DepthPyramid
                     cmd.SetComputeVectorParam(shader, k_SourceResId, data.sourceRes);
                     cmd.SetComputeVectorParam(shader, k_DestResId, data.destRes);
                 };
+
                 RenderPassRecorder.AddComputePass(renderGraph, k_DownsampleHighZKernelName, m_PassData);
             }
-
-
-            /*
-            // initial blit
-            var dispatchMeta = new ComputeDispatchMeta(k_KernelMeta, Mathf.CeilToInt(m_LastResolution.x / 8.0f), Mathf.CeilToInt(m_LastResolution.y / 8.0f), 1);
-
-
-            k_PassData.AdditionalData = new ComputePassMeta(dispatchMeta);
-            k_PassData.SetInput(k_SourceId, srcDepthBuffer);
-            k_PassData.Destination = new TextureMeta { propertyId = k_DestId, handle = destHandle };
-
-            RenderPassRecorder.AddComputePass(renderGraph, k_DownsampleHighZKernelName, k_PassData);
-            */
 
 #if UNITY_EDITOR
             if (debug)

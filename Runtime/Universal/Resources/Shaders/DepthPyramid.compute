@@ -31,8 +31,8 @@ RWTexture2D<float> _Dest;
  */
 cbuffer _DownsampleHighZParams
 {
-    float2 _SourceRes;
-    float2 _DestRes;
+    uint2 _SourceRes;
+    uint2 _DestRes;
 };
 
 /**
@@ -47,17 +47,15 @@ cbuffer _DownsampleHighZParams
 [numthreads(8, 8, 1)]
 void DownsampleHighZ(uint3 id : SV_DispatchThreadID)
 {
-    if ((uint) _DestRes.x <= id.x || (uint) _DestRes.y <= id.y)
+    if (id.x < _DestRes.x || id.y < _DestRes.y)
         return;
 
     uint2 base = id.xy * 2;
     
-    uint2 sourceRes = uint2(_SourceRes);
-
     uint2 c00 = base;
-    uint2 c10 = min(base + uint2(1, 0), sourceRes - 1);
-    uint2 c01 = min(base + uint2(0, 1), sourceRes - 1);
-    uint2 c11 = min(base + uint2(1, 1), sourceRes - 1);
+    uint2 c10 = min(base + uint2(1, 0), _SourceRes - 1);
+    uint2 c01 = min(base + uint2(0, 1), _SourceRes - 1);
+    uint2 c11 = min(base + uint2(1, 1), _SourceRes - 1);
 
     float4 samples;
     samples.x = _Source[c00].r;
@@ -67,15 +65,10 @@ void DownsampleHighZ(uint3 id : SV_DispatchThreadID)
 
     float result;
     
-#if defined(UNITY_REVERSED_Z)
     // Reversed-Z: nearer = larger value, so take the minimum
     result = Min4(samples);
-#else
-    // Regular Z: nearer = smaller value, so take the maximum
-    result = Max4(samples);
-#endif
 
-    _Dest[id.xy] = 1;//   result;
+    _Dest[id.xy] = result;
 }
 
 /**
