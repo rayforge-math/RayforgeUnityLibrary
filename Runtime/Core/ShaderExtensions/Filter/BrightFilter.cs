@@ -1,4 +1,4 @@
-namespace Rayforge.ShaderExtensions.Filter
+namespace Rayforge.Core.ShaderExtensions.Filter
 {
     /// <summary>
     /// Brightness filter modes for threshold-based luminance filtering.

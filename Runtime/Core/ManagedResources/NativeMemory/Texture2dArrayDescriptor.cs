@@ -1,7 +1,7 @@
-using Rayforge.Diagnostics;
+using Rayforge.Core.Diagnostics;
 using System;
 
-namespace Rayforge.ManagedResources.NativeMemory
+namespace Rayforge.Core.ManagedResources.NativeMemory
 {
     /// <summary>
     /// Descriptor for a 2D texture array, including the base texture descriptor

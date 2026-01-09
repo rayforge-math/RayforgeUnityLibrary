@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Rayforge.EditorExtensions.Attributes.Abstractions
+namespace Rayforge.Core.EditorExtensions.Attributes.Abstractions
 {
     public interface IConditionalField
     {

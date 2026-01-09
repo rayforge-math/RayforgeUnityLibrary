@@ -1,10 +1,10 @@
-﻿using Rayforge.Rendering.Abstractions;
-using Rayforge.Rendering.Collections.Helpers;
+﻿using Rayforge.Core.Rendering.Abstractions;
+using Rayforge.Core.Rendering.Collections.Helpers;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Rayforge.Rendering.Collections
+namespace Rayforge.Core.Rendering.Collections
 {
     /// <summary>
     /// Represents a chain of handles corresponding to mip levels of a texture.

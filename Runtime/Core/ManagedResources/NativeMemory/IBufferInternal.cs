@@ -1,4 +1,4 @@
-namespace Rayforge.ManagedResources.NativeMemory
+namespace Rayforge.Core.ManagedResources.NativeMemory
 {
     /// <summary>
     /// Interface providing access to the underlying internal buffer/resource.

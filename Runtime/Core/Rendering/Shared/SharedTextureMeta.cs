@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Rayforge.Rendering.Shared
+namespace Rayforge.Core.Rendering.Shared
 {
     /// <summary>
     /// Immutable metadata describing a globally shared shader texture.

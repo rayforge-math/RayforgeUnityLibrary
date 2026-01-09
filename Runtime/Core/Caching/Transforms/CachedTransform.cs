@@ -1,9 +1,9 @@
 using System;
 using UnityEngine;
 
-using Rayforge.Caching.Abstractions;
+using Rayforge.Core.Caching.Abstractions;
 
-namespace Rayforge.Caching.Transforms
+namespace Rayforge.Core.Caching.Transforms
 {
     /// <summary>
     /// A cached wrapper around a Unity <see cref="Transform"/> that stores position, rotation, and scale locally

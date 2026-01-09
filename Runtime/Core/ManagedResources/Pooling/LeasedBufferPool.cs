@@ -1,6 +1,6 @@
 using System;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// Simple buffer pool that returns standard leased buffers.

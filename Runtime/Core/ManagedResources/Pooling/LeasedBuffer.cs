@@ -1,7 +1,7 @@
-using Rayforge.Diagnostics;
+using Rayforge.Core.Diagnostics;
 using System;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// Base class for all leased buffer wrappers. Handles lifetime management,

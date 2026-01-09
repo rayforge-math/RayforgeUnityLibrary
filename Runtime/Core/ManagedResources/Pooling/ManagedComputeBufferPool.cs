@@ -1,6 +1,6 @@
-using Rayforge.ManagedResources.NativeMemory;
+using Rayforge.Core.ManagedResources.NativeMemory;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// Specialized managed compute buffer pool with batching support.

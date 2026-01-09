@@ -1,4 +1,4 @@
-namespace Rayforge.Rendering.Colors
+namespace Rayforge.Core.Rendering.Colors
 {
     /// <summary>
     /// Color sources that can be reliably queried via Unity API.

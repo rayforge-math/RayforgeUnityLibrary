@@ -1,10 +1,10 @@
-using Rayforge.EditorExtensions.Attributes.Abstractions;
-using Rayforge.EditorExtensions.Attributes.Helpers;
+using Rayforge.Core.EditorExtensions.Attributes.Abstractions;
+using Rayforge.Core.EditorExtensions.Attributes.Helpers;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-namespace Rayforge.EditorExtensions.Attributes
+namespace Rayforge.Core.EditorExtensions.Attributes
 {
     [System.AttributeUsage(System.AttributeTargets.Field)]
     public class ConditionalFieldsAttribute : PropertyAttribute, IConditionalField

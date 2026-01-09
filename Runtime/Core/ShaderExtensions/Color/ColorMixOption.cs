@@ -1,4 +1,4 @@
-namespace Rayforge.ShaderExtensions.Color
+namespace Rayforge.Core.ShaderExtensions.Color
 {
     /// <summary>
     /// Specifies the different modes for mixing colors in shaders or post-processing operations.

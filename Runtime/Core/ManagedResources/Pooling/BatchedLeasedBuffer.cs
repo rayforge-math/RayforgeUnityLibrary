@@ -1,6 +1,6 @@
 using System;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// Represents a leased buffer that supports batch validation within a pooled context.

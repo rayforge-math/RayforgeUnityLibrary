@@ -1,4 +1,4 @@
-namespace Rayforge.Utility.VolumeComponents.Abstractions
+namespace Rayforge.Core.Utility.VolumeComponents.Abstractions
 {
     public delegate void NotifyDelegate<T>(IObservableParameter<T> sender);
 

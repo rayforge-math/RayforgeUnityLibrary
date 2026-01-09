@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Rayforge.Rendering.Helpers
+namespace Rayforge.Core.Rendering.Helpers
 {
     public static class DefaultDescriptors
     {

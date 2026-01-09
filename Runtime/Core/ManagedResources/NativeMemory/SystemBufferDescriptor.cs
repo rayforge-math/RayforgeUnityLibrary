@@ -1,9 +1,9 @@
-using Rayforge.Diagnostics;
-using Rayforge.ManagedResources.Abstractions;
+using Rayforge.Core.Diagnostics;
+using Rayforge.Core.ManagedResources.Abstractions;
 using System;
 using Unity.Collections;
 
-namespace Rayforge.ManagedResources.NativeMemory
+namespace Rayforge.Core.ManagedResources.NativeMemory
 {
     /// <summary>
     /// Descriptor for a native system buffer (NativeArray), including size and allocator.

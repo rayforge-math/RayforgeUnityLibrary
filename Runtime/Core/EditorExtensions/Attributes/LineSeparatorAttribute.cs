@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Rayforge.EditorExtensions.Attributes
+namespace Rayforge.Core.EditorExtensions.Attributes
 {
     [System.AttributeUsage(System.AttributeTargets.Field)]
     public class LineSeparatorAttribute : PropertyAttribute

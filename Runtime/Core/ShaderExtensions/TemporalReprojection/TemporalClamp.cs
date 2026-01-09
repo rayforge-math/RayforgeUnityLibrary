@@ -1,6 +1,6 @@
-﻿using Rayforge.ShaderExtensions.Filter;
+﻿using Rayforge.Core.ShaderExtensions.Filter;
 
-namespace Rayforge.ShaderExtensions.TemporalReprojection
+namespace Rayforge.Core.ShaderExtensions.TemporalReprojection
 {
     /// <summary>
     /// Defines the color clamping modes used in temporal anti-aliasing (TAA) shaders.

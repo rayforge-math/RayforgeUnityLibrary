@@ -1,4 +1,4 @@
-namespace Rayforge.Common.LowLevel
+namespace Rayforge.Core.Common.LowLevel
 {
     /// <summary>
     /// Lightweight bit field utility for managing boolean flags packed into a <see cref="uint"/>.

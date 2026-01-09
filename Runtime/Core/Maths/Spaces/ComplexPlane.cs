@@ -4,7 +4,7 @@ using Unity.Mathematics;
 
 using static Unity.Mathematics.math;
 
-namespace Rayforge.Maths.Spaces
+namespace Rayforge.Core.Maths.Spaces
 {
     [BurstCompile]
     public struct Complex

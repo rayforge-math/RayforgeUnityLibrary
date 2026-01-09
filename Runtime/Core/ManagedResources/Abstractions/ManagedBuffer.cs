@@ -1,9 +1,9 @@
-using Rayforge.ManagedResources.NativeMemory;
-using Rayforge.ManagedResources.Pooling;
+using Rayforge.Core.ManagedResources.NativeMemory;
+using Rayforge.Core.ManagedResources.Pooling;
 
 using System;
 
-namespace Rayforge.ManagedResources.Abstractions
+namespace Rayforge.Core.ManagedResources.Abstractions
 {
     /// <summary>
     /// Base class for managed buffers, handling lifecycle and providing access

@@ -1,4 +1,4 @@
-using Rayforge.ManagedResources.Abstractions;
+using Rayforge.Core.ManagedResources.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -6,7 +6,7 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering.RenderGraphModule;
 
-namespace Rayforge.ManagedResources.NativeMemory
+namespace Rayforge.Core.ManagedResources.NativeMemory
 {
     /// <summary>
     /// Managed wrapper around Unity's <see cref="ComputeBuffer"/> that handles allocation, data upload, and cleanup.

@@ -1,8 +1,8 @@
-using Rayforge.Diagnostics;
+using Rayforge.Core.Diagnostics;
 using System;
 using System.Collections.Generic;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// Base class for buffer pools that manage reusable buffer objects and hand them out as lease wrappers.

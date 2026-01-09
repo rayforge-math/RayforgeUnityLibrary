@@ -1,9 +1,9 @@
 ﻿using System;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
-using Rayforge.Rendering.Passes;
+using Rayforge.Core.Rendering.Passes;
 
-namespace Rayforge.Utility.RenderGraphs.Rendering
+namespace Rayforge.Core.Utility.RenderGraphs.Rendering
 {
     /// <summary>
     /// Base class for compute RenderGraph pass input/output configuration and dispatch metadata.

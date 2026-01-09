@@ -1,6 +1,6 @@
 using UnityEngine.Rendering;
 
-namespace Rayforge.Utility.VolumeComponents.Helpers
+namespace Rayforge.Core.Utility.VolumeComponents.Helpers
 {
     /// <summary>
     /// Provides utility functions for accessing volume components from the global <see cref="VolumeManager"/> stack.

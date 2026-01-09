@@ -1,8 +1,8 @@
-using Rayforge.ManagedResources.Abstractions;
+using Rayforge.Core.ManagedResources.Abstractions;
 using System;
 using Unity.Collections;
 
-namespace Rayforge.ManagedResources.NativeMemory
+namespace Rayforge.Core.ManagedResources.NativeMemory
 {
     /// <summary>
     /// Managed wrapper around a <see cref="NativeArray{TType}"/>.

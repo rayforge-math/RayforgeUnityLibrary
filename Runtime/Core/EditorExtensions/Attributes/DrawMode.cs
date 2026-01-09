@@ -1,4 +1,4 @@
-namespace Rayforge.EditorExtensions.Attributes
+namespace Rayforge.Core.EditorExtensions.Attributes
 {
     public enum DrawMode
     {

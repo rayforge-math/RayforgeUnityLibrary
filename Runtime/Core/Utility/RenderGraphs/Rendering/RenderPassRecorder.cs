@@ -1,11 +1,11 @@
-using Rayforge.Diagnostics;
-using Rayforge.ShaderExtensions.Blitter;
+using Rayforge.Core.Diagnostics;
+using Rayforge.Core.ShaderExtensions.Blitter;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Windows;
 
-namespace Rayforge.Utility.RenderGraphs.Rendering
+namespace Rayforge.Core.Utility.RenderGraphs.Rendering
 {
     /// <summary>
     /// Provides helper functions for recording RenderGraph passes in a way that follows

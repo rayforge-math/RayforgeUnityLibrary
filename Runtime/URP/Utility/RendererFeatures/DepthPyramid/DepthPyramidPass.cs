@@ -1,13 +1,11 @@
-using Rayforge.Diagnostics;
-using Rayforge.ManagedResources.Abstractions;
-using Rayforge.Rendering.Collections.Helpers;
-using Rayforge.Rendering.Helpers;
-using Rayforge.Rendering.Passes;
-using Rayforge.Utility.RenderGraphs.Collections;
-using Rayforge.Utility.RenderGraphs.Helpers;
-using Rayforge.Utility.RenderGraphs.Rendering;
+using Rayforge.Core.Diagnostics;
+using Rayforge.Core.Rendering.Collections.Helpers;
+using Rayforge.Core.Rendering.Helpers;
+using Rayforge.Core.Rendering.Passes;
+using Rayforge.Core.Utility.RenderGraphs.Collections;
+using Rayforge.Core.Utility.RenderGraphs.Helpers;
+using Rayforge.Core.Utility.RenderGraphs.Rendering;
 using System;
-using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -15,7 +13,7 @@ using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 using static UnityEngine.Rendering.RenderGraphModule.Util.RenderGraphUtils;
 
-namespace Rayforge.Utility.RendererFeatures.DepthPyramid
+namespace Rayforge.URP.Utility.RendererFeatures.DepthPyramid
 {
     public class DepthPyramidPass : ScriptableRenderPass, IDisposable
     {

@@ -1,10 +1,10 @@
-using Rayforge.Rendering.Collections;
+using Rayforge.Core.Rendering.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Rayforge.Common;
+using Rayforge.Core.Common;
 using System;
 
-namespace Rayforge.Utility.RenderGraphs.Collections
+namespace Rayforge.Core.Utility.RenderGraphs.Collections
 {
     /// <summary>
     /// Represents a chain of <see cref="RTHandle"/>s corresponding to mip levels of a texture

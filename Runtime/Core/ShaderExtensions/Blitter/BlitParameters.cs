@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Rayforge.ShaderExtensions.Blitter
+namespace Rayforge.Core.ShaderExtensions.Blitter
 {
     /// <summary>
     /// Provides shader property identifiers for common blit parameters used when drawing

@@ -1,11 +1,11 @@
-using Rayforge.Common;
-using Rayforge.Diagnostics;
-using Rayforge.Rendering.Collections;
+using Rayforge.Core.Common;
+using Rayforge.Core.Diagnostics;
+using Rayforge.Core.Rendering.Collections;
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Rayforge.Utility.RenderGraphs.Collections
+namespace Rayforge.Core.Utility.RenderGraphs.Collections
 {
     /// <summary>
     /// Manages a pair of persistent render targets (history handles) for frame-over-frame operations.

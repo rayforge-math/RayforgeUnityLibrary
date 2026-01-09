@@ -1,6 +1,6 @@
 using System;
 
-namespace Rayforge.Utility.VolumeComponents.Parameters.Helpers
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers
 {
     public static class ArrayExtensions
     {

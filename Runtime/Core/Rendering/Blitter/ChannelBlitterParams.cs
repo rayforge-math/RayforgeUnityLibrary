@@ -1,8 +1,8 @@
 using UnityEngine;
-using Rayforge.ManagedResources.Abstractions;
+using Rayforge.Core.ManagedResources.Abstractions;
 using System.Runtime.InteropServices;
 
-namespace Rayforge.Rendering.Blitter
+namespace Rayforge.Core.Rendering.Blitter
 {
     /// <summary>
     /// Parameter struct for channel blitting operations.

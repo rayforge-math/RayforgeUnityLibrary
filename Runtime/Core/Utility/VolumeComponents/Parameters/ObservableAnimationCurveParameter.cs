@@ -1,11 +1,11 @@
-using Rayforge.Utility.VolumeComponents.Abstractions;
+using Rayforge.Core.Utility.VolumeComponents.Abstractions;
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-using static Rayforge.Utility.VolumeComponents.Parameters.Helpers.KeyframeExtensions;
+using static Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers.KeyframeExtensions;
 
-namespace Rayforge.Utility.VolumeComponents.Parameters
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters
 {
     [System.Serializable]
     public class ObservableAnimationCurveParameter : AnimationCurveParameter, IObservableParameter<AnimationCurve>, IEquatable<ObservableAnimationCurveParameter>

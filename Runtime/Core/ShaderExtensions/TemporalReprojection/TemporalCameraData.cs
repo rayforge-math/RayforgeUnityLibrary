@@ -1,8 +1,8 @@
 using UnityEngine;
 
-using Rayforge.Common.Sync;
+using Rayforge.Core.Common.Sync;
 
-namespace Rayforge.ShaderExtensions.TemporalReprojection
+namespace Rayforge.Core.ShaderExtensions.TemporalReprojection
 {
     /// <summary>
     /// Provides per-frame temporal camera data for use in reprojection-based effects

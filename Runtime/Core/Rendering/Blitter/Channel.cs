@@ -1,4 +1,4 @@
-namespace Rayforge.Rendering.Blitter
+namespace Rayforge.Core.Rendering.Blitter
 {
     /// <summary>
     /// Represents a single color channel in a texture.

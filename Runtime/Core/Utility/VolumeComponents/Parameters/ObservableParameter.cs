@@ -1,4 +1,4 @@
-namespace Rayforge.Utility.VolumeComponents.Parameters
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters
 {
     [System.Serializable]
     public class ObservableParameter<T> : ObservableBase<T>

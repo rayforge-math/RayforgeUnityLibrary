@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace Rayforge.Diagnostics
+namespace Rayforge.Core.Diagnostics
 {
     /// <summary>
     /// Provides editor/development-only runtime assertions for validating values, objects, and delegates.

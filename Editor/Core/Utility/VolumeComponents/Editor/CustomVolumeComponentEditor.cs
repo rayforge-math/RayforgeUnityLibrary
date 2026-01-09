@@ -1,5 +1,5 @@
-using Rayforge.EditorExtensions.Attributes;
-using Rayforge.EditorExtensions.Attributes.Abstractions;
+using Rayforge.Core.EditorExtensions.Attributes;
+using Rayforge.Core.EditorExtensions.Attributes.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +9,7 @@ using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Rayforge.Utility.VolumeComponents.Editor
+namespace Rayforge.Core.Utility.VolumeComponents.Editor
 {
     public abstract class CustomVolumeComponentEditor<Tcomp> : VolumeComponentEditor
         where Tcomp : VolumeComponent

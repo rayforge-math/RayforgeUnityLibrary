@@ -9,7 +9,7 @@ using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 #endif
 
-namespace Rayforge.Utility.RenderGraphs.Example
+namespace Rayforge.Core.Utility.RenderGraphs.Example
 {
 #if UNITY_PIPELINE_URP
     public class TestRenderPass : ScriptableRenderPass

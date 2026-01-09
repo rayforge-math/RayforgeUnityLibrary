@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
-using Rayforge.Utility.VolumeComponents.Parameters.Helpers;
+using Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers;
 
-using static Rayforge.Utility.VolumeComponents.Parameters.Helpers.ArrayExtensions;
+using static Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers.ArrayExtensions;
 
-namespace Rayforge.Utility.VolumeComponents.Parameters
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters
 {
     [System.Serializable]
     public class NoInterpObservableListParameter<T> : NoInterpObservableParameter<ArrayWrapper<T>>

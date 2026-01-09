@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Rayforge.Maths.Helpers
+namespace Rayforge.Core.Maths.Helpers
 {
     public static class GaussHelpers
     {

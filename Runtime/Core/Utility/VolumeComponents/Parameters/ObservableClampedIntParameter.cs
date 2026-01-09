@@ -1,8 +1,8 @@
-using Rayforge.Utility.VolumeComponents.Abstractions;
+using Rayforge.Core.Utility.VolumeComponents.Abstractions;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 
-namespace Rayforge.Utility.VolumeComponents.Parameters
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters
 {
     [System.Serializable]
     public class ObservableClampedIntParameter : ClampedIntParameter, IObservableParameter<int>

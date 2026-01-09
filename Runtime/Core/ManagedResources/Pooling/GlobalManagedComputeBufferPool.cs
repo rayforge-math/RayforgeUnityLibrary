@@ -1,8 +1,8 @@
-using Rayforge.ManagedResources.NativeMemory;
+using Rayforge.Core.ManagedResources.NativeMemory;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// Global static pool for <see cref="ManagedComputeBuffer"/> instances.

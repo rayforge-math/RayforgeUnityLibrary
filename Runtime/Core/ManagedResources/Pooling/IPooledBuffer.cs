@@ -1,6 +1,6 @@
 using System;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// Interface for pooled GPU/graphics resources.

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Rayforge.Utility.VolumeComponents.Parameters.Helpers
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers
 {
     public class ListParameterComparer<T> : IEqualityComparer<T>
         where T : IEquatable<T>

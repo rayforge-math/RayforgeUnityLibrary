@@ -1,6 +1,6 @@
 using UnityEngine.Rendering;
 
-namespace Rayforge.Common
+namespace Rayforge.Core.Common
 {
     /// <summary>
     /// Detects which Scriptable Render Pipeline (SRP) is currently active at runtime.

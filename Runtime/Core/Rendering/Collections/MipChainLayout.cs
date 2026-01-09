@@ -1,9 +1,9 @@
 using System;
 using UnityEngine;
 
-using Rayforge.Rendering.Collections.Helpers;
+using Rayforge.Core.Rendering.Collections.Helpers;
 
-namespace Rayforge.Rendering.Collections
+namespace Rayforge.Core.Rendering.Collections
 {
     /// <summary>
     /// Represents the layout of a mip chain, independent of any rendering backend.

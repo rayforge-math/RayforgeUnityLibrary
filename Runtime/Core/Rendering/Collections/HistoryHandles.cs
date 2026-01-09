@@ -1,4 +1,4 @@
-﻿namespace Rayforge.Rendering.Collections
+﻿namespace Rayforge.Core.Rendering.Collections
 {
     /// <summary>
     /// Manages a pair of persistent render targets (history handles) for frame-over-frame operations.

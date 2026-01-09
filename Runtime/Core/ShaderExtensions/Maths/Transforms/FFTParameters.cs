@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using UnityEngine;
 
-namespace Rayforge.ShaderExtensions.Maths.Transforms
+namespace Rayforge.Core.ShaderExtensions.Maths.Transforms
 {
     /// <summary>
     /// Contains global parameters for FFT operations used in the HLSL shader include.

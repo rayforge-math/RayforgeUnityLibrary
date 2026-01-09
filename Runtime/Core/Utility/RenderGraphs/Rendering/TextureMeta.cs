@@ -1,6 +1,6 @@
 using UnityEngine.Rendering.RenderGraphModule;
 
-namespace Rayforge.Utility.RenderGraphs.Rendering
+namespace Rayforge.Core.Utility.RenderGraphs.Rendering
 {
     /// <summary>
     /// Represents a texture input bound to a pass, associating a shader property slot

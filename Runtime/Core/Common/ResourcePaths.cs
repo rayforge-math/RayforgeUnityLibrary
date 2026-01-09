@@ -1,4 +1,4 @@
-namespace Rayforge.Common
+namespace Rayforge.Core.Common
 {
     public static class ResourcePaths
     {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Rayforge.Rendering.Abstractions
+namespace Rayforge.Core.Rendering.Abstractions
 {
 	/// <summary>
 	/// Represents a collection of renderable handles, providing both read-only access

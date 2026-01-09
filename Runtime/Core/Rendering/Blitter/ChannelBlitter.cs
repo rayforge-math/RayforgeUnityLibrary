@@ -1,12 +1,12 @@
-using Rayforge.Common;
-using Rayforge.ManagedResources.NativeMemory;
-using Rayforge.ManagedResources.NativeMemory.Helpers;
-using Rayforge.ShaderExtensions.Blitter;
+using Rayforge.Core.Common;
+using Rayforge.Core.ManagedResources.NativeMemory;
+using Rayforge.Core.ManagedResources.NativeMemory.Helpers;
+using Rayforge.Core.ShaderExtensions.Blitter;
 using System;
 using UnityEngine;
 using static UnityEngine.Resources;
 
-namespace Rayforge.Rendering.Blitter
+namespace Rayforge.Core.Rendering.Blitter
 {
     /// <summary>
     /// Utility class for performing channel-wise blits from a source texture

@@ -1,6 +1,6 @@
-using Rayforge.ManagedResources.NativeMemory;
+using Rayforge.Core.ManagedResources.NativeMemory;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// Managed pool for <see cref="ManagedTexture2D"/> objects.

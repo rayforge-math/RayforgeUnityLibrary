@@ -2,9 +2,9 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
-using Rayforge.Rendering.Passes;
+using Rayforge.Core.Rendering.Passes;
 
-namespace Rayforge.Utility.RenderGraphs.Rendering
+namespace Rayforge.Core.Utility.RenderGraphs.Rendering
 {
     /// <summary>
     /// Base class for raster RenderGraph pass input/output configuration and material binding.

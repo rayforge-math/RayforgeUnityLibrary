@@ -1,6 +1,6 @@
 using System;
 
-namespace Rayforge.Rendering.Filtering
+namespace Rayforge.Core.Rendering.Filtering
 {
     /// <summary>
     /// Represents a parametrized 1D filter function.

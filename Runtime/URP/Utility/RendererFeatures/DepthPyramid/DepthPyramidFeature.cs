@@ -1,10 +1,10 @@
-using Rayforge.Common;
-using Rayforge.Diagnostics;
+using Rayforge.Core.Common;
+using Rayforge.Core.Diagnostics;
 using System;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-namespace Rayforge.Utility.RendererFeatures.DepthPyramid
+namespace Rayforge.URP.Utility.RendererFeatures.DepthPyramid
 {
     /// <summary>
     /// ScriptableRendererFeature that generates a hierarchical depth pyramid for use in effects like SSAO or depth-based post-processing.

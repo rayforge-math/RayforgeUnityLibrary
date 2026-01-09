@@ -2,7 +2,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Rayforge.Utility.VolumeComponents.Parameters.Helpers
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers
 {
     public static class TextureGradientExtensions
     {

@@ -1,4 +1,4 @@
-namespace Rayforge.ShaderExtensions.Filter
+namespace Rayforge.Core.ShaderExtensions.Filter
 {
     /// <summary>
     /// Defines the types of blur that can be applied to a texture or render target.

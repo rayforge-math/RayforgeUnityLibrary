@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Rayforge.ManagedResources.NativeMemory.Helpers
+namespace Rayforge.Core.ManagedResources.NativeMemory.Helpers
 {
     /// <summary>
     /// Provides extension methods for binding <see cref="ComputeBuffer"/> objects as constant buffers

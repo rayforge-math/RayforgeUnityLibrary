@@ -1,9 +1,9 @@
-using Rayforge.Diagnostics;
-using Rayforge.ManagedResources.Abstractions;
+using Rayforge.Core.Diagnostics;
+using Rayforge.Core.ManagedResources.Abstractions;
 using System;
 using System.Collections.Generic;
 
-namespace Rayforge.Rendering.Filtering
+namespace Rayforge.Core.Rendering.Filtering
 {
     /// <summary>
     /// Represents a symmetric, optionally normalized 1D convolution kernel.

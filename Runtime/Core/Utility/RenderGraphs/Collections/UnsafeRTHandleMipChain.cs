@@ -1,11 +1,11 @@
-using Rayforge.Common;
-using Rayforge.Rendering.Collections;
+using Rayforge.Core.Common;
+using Rayforge.Core.Rendering.Collections;
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
-namespace Rayforge.Utility.RenderGraphs.Collections
+namespace Rayforge.Core.Utility.RenderGraphs.Collections
 {
     /// <summary>
     /// Represents an "unsafe" variant of <see cref="RTHandleMipChain{TData}"/>.

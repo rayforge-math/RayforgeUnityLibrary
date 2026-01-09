@@ -1,8 +1,8 @@
-using Rayforge.ManagedResources.Abstractions;
+using Rayforge.Core.ManagedResources.Abstractions;
 using System;
 using UnityEngine;
 
-namespace Rayforge.ManagedResources.NativeMemory
+namespace Rayforge.Core.ManagedResources.NativeMemory
 {
     /// <summary>
     /// Managed wrapper around Unity's <see cref="Texture2D"/>.

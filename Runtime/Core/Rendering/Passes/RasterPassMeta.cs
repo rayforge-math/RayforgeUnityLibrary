@@ -1,7 +1,7 @@
-using Rayforge.Diagnostics;
+using Rayforge.Core.Diagnostics;
 using UnityEngine;
 
-namespace Rayforge.Rendering.Passes
+namespace Rayforge.Core.Rendering.Passes
 {
     /// <summary>
     /// Metadata describing a complete raster pass.

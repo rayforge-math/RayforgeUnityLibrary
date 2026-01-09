@@ -1,9 +1,9 @@
-using Rayforge.Diagnostics;
+using Rayforge.Core.Diagnostics;
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Rayforge.ManagedResources.NativeMemory
+namespace Rayforge.Core.ManagedResources.NativeMemory
 {
     /// <summary>
     /// Wrapper around Unity's <see cref="RenderTextureDescriptor"/> to provide

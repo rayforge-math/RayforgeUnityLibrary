@@ -1,7 +1,7 @@
-using Rayforge.ManagedResources.NativeMemory;
+using Rayforge.Core.ManagedResources.NativeMemory;
 using UnityEngine;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// Managed pool for <see cref="ManagedRenderTexture"/> objects.

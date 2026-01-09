@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-namespace Rayforge.EditorExtensions.Attributes.Helpers
+namespace Rayforge.Core.EditorExtensions.Attributes.Helpers
 {
     public static class ConditionalHelpers
     {

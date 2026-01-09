@@ -3,11 +3,11 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 
-using Rayforge.Maths.Spaces;
+using Rayforge.Core.Maths.Spaces;
 
 using static Unity.Mathematics.math;
 
-namespace Rayforge.Maths.Tranforms
+namespace Rayforge.Core.Maths.Tranforms
 {
     /// <summary>
     /// A Unity Job that performs an in-place FFT or inverse FFT on a NativeArray of Complex numbers.

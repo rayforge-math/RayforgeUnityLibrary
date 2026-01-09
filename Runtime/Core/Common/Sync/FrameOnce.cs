@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Rayforge.Common.Sync
+namespace Rayforge.Core.Common.Sync
 {
     /// <summary>
     /// Lightweight per-frame execution guard.

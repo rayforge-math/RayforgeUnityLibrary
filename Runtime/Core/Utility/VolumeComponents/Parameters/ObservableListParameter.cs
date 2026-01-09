@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 using UnityEngine;
-using Rayforge.Utility.VolumeComponents.Abstractions;
-using Rayforge.Utility.VolumeComponents.Parameters.Helpers;
+using Rayforge.Core.Utility.VolumeComponents.Abstractions;
+using Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers;
 
-using static Rayforge.Utility.VolumeComponents.Parameters.Helpers.ArrayExtensions;
+using static Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers.ArrayExtensions;
 
-namespace Rayforge.Utility.VolumeComponents.Parameters
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters
 {
     [System.Serializable]
     public class ObservableListParameter<T> : ObservableParameter<ArrayWrapper<T>>

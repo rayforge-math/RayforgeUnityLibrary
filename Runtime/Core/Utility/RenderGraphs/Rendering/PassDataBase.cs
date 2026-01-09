@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Rendering.RenderGraphModule;
 
-namespace Rayforge.Utility.RenderGraphs.Rendering
+namespace Rayforge.Core.Utility.RenderGraphs.Rendering
 {
     /// <summary>
     /// Base class for RenderGraph pass input/output configuration and pass metadata.

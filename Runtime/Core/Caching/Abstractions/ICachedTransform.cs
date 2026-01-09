@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Rayforge.Caching.Abstractions
+namespace Rayforge.Core.Caching.Abstractions
 {
     /// <summary>
     /// Defines a lightweight abstraction layer over Unity's <see cref="Transform"/> component,

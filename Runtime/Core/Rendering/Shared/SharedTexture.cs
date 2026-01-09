@@ -1,7 +1,7 @@
-using Rayforge.Diagnostics;
+using Rayforge.Core.Diagnostics;
 using UnityEngine;
 
-namespace Rayforge.Rendering.Shared
+namespace Rayforge.Core.Rendering.Shared
 {
     /// <summary>
     /// Utility class for managing shared global textures in shaders.

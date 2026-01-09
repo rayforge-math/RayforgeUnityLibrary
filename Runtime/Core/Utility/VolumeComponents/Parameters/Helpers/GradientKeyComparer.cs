@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Rayforge.Utility.VolumeComponents.Parameters.Helpers
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers
 {
     public class GradientKeyComparer : IEqualityComparer<GradientColorKey>, IEqualityComparer<GradientAlphaKey>
     {

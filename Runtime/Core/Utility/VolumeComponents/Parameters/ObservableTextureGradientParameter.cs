@@ -1,10 +1,10 @@
-using Rayforge.Utility.VolumeComponents.Abstractions;
+using Rayforge.Core.Utility.VolumeComponents.Abstractions;
 using System;
 using UnityEngine.Rendering;
 
-using static Rayforge.Utility.VolumeComponents.Parameters.Helpers.TextureGradientExtensions;
+using static Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers.TextureGradientExtensions;
 
-namespace Rayforge.Utility.VolumeComponents.Parameters
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters
 {
     [System.Serializable]
     public class ObservableTextureGradientParameter : TextureGradientParameter, IObservableParameter<TextureGradient>, IEquatable<ObservableTextureGradientParameter>

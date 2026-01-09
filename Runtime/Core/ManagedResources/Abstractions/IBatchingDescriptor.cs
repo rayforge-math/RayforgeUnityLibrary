@@ -1,4 +1,4 @@
-namespace Rayforge.ManagedResources.Abstractions
+namespace Rayforge.Core.ManagedResources.Abstractions
 {
     /// <summary>
     /// Interface for descriptors that support batching.

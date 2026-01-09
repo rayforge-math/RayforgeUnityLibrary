@@ -1,6 +1,6 @@
 using System;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// Base class providing a globally shared buffer pool for a specific 

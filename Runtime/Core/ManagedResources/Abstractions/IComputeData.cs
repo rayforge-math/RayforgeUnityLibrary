@@ -1,4 +1,4 @@
-namespace Rayforge.ManagedResources.Abstractions
+namespace Rayforge.Core.ManagedResources.Abstractions
 {
     /// <summary>
     /// Represents a CPU-side container that exposes backing single-element data

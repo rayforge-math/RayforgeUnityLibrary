@@ -1,8 +1,8 @@
-using Rayforge.Diagnostics;
+using Rayforge.Core.Diagnostics;
 using System;
 using UnityEngine;
 
-namespace Rayforge.Rendering.Collections.Helpers
+namespace Rayforge.Core.Rendering.Collections.Helpers
 {
     public static class MipChainHelpers
     {

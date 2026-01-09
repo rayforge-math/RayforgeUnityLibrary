@@ -3,7 +3,7 @@ using UnityEngine.Rendering;
 
 using System;
 
-namespace Rayforge.EditorExtensions.Example
+namespace Rayforge.Core.EditorExtensions.Example
 {
     /*
     [System.Serializable, VolumeComponentMenu("Custom/Test")]

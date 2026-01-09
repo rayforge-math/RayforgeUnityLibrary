@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace Rayforge.Utility.VolumeComponents.Parameters.Helpers
+namespace Rayforge.Core.Utility.VolumeComponents.Parameters.Helpers
 {
     [System.Serializable]
     public struct ArrayWrapper<T> : IEnumerable<T>, IEquatable<ArrayWrapper<T>>

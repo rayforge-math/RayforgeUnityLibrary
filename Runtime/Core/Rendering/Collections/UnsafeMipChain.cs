@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using Rayforge.Rendering.Collections.Helpers;
+using Rayforge.Core.Rendering.Collections.Helpers;
 
-namespace Rayforge.Rendering.Collections
+namespace Rayforge.Core.Rendering.Collections
 {
     /// <summary>
     /// Represents an "unsafe" mip chain with additional flexibility for advanced scenarios.

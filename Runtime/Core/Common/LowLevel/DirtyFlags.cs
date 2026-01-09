@@ -1,4 +1,4 @@
-namespace Rayforge.Common.LowLevel
+namespace Rayforge.Core.Common.LowLevel
 {
     /// <summary>
     /// Lightweight dirty-flag container built on top of <see cref="BitField"/>.

@@ -2,7 +2,7 @@ using UnityEngine.Rendering;
 
 using UnityEngine.Rendering.RenderGraphModule;
 
-namespace Rayforge.Utility.RenderGraphs.Helpers
+namespace Rayforge.Core.Utility.RenderGraphs.Helpers
 {
     /// <summary>
     /// Extension methods for <see cref="RTHandle"/> to simplify integration with RenderGraph.

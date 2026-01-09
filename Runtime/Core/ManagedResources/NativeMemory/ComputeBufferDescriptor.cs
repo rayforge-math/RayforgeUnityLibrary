@@ -1,9 +1,9 @@
-using Rayforge.Diagnostics;
-using Rayforge.ManagedResources.Abstractions;
+using Rayforge.Core.Diagnostics;
+using Rayforge.Core.ManagedResources.Abstractions;
 using System;
 using UnityEngine;
 
-namespace Rayforge.ManagedResources.NativeMemory
+namespace Rayforge.Core.ManagedResources.NativeMemory
 {
     /// <summary>
     /// Describes the properties of a compute buffer.

@@ -1,7 +1,7 @@
-﻿using Rayforge.ManagedResources.Abstractions;
+﻿using Rayforge.Core.ManagedResources.Abstractions;
 using System;
 
-namespace Rayforge.ManagedResources.Pooling
+namespace Rayforge.Core.ManagedResources.Pooling
 {
     /// <summary>
     /// A specialized buffer pool that supports batching for sequential buffers.

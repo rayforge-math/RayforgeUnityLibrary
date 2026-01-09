@@ -1,16 +1,16 @@
-using Rayforge.ManagedResources.NativeMemory;
-using Rayforge.Maths.Tranforms;
-using Rayforge.Threading.Jobs;
+using Rayforge.Core.ManagedResources.NativeMemory;
+using Rayforge.Core.Maths.Tranforms;
+using Rayforge.Core.Threading.Jobs;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 
-using Rayforge.Maths.Spaces;
+using Rayforge.Core.Maths.Spaces;
 using System.Linq;
 
-namespace Rayforge.Maths.Transforms
+namespace Rayforge.Core.Maths.Transforms
 {
     /// <summary>
     /// Dispatcher for scheduling and completing 1D FFT and IFFT jobs.

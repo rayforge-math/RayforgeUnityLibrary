@@ -1,8 +1,8 @@
-using Rayforge.Caching.Abstractions;
-using Rayforge.Caching.Transforms;
+using Rayforge.Core.Caching.Abstractions;
+using Rayforge.Core.Caching.Transforms;
 using UnityEngine;
 
-namespace Rayforge.Caching.Concurrent
+namespace Rayforge.Core.Caching.Concurrent
 {
     /// <summary>
     /// Thread-safe variant of <see cref="CachedTransform"/>.

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 
-using Rayforge.Rendering.Abstractions;
+using Rayforge.Core.Rendering.Abstractions;
 
-namespace Rayforge.Rendering.Collections
+namespace Rayforge.Core.Rendering.Collections
 {
     /// <summary>
     /// Generic ping-pong buffer that manages two handles of type <typeparamref name="THandle"/>.

@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using Rayforge.Rendering.Shared;
-using Rayforge.Diagnostics;
-using Rayforge.Common;
+using Rayforge.Core.Rendering.Shared;
+using Rayforge.Core.Diagnostics;
+using Rayforge.Core.Common;
 
 using static UnityEngine.Resources;
 
-namespace Rayforge.Resources
+namespace Rayforge.Core.Resources
 {
     /// <summary>
     /// Provides access to shared global resources used across Rayforge shaders and in projects.
@@ -132,7 +132,7 @@ namespace Rayforge.Resources
             => LoadAndRegisterTexture<Texture2D>(k_NoiseShapeMeta);
 
         /// <summary>
-        /// Loads and registers all shared texture resources used by Rayforge.
+        /// Loads and registers all shared texture resources used by Rayforge.Core.
         /// 
         /// Intended to be called once during pipeline or renderer initialization,
         /// but safe to call multiple times.

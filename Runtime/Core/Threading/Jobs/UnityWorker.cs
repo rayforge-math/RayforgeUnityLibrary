@@ -1,6 +1,6 @@
 using Unity.Jobs;
 
-namespace Rayforge.Threading.Jobs
+namespace Rayforge.Core.Threading.Jobs
 {
     /// <summary>
     /// Utility class that provides simplified helper methods for scheduling and completing Unity Jobs.

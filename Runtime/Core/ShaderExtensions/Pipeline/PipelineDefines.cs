@@ -1,8 +1,8 @@
 using UnityEngine;
 
-using Rayforge.Common;
+using Rayforge.Core.Common;
 
-namespace Rayforge.ShaderExtensions.Pipeline
+namespace Rayforge.Core.ShaderExtensions.Pipeline
 {
     /// <summary>
     /// Provides runtime detection of the active Scriptable Render Pipeline (URP or HDRP)
