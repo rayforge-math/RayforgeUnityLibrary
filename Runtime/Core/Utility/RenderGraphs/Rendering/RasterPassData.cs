@@ -33,11 +33,6 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         where TCmd : BaseCommandBuffer
     {
         /// <summary>
-        /// Core raster metadata (material, pass index/name, property block).
-        /// </summary>
-        public RasterPassMeta Meta { get; set; }
-
-        /// <summary>
         /// Optional callback invoked before dispatch to bind resources, set constants, etc.
         /// <para>
         /// <b>Performance note:</b> To avoid heap allocations per frame and to comply with RenderGraph's

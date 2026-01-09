@@ -32,11 +32,6 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
         where TDerived : PassDataBase<TDerived, ComputePassMeta, TextureMeta>
     {
         /// <summary>
-        /// Core compute metadata (shader, kernel, thread groups).
-        /// </summary>
-        public ComputePassMeta Meta { get; set; }
-
-        /// <summary>
         /// Optional callback invoked before dispatch to bind resources, set constants, etc.
         /// <para>
         /// <b>Performance note:</b> To avoid heap allocations per frame and to comply with RenderGraph's
