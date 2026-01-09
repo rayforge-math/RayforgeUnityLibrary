@@ -1,2 +1,14 @@
 BlueNoise512 – released under CC0.
 Source: https://momentsingraphics.de/BlueNoise.html
+
+NoiseDetail512 – released under CC0.
+Source: https://opengameart.org/content/700-noise-textures
+
+NoiseShape512 – released under CC0.
+Source: https://opengameart.org/content/700-noise-textures
+
+Noise3DDetail – released under MIT.
+Source: https://github.com/SebLague/Clouds/tree/master/Assets/Resources
+
+Noise3DShape – released under MIT.
+Source: https://github.com/SebLague/Clouds/tree/master/Assets/Resources
