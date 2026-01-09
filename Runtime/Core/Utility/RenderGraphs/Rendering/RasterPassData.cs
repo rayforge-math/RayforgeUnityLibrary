@@ -10,6 +10,14 @@ namespace Rayforge.Utility.RenderGraphs.Rendering
     /// Base class for raster RenderGraph pass input/output configuration and material binding.
     /// Contains the destination texture and the core pass metadata.
     /// </summary>
+    /// <remarks>
+    /// This class is declared as <c>partial</c> to allow projects to extend the pass data
+    /// with additional fields that should be present on all raster passes of this type
+    /// (e.g. debug flags, frame indices, or shared constants),
+    /// without requiring inheritance or modification of the core framework.
+    /// 
+    /// Extensions should remain data-only and must not introduce execution logic.
+    /// </remarks>
     /// <typeparam name="TMeta">The type of the pass metadata (e.g., <see cref="RasterPassMeta"/>).</typeparam>
     public abstract partial class RasterPassDataBase<TDerived, TMeta, TCmd> : PassDataBase<TDerived, TMeta, TextureHandle>
         where TDerived : PassDataBase<TDerived, TMeta, TextureHandle>

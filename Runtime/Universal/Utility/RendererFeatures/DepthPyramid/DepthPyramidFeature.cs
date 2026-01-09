@@ -3,7 +3,6 @@ using Rayforge.Diagnostics;
 using System;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-using static UnityEngine.XR.XRDisplaySubsystem;
 
 namespace Rayforge.Utility.RendererFeatures.DepthPyramid
 {
