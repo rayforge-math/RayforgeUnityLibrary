@@ -5,8 +5,8 @@ It remains available for reference purposes only.
 
 For new projects, please use one of the following actively maintained alternatives instead:
 
-- 👉 **Core Library:** [https://github.com/yourname/your-new-unity-lib  ](https://github.com/rayforge-math/RayforgeUnityLibraryCore)
-- 👉 **Additional URP Library:** [https://github.com/yourname/your-other-unity-lib](https://github.com/rayforge-math/RayforgeUnityLibraryURP)
+- 👉 **Core Library:** [https://github.com/rayforge-math/RayforgeUnityLibraryCore](https://github.com/rayforge-math/RayforgeUnityLibraryCore)
+- 👉 **Additional URP Library:** [https://github.com/rayforge-math/RayforgeUnityLibraryURP](https://github.com/rayforge-math/RayforgeUnityLibraryURP)
 
 ---
 
