@@ -1,3 +1,21 @@
+# ⚠️ OBSOLETE / DEPRECATED
+
+**This repository is no longer actively maintained and should be considered obsolete.**  
+It remains available for reference purposes only.
+
+For new projects, please use one of the following actively maintained alternatives instead:
+
+- 👉 **Core Library:** [https://github.com/yourname/your-new-unity-lib  ](https://github.com/rayforge-math/RayforgeUnityLibraryCore)
+- 👉 **Additional URP Library:** [https://github.com/yourname/your-other-unity-lib](https://github.com/rayforge-math/RayforgeUnityLibraryURP)
+
+---
+
+# Rayforge Unity Library
+
+A collection of personal Unity utilities, wrappers, extension methods, and helper systems designed to streamline common tasks and reduce boilerplate code.
+
+> **Status:** Legacy / archived. The concepts and code may still be useful for learning or migration, but are not recommended for production use.
+
 # Rayforge Unity Library
 
 A collection of personal Unity utilities, wrappers, extension methods, and helper systems designed to streamline common tasks and reduce boilerplate code.
